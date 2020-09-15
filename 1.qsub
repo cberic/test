@@ -1,0 +1,14 @@
+#!/bin/bash                                                          
+#PBS -q parallel
+#PBS -l nodes=1:ppn=24
+#PBS -l mem=48gb
+#PBS -l cput=24:00:00 
+#PBS -N xppcm
+
+cd $PBS_O_WORKDIR
+
+module load Gaussian/16
+#export GAUSS_SCRDIR=$PBS_O_WORKDIR/tmp
+
+/scratch/bochen/julia-1.5.1/bin/julia xppcm-test.jl
+

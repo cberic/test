@@ -5,15 +5,15 @@
     # function evals   = 21
     # data points      = 7
     # variables        = 3
-    chi-square         = 9.2895e-07
-    reduced chi-square = 2.3224e-07
-    Akaike info crit   = -104.845835
-    Bayesian info crit = -105.008105
+    chi-square         = 4.9117e-07
+    reduced chi-square = 1.2279e-07
+    Akaike info crit   = -109.306699
+    Bayesian info crit = -109.468969
 [[Variables]]
-    a:  0.04122664 +/- 0.00248272 (6.02%) (init = 0)
-    b:  6.16150466 +/- 0.33007046 (5.36%) (init = 5)
-    c:  0.04805456 +/- 0.00353335 (7.35%) (init = 0)
+    a:  0.04406782 +/- 0.00205010 (4.65%) (init = 0)
+    b:  5.60959786 +/- 0.28887769 (5.15%) (init = 5)
+    c:  0.05199440 +/- 0.00303304 (5.83%) (init = 0)
 [[Correlations]] (unreported correlations are < 0.100)
-    C(a, c) =  0.998
-    C(a, b) = -0.981
-    C(b, c) = -0.974
+    C(a, c) =  0.999
+    C(a, b) = -0.977
+    C(b, c) = -0.973

@@ -210,7 +210,7 @@ function gjfvc(geom = geometries, 𝑓 = scalingfactors)
                 # job killed after L301 (%kjob l301);
                 write(file, """
                 %kjob l301
-                %chk=structure-$i-Vc-$(𝑓[j]).chk
+                %chk=structure-$i-Vc.chk
                 %nproc=1
                 %mem=1000mb
                 #p $method $basis
@@ -263,7 +263,7 @@ function gjfger(geom = geometries, 𝑓 = scalingfactors)
                 # job killed after L502
                 write(file, """
                 %kjob l502
-                %chk=structure-$i-Ger-$(𝑓[j]).chk
+                %chk=structure-$i-Ger.chk
                 %nproc=$nproc
                 %mem=$mem
                 #p $method $basis
@@ -316,7 +316,7 @@ function gjfgcav(cav = cavity, geom = geometries, 𝑓 = scalingfactors)
                 # also testing for vdw cavity to add the noaddsph keyword
                 write(file, """
                 %kjob l301
-                %chk=structure-$i-Gcav-$(𝑓[j]).chk
+                %chk=structure-$i-Gcav.chk
                 %nproc=$nproc
                 %mem=$mem
                 #p $method $basis
@@ -446,7 +446,7 @@ end
 # add return value for output file "return "$jobtype finished at time()""
 function rungaussian(jobtype; geom=geometries)
     nos = numberofstructures(geom)
-    run(`cd tmp`)
+    cd("tmp")
     if jobtype == "Vc" || jobtype == "Gcav"
         Threads.@threads for i in 1:nos
             run(`g16 structure-$i-$jobtype.gjf`)
@@ -456,7 +456,7 @@ function rungaussian(jobtype; geom=geometries)
             run(`g16 structure-$i-$jobtype.gjf`)
         end
     end
-    run(`cd ..`)
+    cd("..")
 end
 
 
@@ -529,7 +529,7 @@ end
 
 # need to install the lmfit package `pip install lmfit`
 # make sure to use the correct python verion
-# note the python3 call inside the function
+# note the python call with full path inside the function
 function pythonfitting(geom = geometries)
     nos = numberofstructures(geom)
     𝑉𝑐 = get𝑉𝑐()
@@ -561,7 +561,7 @@ function pythonfitting(geom = geometries)
             #<end examples/doc_model1.py>"""
         
         # read in fitting results and write to structure-$i-fitting.out files
-        results = read(pipeline(`echo $script`, `python3`), String)
+        results = read(pipeline(`echo $script`, `/scratch/bochen/Python-2.7.18/bin/python`), String)
         open("tmp/structure-$i-fitting.out", "w") do file
             write(file, results)
         end
@@ -633,7 +633,8 @@ function calculate𝑝()
         #end
     #end
     # 4359.74417 is the conversion factor from hartree/Å³ to GPa
-    return @. (𝑎 * (1 - (𝑉𝑐[:,1]/𝑉𝑐)^𝑏) + 𝑐) * 4359.74417    # 2D array of dimension nos * length(𝑓)
+    return @. (𝑎 * ( (𝑉𝑐[:,1]/𝑉𝑐)^(𝑏+1) - 1 ) + 𝑐) * 4359.74417    # 2D array of dimension nos * length(𝑓)
+    #return @. (𝑎 * (1 - (𝑉𝑐[:,1]/𝑉𝑐)^𝑏) + 𝑐) * 4359.74417    # 2D array of dimension nos * length(𝑓)
 end
 
 
@@ -665,19 +666,19 @@ end
 
 writegjf("Vc")          # write .gjf files for cavity volume "Vc" calculation 
 
-#rungaussian("Vc")       # run Gaussian jobs
+rungaussian("Vc")       # run Gaussian jobs
 
-get𝑉𝑐()                 # extract cavity volume 𝑉𝑐 from Gaussian output
+#get𝑉𝑐()                 # extract cavity volume 𝑉𝑐 from Gaussian output
 
-calculate𝑠()            # calculate linear scaling 𝑠 from 𝑉𝑐 date
+#calculate𝑠()            # calculate linear scaling 𝑠 from 𝑉𝑐 date
 
-average𝑠()              # calculated the average of 𝑠 over all structures
+#average𝑠()              # calculated the average of 𝑠 over all structures
 
-calculate𝜀()            # calculate dielectric permitivity 𝜀
+#calculate𝜀()            # calculate dielectric permitivity 𝜀
 
-calculate𝑍()            # calculate Pauli repulsion barrier 𝑍
+#calculate𝑍()            # calculate Pauli repulsion barrier 𝑍
 
-calculate𝑉ₘ()           # calculate the molar volume of solvent 𝑉ₘ
+#calculate𝑉ₘ()           # calculate the molar volume of solvent 𝑉ₘ
 
 #------------------------------------------------------------------------------
 # Step 2: electronic structure Gaussian jobs and pressure calculations 
@@ -685,11 +686,11 @@ calculate𝑉ₘ()           # calculate the molar volume of solvent 𝑉ₘ
 
 writegjf("Ger")          # write .gjf files for cavity volume "Ger" calculation 
 
-#rungaussian("Ger")       # run Gaussian jobs
+rungaussian("Ger")       # run Gaussian jobs
 
-get𝐺𝑒𝑟()                 # extract 𝐺𝑒𝑟 from Gaussian output
+#get𝐺𝑒𝑟()                 # extract 𝐺𝑒𝑟 from Gaussian output
 
-calculate𝑝()             # calculate pressure 𝑝
+#calculate𝑝()             # calculate pressure 𝑝
 
 #------------------------------------------------------------------------------
 # Step 3: cavitation energy Gaussian jobs
@@ -697,13 +698,13 @@ calculate𝑝()             # calculate pressure 𝑝
 
 writegjf("Gcav")         # write .gjf files for cavitation energy "Gcav" calculation 
 
-#rungaussian("Gcav")      # run Gaussian jobs
+rungaussian("Gcav")      # run Gaussian jobs
 
-get𝐸𝑐𝑎𝑣()                 # extract 𝐺𝑐𝑎𝑣 from Gaussian output
+#get𝐸𝑐𝑎𝑣()                 # extract 𝐺𝑐𝑎𝑣 from Gaussian output
 
-calculate𝐺𝑐𝑎𝑣()           # calculate cavitation energy 𝐺𝑐𝑎𝑣
+#calculate𝐺𝑐𝑎𝑣()           # calculate cavitation energy 𝐺𝑐𝑎𝑣
 
-calculate𝐺𝑡𝑜𝑡()            # calculate total energy 𝐺𝑡𝑜𝑡
+#calculate𝐺𝑡𝑜𝑡()            # calculate total energy 𝐺𝑡𝑜𝑡
 
 #------------------------------------------------------------------------------
 # print results
