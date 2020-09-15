@@ -1,0 +1,43 @@
+Sat Jul 25 20:58:31 CEST 2020
+$#ARGV=19
+ $n_par=8
+$nfm1=6
+C6H12
+3
+vdw
+1.2
+noaddsph  
+0.075
+bi-molecular process: A+B-> AB_1->....
+Mathematica
+0.6022140857 
+4359.74417 
+627.509404689879 
+Cyclohexane 
+
+end g16-233.424050701 Hartree
+
+end g16-233.424050701 Hartree
+
+end g16-466.860493106 Hartree
+
+end g16-466.815524921 Hartree
+
+end g16-466.837217109 Hartree
+
+end g16$n_fact= 1$volume[$n_fact]=127.890$n_fact= 2$volume[$n_fact]=118.297$n_fact= 3$volume[$n_fact]=109.950$n_fact= 4$volume[$n_fact]=101.447$n_fact= 5$volume[$n_fact]=94.288$n_fact= 6$volume[$n_fact]=90.374$n_fact= 7$volume[$n_fact]=86.642
+end g16$n_fact= 1$volume[$n_fact]=127.890$n_fact= 2$volume[$n_fact]=118.297$n_fact= 3$volume[$n_fact]=109.950$n_fact= 4$volume[$n_fact]=101.447$n_fact= 5$volume[$n_fact]=94.288$n_fact= 6$volume[$n_fact]=90.374$n_fact= 7$volume[$n_fact]=86.642
+end g16$n_fact= 1$volume[$n_fact]=260.640$n_fact= 2$volume[$n_fact]=245.524$n_fact= 3$volume[$n_fact]=231.495$n_fact= 4$volume[$n_fact]=216.500$n_fact= 5$volume[$n_fact]=204.411$n_fact= 6$volume[$n_fact]=198.085$n_fact= 7$volume[$n_fact]=191.604
+end g16$n_fact= 1$volume[$n_fact]=245.980$n_fact= 2$volume[$n_fact]=231.703$n_fact= 3$volume[$n_fact]=218.008$n_fact= 4$volume[$n_fact]=204.132$n_fact= 5$volume[$n_fact]=191.938$n_fact= 6$volume[$n_fact]=185.506$n_fact= 7$volume[$n_fact]=179.319
+end g16$n_fact= 1$volume[$n_fact]=243.194$n_fact= 2$volume[$n_fact]=229.354$n_fact= 3$volume[$n_fact]=215.627$n_fact= 4$volume[$n_fact]=202.382$n_fact= 5$volume[$n_fact]=190.708$n_fact= 6$volume[$n_fact]=184.609$n_fact= 7$volume[$n_fact]=178.260
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+ rm *.chkSat Jul 25 23:43:31 CEST 2020

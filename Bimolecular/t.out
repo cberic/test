@@ -1,0 +1,20 @@
+[[Model]]
+    Model(murnaghan)
+[[Fit Statistics]]
+    # fitting method   = leastsq
+    # function evals   = 21
+    # data points      = 7
+    # variables        = 3
+    chi-square         = 1.8007e-06
+    reduced chi-square = 4.5019e-07
+    Akaike info crit   = -100.212544
+    Bayesian info crit = -100.374814
+[[Variables]]
+    a:  0.04524962 +/- 0.00373617 (8.26%) (init = 0)
+    b:  5.79163389 +/- 0.48986589 (8.46%) (init = 5)
+    c:  0.05328088 +/- 0.00545033 (10.23%) (init = 0)
+[[Correlations]] (unreported correlations are < 0.100)
+    C(a, c) =  0.998
+    C(a, b) = -0.978
+    C(b, c) = -0.973
+

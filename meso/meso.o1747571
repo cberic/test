@@ -1,0 +1,243 @@
+Mon Aug  3 13:29:54 CEST 2020
+$#ARGV=59
+ $n_par=8
+$nfm1=6
+C6H12
+3
+vdw
+1.2
+noaddsph  
+0.075
+bi-molecular process: A+B-> AB_1->....
+Python
+0.6022140857 
+4359.74417 
+627.509404689879 
+Cyclohexane 
+
+end g16-233.427605095 Hartree
+
+end g16-233.427605095 Hartree
+
+end g16-466.860493106 Hartree
+
+end g16-466.860444396 Hartree
+
+end g16-466.860378638 Hartree
+
+end g16-466.860292367 Hartree
+
+end g16-466.860175619 Hartree
+
+end g16-466.860018360 Hartree
+
+end g16-466.859824721 Hartree
+
+end g16-466.859590743 Hartree
+
+end g16-466.859310496 Hartree
+
+end g16-466.858973460 Hartree
+
+end g16-466.858578989 Hartree
+
+end g16-466.858099295 Hartree
+
+end g16-466.857541087 Hartree
+
+end g16-466.856890261 Hartree
+
+end g16-466.856143577 Hartree
+
+end g16-466.855282570 Hartree
+
+end g16-466.854290223 Hartree
+
+end g16-466.853138151 Hartree
+
+end g16-466.851820427 Hartree
+
+end g16-466.850323652 Hartree
+
+end g16-466.848617374 Hartree
+
+end g16-466.846664458 Hartree
+
+end g16-466.844427101 Hartree
+
+end g16-466.841874101 Hartree
+
+end g16-466.838963067 Hartree
+
+end g16-466.835664017 Hartree
+
+end g16-466.831953726 Hartree
+
+end g16-466.827809514 Hartree
+
+end g16-466.823302947 Hartree
+
+end g16-466.818355020 Hartree
+
+end g16-466.815571515 Hartree
+
+end g16-466.815524921 Hartree
+
+end g16-466.815524907 Hartree
+
+end g16-466.817549164 Hartree
+
+end g16-466.821163706 Hartree
+
+end g16-466.825404801 Hartree
+
+end g16-466.829560004 Hartree
+
+end g16-466.833064861 Hartree
+
+end g16-466.835486704 Hartree
+
+end g16-466.836683273 Hartree
+
+end g16-466.837058228 Hartree
+
+end g16-466.837176627 Hartree
+
+end g16-466.837217109 Hartree
+
+end g16$n_fact= 1$volume[$n_fact]=127.788$n_fact= 2$volume[$n_fact]=119.071$n_fact= 3$volume[$n_fact]=110.556$n_fact= 4$volume[$n_fact]=102.459$n_fact= 5$volume[$n_fact]=95.230$n_fact= 6$volume[$n_fact]=91.269$n_fact= 7$volume[$n_fact]=87.427
+end g16$n_fact= 1$volume[$n_fact]=127.788$n_fact= 2$volume[$n_fact]=119.071$n_fact= 3$volume[$n_fact]=110.556$n_fact= 4$volume[$n_fact]=102.459$n_fact= 5$volume[$n_fact]=95.230$n_fact= 6$volume[$n_fact]=91.269$n_fact= 7$volume[$n_fact]=87.427
+end g16$n_fact= 1$volume[$n_fact]=260.640$n_fact= 2$volume[$n_fact]=245.524$n_fact= 3$volume[$n_fact]=231.495$n_fact= 4$volume[$n_fact]=216.500$n_fact= 5$volume[$n_fact]=204.411$n_fact= 6$volume[$n_fact]=198.085$n_fact= 7$volume[$n_fact]=191.604
+end g16$n_fact= 1$volume[$n_fact]=260.287$n_fact= 2$volume[$n_fact]=245.308$n_fact= 3$volume[$n_fact]=231.219$n_fact= 4$volume[$n_fact]=216.535$n_fact= 5$volume[$n_fact]=203.782$n_fact= 6$volume[$n_fact]=197.601$n_fact= 7$volume[$n_fact]=191.119
+end g16$n_fact= 1$volume[$n_fact]=259.618$n_fact= 2$volume[$n_fact]=244.342$n_fact= 3$volume[$n_fact]=230.319$n_fact= 4$volume[$n_fact]=216.148$n_fact= 5$volume[$n_fact]=203.130$n_fact= 6$volume[$n_fact]=198.652$n_fact= 7$volume[$n_fact]=190.775
+end g16$n_fact= 1$volume[$n_fact]=258.848$n_fact= 2$volume[$n_fact]=243.786$n_fact= 3$volume[$n_fact]=230.120$n_fact= 4$volume[$n_fact]=215.526$n_fact= 5$volume[$n_fact]=202.824$n_fact= 6$volume[$n_fact]=196.782$n_fact= 7$volume[$n_fact]=190.457
+end g16$n_fact= 1$volume[$n_fact]=258.055$n_fact= 2$volume[$n_fact]=243.901$n_fact= 3$volume[$n_fact]=229.248$n_fact= 4$volume[$n_fact]=216.479$n_fact= 5$volume[$n_fact]=202.445$n_fact= 6$volume[$n_fact]=196.507$n_fact= 7$volume[$n_fact]=189.853
+end g16$n_fact= 1$volume[$n_fact]=257.820$n_fact= 2$volume[$n_fact]=242.961$n_fact= 3$volume[$n_fact]=228.682$n_fact= 4$volume[$n_fact]=215.860$n_fact= 5$volume[$n_fact]=201.433$n_fact= 6$volume[$n_fact]=196.024$n_fact= 7$volume[$n_fact]=189.460
+end g16$n_fact= 1$volume[$n_fact]=257.354$n_fact= 2$volume[$n_fact]=242.090$n_fact= 3$volume[$n_fact]=228.164$n_fact= 4$volume[$n_fact]=214.678$n_fact= 5$volume[$n_fact]=201.359$n_fact= 6$volume[$n_fact]=195.554$n_fact= 7$volume[$n_fact]=189.109
+end g16$n_fact= 1$volume[$n_fact]=256.576$n_fact= 2$volume[$n_fact]=241.371$n_fact= 3$volume[$n_fact]=227.587$n_fact= 4$volume[$n_fact]=213.771$n_fact= 5$volume[$n_fact]=200.452$n_fact= 6$volume[$n_fact]=194.958$n_fact= 7$volume[$n_fact]=189.011
+end g16$n_fact= 1$volume[$n_fact]=255.990$n_fact= 2$volume[$n_fact]=241.111$n_fact= 3$volume[$n_fact]=227.275$n_fact= 4$volume[$n_fact]=213.498$n_fact= 5$volume[$n_fact]=199.683$n_fact= 6$volume[$n_fact]=194.234$n_fact= 7$volume[$n_fact]=188.616
+end g16$n_fact= 1$volume[$n_fact]=255.380$n_fact= 2$volume[$n_fact]=240.138$n_fact= 3$volume[$n_fact]=226.477$n_fact= 4$volume[$n_fact]=213.511$n_fact= 5$volume[$n_fact]=199.272$n_fact= 6$volume[$n_fact]=193.728$n_fact= 7$volume[$n_fact]=187.572
+end g16$n_fact= 1$volume[$n_fact]=255.188$n_fact= 2$volume[$n_fact]=239.966$n_fact= 3$volume[$n_fact]=225.786$n_fact= 4$volume[$n_fact]=212.342$n_fact= 5$volume[$n_fact]=198.977$n_fact= 6$volume[$n_fact]=193.088$n_fact= 7$volume[$n_fact]=187.068
+end g16$n_fact= 1$volume[$n_fact]=253.954$n_fact= 2$volume[$n_fact]=239.232$n_fact= 3$volume[$n_fact]=225.434$n_fact= 4$volume[$n_fact]=212.297$n_fact= 5$volume[$n_fact]=198.730$n_fact= 6$volume[$n_fact]=192.280$n_fact= 7$volume[$n_fact]=186.706
+end g16$n_fact= 1$volume[$n_fact]=253.543$n_fact= 2$volume[$n_fact]=238.457$n_fact= 3$volume[$n_fact]=224.801$n_fact= 4$volume[$n_fact]=211.612$n_fact= 5$volume[$n_fact]=198.293$n_fact= 6$volume[$n_fact]=191.927$n_fact= 7$volume[$n_fact]=185.935
+end g16$n_fact= 1$volume[$n_fact]=253.244$n_fact= 2$volume[$n_fact]=237.713$n_fact= 3$volume[$n_fact]=224.110$n_fact= 4$volume[$n_fact]=210.736$n_fact= 5$volume[$n_fact]=197.959$n_fact= 6$volume[$n_fact]=191.464$n_fact= 7$volume[$n_fact]=185.276
+end g16$n_fact= 1$volume[$n_fact]=252.319$n_fact= 2$volume[$n_fact]=237.034$n_fact= 3$volume[$n_fact]=223.451$n_fact= 4$volume[$n_fact]=209.924$n_fact= 5$volume[$n_fact]=197.397$n_fact= 6$volume[$n_fact]=190.949$n_fact= 7$volume[$n_fact]=184.815
+end g16$n_fact= 1$volume[$n_fact]=251.717$n_fact= 2$volume[$n_fact]=236.514$n_fact= 3$volume[$n_fact]=222.794$n_fact= 4$volume[$n_fact]=209.232$n_fact= 5$volume[$n_fact]=196.705$n_fact= 6$volume[$n_fact]=190.213$n_fact= 7$volume[$n_fact]=184.194
+end g16$n_fact= 1$volume[$n_fact]=251.062$n_fact= 2$volume[$n_fact]=235.584$n_fact= 3$volume[$n_fact]=222.364$n_fact= 4$volume[$n_fact]=208.691$n_fact= 5$volume[$n_fact]=195.521$n_fact= 6$volume[$n_fact]=189.437$n_fact= 7$volume[$n_fact]=183.431
+end g16$n_fact= 1$volume[$n_fact]=250.497$n_fact= 2$volume[$n_fact]=234.639$n_fact= 3$volume[$n_fact]=221.869$n_fact= 4$volume[$n_fact]=208.593$n_fact= 5$volume[$n_fact]=194.981$n_fact= 6$volume[$n_fact]=189.280$n_fact= 7$volume[$n_fact]=182.808
+end g16$n_fact= 1$volume[$n_fact]=249.885$n_fact= 2$volume[$n_fact]=233.948$n_fact= 3$volume[$n_fact]=220.891$n_fact= 4$volume[$n_fact]=208.313$n_fact= 5$volume[$n_fact]=194.381$n_fact= 6$volume[$n_fact]=188.721$n_fact= 7$volume[$n_fact]=182.529
+end g16$n_fact= 1$volume[$n_fact]=249.097$n_fact= 2$volume[$n_fact]=233.449$n_fact= 3$volume[$n_fact]=220.583$n_fact= 4$volume[$n_fact]=207.372$n_fact= 5$volume[$n_fact]=194.276$n_fact= 6$volume[$n_fact]=187.876$n_fact= 7$volume[$n_fact]=181.747
+end g16$n_fact= 1$volume[$n_fact]=248.461$n_fact= 2$volume[$n_fact]=233.688$n_fact= 3$volume[$n_fact]=220.384$n_fact= 4$volume[$n_fact]=206.628$n_fact= 5$volume[$n_fact]=193.604$n_fact= 6$volume[$n_fact]=187.318$n_fact= 7$volume[$n_fact]=181.466
+end g16$n_fact= 1$volume[$n_fact]=247.883$n_fact= 2$volume[$n_fact]=233.318$n_fact= 3$volume[$n_fact]=219.556$n_fact= 4$volume[$n_fact]=205.951$n_fact= 5$volume[$n_fact]=193.026$n_fact= 6$volume[$n_fact]=186.802$n_fact= 7$volume[$n_fact]=181.057
+end g16$n_fact= 1$volume[$n_fact]=247.297$n_fact= 2$volume[$n_fact]=233.319$n_fact= 3$volume[$n_fact]=219.141$n_fact= 4$volume[$n_fact]=205.477$n_fact= 5$volume[$n_fact]=192.709$n_fact= 6$volume[$n_fact]=186.487$n_fact= 7$volume[$n_fact]=180.549
+end g16$n_fact= 1$volume[$n_fact]=246.877$n_fact= 2$volume[$n_fact]=232.809$n_fact= 3$volume[$n_fact]=218.705$n_fact= 4$volume[$n_fact]=204.882$n_fact= 5$volume[$n_fact]=192.740$n_fact= 6$volume[$n_fact]=185.899$n_fact= 7$volume[$n_fact]=179.982
+end g16$n_fact= 1$volume[$n_fact]=246.882$n_fact= 2$volume[$n_fact]=232.370$n_fact= 3$volume[$n_fact]=218.556$n_fact= 4$volume[$n_fact]=204.825$n_fact= 5$volume[$n_fact]=191.896$n_fact= 6$volume[$n_fact]=185.744$n_fact= 7$volume[$n_fact]=179.621
+end g16$n_fact= 1$volume[$n_fact]=246.590$n_fact= 2$volume[$n_fact]=231.985$n_fact= 3$volume[$n_fact]=218.131$n_fact= 4$volume[$n_fact]=204.342$n_fact= 5$volume[$n_fact]=191.703$n_fact= 6$volume[$n_fact]=185.172$n_fact= 7$volume[$n_fact]=179.396
+end g16$n_fact= 1$volume[$n_fact]=246.239$n_fact= 2$volume[$n_fact]=232.030$n_fact= 3$volume[$n_fact]=217.721$n_fact= 4$volume[$n_fact]=204.136$n_fact= 5$volume[$n_fact]=191.234$n_fact= 6$volume[$n_fact]=185.049$n_fact= 7$volume[$n_fact]=179.184
+end g16$n_fact= 1$volume[$n_fact]=246.174$n_fact= 2$volume[$n_fact]=231.746$n_fact= 3$volume[$n_fact]=217.593$n_fact= 4$volume[$n_fact]=203.819$n_fact= 5$volume[$n_fact]=191.085$n_fact= 6$volume[$n_fact]=184.973$n_fact= 7$volume[$n_fact]=178.723
+end g16$n_fact= 1$volume[$n_fact]=245.840$n_fact= 2$volume[$n_fact]=230.750$n_fact= 3$volume[$n_fact]=217.688$n_fact= 4$volume[$n_fact]=203.968$n_fact= 5$volume[$n_fact]=191.076$n_fact= 6$volume[$n_fact]=184.872$n_fact= 7$volume[$n_fact]=178.741
+end g16$n_fact= 1$volume[$n_fact]=245.935$n_fact= 2$volume[$n_fact]=230.991$n_fact= 3$volume[$n_fact]=217.691$n_fact= 4$volume[$n_fact]=204.242$n_fact= 5$volume[$n_fact]=191.593$n_fact= 6$volume[$n_fact]=185.152$n_fact= 7$volume[$n_fact]=179.154
+end g16$n_fact= 1$volume[$n_fact]=245.839$n_fact= 2$volume[$n_fact]=231.342$n_fact= 3$volume[$n_fact]=217.877$n_fact= 4$volume[$n_fact]=204.185$n_fact= 5$volume[$n_fact]=191.914$n_fact= 6$volume[$n_fact]=185.223$n_fact= 7$volume[$n_fact]=179.393
+end g16$n_fact= 1$volume[$n_fact]=245.980$n_fact= 2$volume[$n_fact]=231.703$n_fact= 3$volume[$n_fact]=218.008$n_fact= 4$volume[$n_fact]=204.132$n_fact= 5$volume[$n_fact]=191.938$n_fact= 6$volume[$n_fact]=185.506$n_fact= 7$volume[$n_fact]=179.319
+end g16$n_fact= 1$volume[$n_fact]=245.981$n_fact= 2$volume[$n_fact]=231.702$n_fact= 3$volume[$n_fact]=218.007$n_fact= 4$volume[$n_fact]=204.133$n_fact= 5$volume[$n_fact]=191.935$n_fact= 6$volume[$n_fact]=185.504$n_fact= 7$volume[$n_fact]=179.313
+end g16$n_fact= 1$volume[$n_fact]=245.831$n_fact= 2$volume[$n_fact]=231.322$n_fact= 3$volume[$n_fact]=218.194$n_fact= 4$volume[$n_fact]=204.474$n_fact= 5$volume[$n_fact]=191.682$n_fact= 6$volume[$n_fact]=185.742$n_fact= 7$volume[$n_fact]=179.553
+end g16$n_fact= 1$volume[$n_fact]=245.788$n_fact= 2$volume[$n_fact]=231.577$n_fact= 3$volume[$n_fact]=218.139$n_fact= 4$volume[$n_fact]=204.583$n_fact= 5$volume[$n_fact]=191.575$n_fact= 6$volume[$n_fact]=185.636$n_fact= 7$volume[$n_fact]=179.639
+end g16$n_fact= 1$volume[$n_fact]=246.174$n_fact= 2$volume[$n_fact]=231.187$n_fact= 3$volume[$n_fact]=217.990$n_fact= 4$volume[$n_fact]=204.377$n_fact= 5$volume[$n_fact]=191.687$n_fact= 6$volume[$n_fact]=185.512$n_fact= 7$volume[$n_fact]=179.643
+end g16$n_fact= 1$volume[$n_fact]=245.653$n_fact= 2$volume[$n_fact]=231.066$n_fact= 3$volume[$n_fact]=217.846$n_fact= 4$volume[$n_fact]=204.175$n_fact= 5$volume[$n_fact]=191.752$n_fact= 6$volume[$n_fact]=186.026$n_fact= 7$volume[$n_fact]=179.855
+end g16$n_fact= 1$volume[$n_fact]=245.283$n_fact= 2$volume[$n_fact]=230.651$n_fact= 3$volume[$n_fact]=217.769$n_fact= 4$volume[$n_fact]=204.178$n_fact= 5$volume[$n_fact]=191.899$n_fact= 6$volume[$n_fact]=185.695$n_fact= 7$volume[$n_fact]=179.514
+end g16$n_fact= 1$volume[$n_fact]=244.795$n_fact= 2$volume[$n_fact]=230.495$n_fact= 3$volume[$n_fact]=217.423$n_fact= 4$volume[$n_fact]=203.418$n_fact= 5$volume[$n_fact]=191.614$n_fact= 6$volume[$n_fact]=185.450$n_fact= 7$volume[$n_fact]=179.301
+end g16$n_fact= 1$volume[$n_fact]=244.224$n_fact= 2$volume[$n_fact]=230.194$n_fact= 3$volume[$n_fact]=216.672$n_fact= 4$volume[$n_fact]=203.219$n_fact= 5$volume[$n_fact]=191.121$n_fact= 6$volume[$n_fact]=185.040$n_fact= 7$volume[$n_fact]=179.071
+end g16$n_fact= 1$volume[$n_fact]=243.736$n_fact= 2$volume[$n_fact]=229.924$n_fact= 3$volume[$n_fact]=216.389$n_fact= 4$volume[$n_fact]=202.710$n_fact= 5$volume[$n_fact]=190.830$n_fact= 6$volume[$n_fact]=184.912$n_fact= 7$volume[$n_fact]=178.472
+end g16$n_fact= 1$volume[$n_fact]=243.088$n_fact= 2$volume[$n_fact]=229.273$n_fact= 3$volume[$n_fact]=215.631$n_fact= 4$volume[$n_fact]=202.336$n_fact= 5$volume[$n_fact]=190.522$n_fact= 6$volume[$n_fact]=184.567$n_fact= 7$volume[$n_fact]=178.144
+end g16$n_fact= 1$volume[$n_fact]=243.194$n_fact= 2$volume[$n_fact]=229.354$n_fact= 3$volume[$n_fact]=215.627$n_fact= 4$volume[$n_fact]=202.382$n_fact= 5$volume[$n_fact]=190.708$n_fact= 6$volume[$n_fact]=184.609$n_fact= 7$volume[$n_fact]=178.260
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+end g16
+ rm *.chkTue Aug  4 21:49:53 CEST 2020
