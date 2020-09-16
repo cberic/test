@@ -11,7 +11,7 @@
     Bayesian info crit = -109.468969
 [[Variables]]
     a:  0.04406782 +/- 0.00205010 (4.65%) (init = 0)
-    b:  5.60959786 +/- 0.28887769 (5.15%) (init = 5)
+    b:  5.60959784 +/- 0.28887770 (5.15%) (init = 5)
     c:  0.05199440 +/- 0.00303304 (5.83%) (init = 0)
 [[Correlations]] (unreported correlations are < 0.100)
     C(a, c) =  0.999

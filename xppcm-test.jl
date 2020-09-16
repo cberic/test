@@ -104,11 +104,14 @@ end
  C
 =#
 function atomlist(geom = geometries)
-    lines1 = structurelines(geom)[1]
+    nos = numberofstructures(geom)
+    lines = structurelines(geom)
     noa = numberofatoms(geom)
-    atoms = Array{String}(undef, noa)  # 1D array of length noa
-    for i in 1:noa
-        atoms[i] = split(lines1[i], keepempty=false, limit=2)[1]
+    atoms = Array{String}(undef, nos,noa)  # 2D array of length nos * noa
+    for i in 1:nos
+        for j in 1:noa
+            atoms[i,j] = split(lines[i][j], keepempty=false, limit=2)[1]
+        end
     end
     return atoms
 end
@@ -229,7 +232,7 @@ function gjfvc(geom = geometries, 𝑓 = scalingfactors)
                 """)
 
                 for k in 1:noa
-                    write(file, " $(lines[i][k])  $(𝑟ₐ[atoms[k]])  $(𝑓[j])\n")
+                    write(file, " $(lines[i][k])  $(𝑟ₐ[atoms[i,k]])  $(𝑓[j])\n")
                 end
 
                 write(file, "\n")
@@ -282,7 +285,7 @@ function gjfger(geom = geometries, 𝑓 = scalingfactors)
                 """)
 
                 for k in 1:noa
-                    write(file, " $(lines[i][k])  $(𝑟ₐ[atoms[k]])  $(𝑓[j])\n")
+                    write(file, " $(lines[i][k])  $(𝑟ₐ[atoms[i,k]])  $(𝑓[j])\n")
                 end
 
                 write(file, "\n")
@@ -334,7 +337,7 @@ function gjfgcav(cav = cavity, geom = geometries, 𝑓 = scalingfactors)
                 """)
 
                 for k in 1:noa
-                    write(file, " $k  $(𝑟ₐ[atoms[k]] * 𝑓[1])  1.0\n")
+                    write(file, " $k  $(𝑟ₐ[atoms[i,k]] * 𝑓[1])  1.0\n")
                 end
 
                 write(file, "\n")
@@ -569,9 +572,9 @@ function pythonfitting(geom = geometries)
         # use an awk script to extract the a, b, c parameters of the equation of state.
         awkscript = raw"/a:/ {a=$2}; /b:/ {b=$2}; /c:/ {c=$2}; END {print a,b,c}"
         abc = read(`awk $awkscript "tmp/structure-$i-fitting.out"`, String)
-        for j = 1:3
-            array[i,j] = parse(Float64, split(abc)[j])
-        end
+        array[i,1] = parse(Float64, split(abc)[1])/𝑉𝑐[i,1]
+        array[i,2] = parse(Float64, split(abc)[2])
+        array[i,3] = parse(Float64, split(abc)[3])/𝑉𝑐[i,1]
     end
     return array   # 2D array of dimension nos * 3
 end
