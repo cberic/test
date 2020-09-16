@@ -213,7 +213,6 @@ function gjfvc(geom = geometries, 𝑓 = scalingfactors)
                 # job killed after L301 (%kjob l301);
                 write(file, """
                 %kjob l301
-                %chk=structure-$i-Vc.chk
                 %nproc=1
                 %mem=1000mb
                 #p $method $basis
@@ -319,7 +318,6 @@ function gjfgcav(cav = cavity, geom = geometries, 𝑓 = scalingfactors)
                 # also testing for vdw cavity to add the noaddsph keyword
                 write(file, """
                 %kjob l301
-                %chk=structure-$i-Gcav.chk
                 %nproc=$nproc
                 %mem=$mem
                 #p $method $basis
