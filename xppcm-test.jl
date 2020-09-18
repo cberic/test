@@ -355,7 +355,7 @@ function get𝑉𝑐(geom = geometries, 𝑓 = scalingfactors)
     nos = numberofstructures(geom)
     a = length(𝑓)
     𝑉𝑐 = Array{Float64}(undef, nos,a)    # 2D array with dimensions nos * a
-    for i in 1:nos
+    Threads.@threads for i in 1:nos
         j = 1    # j indexes the length(𝑓)
         open("tmp/structure-$i-Vc.log") do file
             for line in eachline(file)
@@ -375,7 +375,7 @@ function get𝐺𝑒𝑟(geom = geometries, 𝑓 = scalingfactors)
     nos = numberofstructures(geom)
     a = length(𝑓)
     𝐺𝑒𝑟 = Array{Float64}(undef, nos,a)    # 2D array with dimensions nos * a
-    for i in 1:nos
+    Threads.@threads for i in 1:nos
         j = 1    # j should index the length(𝑓)
         open("tmp/structure-$i-Ger.log") do file
             for line in eachline(file)
@@ -395,7 +395,7 @@ function get𝐸𝑐𝑎𝑣(geom = geometries, 𝑓 = scalingfactors)
     nos = numberofstructures(geom)
     a = length(𝑓)
     𝐸𝑐𝑎𝑣 = Array{Float64}(undef, nos,a)    # 2D array with dimensions nos * a
-    for i in 1:nos
+    Threads.@threads for i in 1:nos
         j = 1    # j should index the length(𝑓)
         open("tmp/structure-$i-Gcav.log") do file
             for line in eachline(file)
