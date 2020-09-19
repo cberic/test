@@ -411,19 +411,16 @@ end
 
 
 # write the properties.dat file; the Printf package is used
-function writeproperties(geom = geometries, 𝑓 = scalingfactors)
+function writeproperties(𝑉𝑐 = 𝑉𝑐, 𝐺𝑒𝑟 = 𝐺𝑒𝑟, 𝐸𝑐𝑎𝑣 = 𝐸𝑐𝑎𝑣, geom = geometries, 𝑓 = scalingfactors)
     nos = numberofstructures(geom)
     a = length(𝑓)
-    𝑉𝑐 = get𝑉𝑐()
     𝑠 = calculate𝑠()
     𝑠̄ = average𝑠()
     𝜀 = calculate𝜀()
     𝑍 = calculate𝑍()
     𝑉ₘ = calculate𝑉ₘ()
-    𝐺𝑒𝑟 = get𝐺𝑒𝑟()
     𝑝 = calculate𝑝()
     𝑝̄ = average𝑝()
-    𝐸𝑐𝑎𝑣 = get𝐸𝑐𝑎𝑣()
     𝐺𝑐𝑎𝑣 = calculate𝐺𝑐𝑎𝑣()
     𝐺𝑡𝑜𝑡 = calculate𝐺𝑡𝑜𝑡()
     open("properties.dat", "w") do file
@@ -465,8 +462,8 @@ end
 # arithmetic.jl
 #------------------------------------------------------------------------------
 # calculate linear scaling factor 𝑠, as the cubic root of volume scaling 𝑉𝑐/𝑉𝑐𝑓=1.2
-function calculate𝑠(geom = geometries, 𝑓 = scalingfactors)
-    𝑉𝑐 = get𝑉𝑐()
+function calculate𝑠(𝑉𝑐 = 𝑉𝑐, geom = geometries, 𝑓 = scalingfactors)
+    #𝑉𝑐 = get𝑉𝑐()
     # @. is a maroc for vectoried operation
     return @. cbrt(𝑉𝑐/𝑉𝑐[:,1]) # 2D array of dimensions nos * a
 end
@@ -531,10 +528,10 @@ end
 # need to install the lmfit package `pip install lmfit`
 # make sure to use the correct python verion
 # note the python call with full path inside the function
-function pythonfitting(geom = geometries)
+function pythonfitting(𝑉𝑐 = 𝑉𝑐, 𝐺𝑒𝑟 = 𝐺𝑒𝑟, geom = geometries)
     nos = numberofstructures(geom)
-    𝑉𝑐 = get𝑉𝑐()
-    𝐺𝑒𝑟 = get𝐺𝑒𝑟()
+    #𝑉𝑐 = get𝑉𝑐()
+    #𝐺𝑒𝑟 = get𝐺𝑒𝑟()
     array = Array{Float64}(undef, nos,3)
     Threads.@threads for i in 1:nos
         script = """#!/usr/bin/env python
@@ -563,6 +560,7 @@ function pythonfitting(geom = geometries)
         
         # read in fitting results and write to structure-$i-fitting.out files
         results = read(pipeline(`echo $script`, `/scratch/bochen/Python-2.7.18/bin/python`), String)
+        #results = read(pipeline(`echo $script`, `python3`), String)
         open("tmp/structure-$i-fitting.out", "w") do file
             write(file, results)
         end
@@ -579,10 +577,10 @@ end
 
 
 
-function mathematicafitting(geom = geometries)
+function mathematicafitting(𝑉𝑐 = 𝑉𝑐, 𝐺𝑒𝑟 = 𝐺𝑒𝑟, geom = geometries)
     nos = numberofstructures(geom)
-    𝑉𝑐 = get𝑉𝑐()
-    𝐺𝑒𝑟 = get𝐺𝑒𝑟()
+    #𝑉𝑐 = get𝑉𝑐()
+    #𝐺𝑒𝑟 = get𝐺𝑒𝑟()
     array = Array{Float64}(undef, nos,3)
     Threads.@threads for i in 1:nos
         # write data to Vc-Ger.dat file which is then read by Mathematica
@@ -616,8 +614,8 @@ function mathematicafitting(geom = geometries)
 end
 
 
-function calculate𝑝()
-    𝑉𝑐 = get𝑉𝑐()    # 2D array of dimension nos * length(𝑓)
+function calculate𝑝(𝑉𝑐 = 𝑉𝑐)
+    #𝑉𝑐 = get𝑉𝑐()    # 2D array of dimension nos * length(𝑓)
     abc = murnaghan("python")    # 2D array of dimension nos * 3 
     𝑎 = abc[:,1]   # 1D array of length nos
     𝑏 = abc[:,2]
@@ -646,16 +644,16 @@ function average𝑝()
 end
 
 
-function calculate𝐺𝑐𝑎𝑣()
-    𝐸𝑐𝑎𝑣 = get𝐸𝑐𝑎𝑣()    # 2D array of dimension nos*length(𝑓)
+function calculate𝐺𝑐𝑎𝑣(𝐸𝑐𝑎𝑣 = 𝐸𝑐𝑎𝑣, 𝑉𝑐 = 𝑉𝑐)
+    #𝐸𝑐𝑎𝑣 = get𝐸𝑐𝑎𝑣()    # 2D array of dimension nos*length(𝑓)
     𝑝̄ = average𝑝()      # 1D array of length(𝑓)
-    𝑉𝑐 = get𝑉𝑐()        # 2D array of dimension nos*length(𝑓)
+    #𝑉𝑐 = get𝑉𝑐()        # 2D array of dimension nos*length(𝑓)
     return @. 𝐸𝑐𝑎𝑣 + 𝑝̄ * 𝑉𝑐 * 2.293712569e-4    # 2D array of dimension nos*length(𝑓)
     # 2.293712569e-4 is the conversion factor from GPa*Å³ to Hartree
 end
 
-function calculate𝐺𝑡𝑜𝑡()
-    return @. get𝐺𝑒𝑟() + calculate𝐺𝑐𝑎𝑣()    # 2D array of dimension nos*length(𝑓)
+function calculate𝐺𝑡𝑜𝑡(𝐺𝑒𝑟 = 𝐺𝑒𝑟)
+    return 𝐺𝑒𝑟 .+ calculate𝐺𝑐𝑎𝑣()    # 2D array of dimension nos*length(𝑓)
 end
 
 
@@ -669,7 +667,7 @@ writegjf("Vc")          # write .gjf files for cavity volume "Vc" calculation
 
 rungaussian("Vc")       # run Gaussian jobs
 
-#get𝑉𝑐()                 # extract cavity volume 𝑉𝑐 from Gaussian output
+const 𝑉𝑐 = get𝑉𝑐()       # extract cavity volume 𝑉𝑐 from Gaussian output
 
 #calculate𝑠()            # calculate linear scaling 𝑠 from 𝑉𝑐 date
 
@@ -689,7 +687,7 @@ writegjf("Ger")          # write .gjf files for cavity volume "Ger" calculation
 
 rungaussian("Ger")       # run Gaussian jobs
 
-#get𝐺𝑒𝑟()                 # extract 𝐺𝑒𝑟 from Gaussian output
+const 𝐺𝑒𝑟 = get𝐺𝑒𝑟()      # extract 𝐺𝑒𝑟 from Gaussian output
 
 #calculate𝑝()             # calculate pressure 𝑝
 
@@ -701,7 +699,7 @@ writegjf("Gcav")         # write .gjf files for cavitation energy "Gcav" calcula
 
 rungaussian("Gcav")      # run Gaussian jobs
 
-#get𝐸𝑐𝑎𝑣()                 # extract 𝐺𝑐𝑎𝑣 from Gaussian output
+const 𝐸𝑐𝑎𝑣 = get𝐸𝑐𝑎𝑣()    # extract 𝐺𝑐𝑎𝑣 from Gaussian output
 
 #calculate𝐺𝑐𝑎𝑣()           # calculate cavitation energy 𝐺𝑐𝑎𝑣
 
