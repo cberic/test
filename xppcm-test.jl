@@ -657,17 +657,56 @@ function calculate𝐺𝑡𝑜𝑡(𝐺𝑒𝑟 = 𝐺𝑒𝑟)
 end
 
 
+# assuming job stopped during electronic energy calculation jobs, i.e., Ger jobs
+# The idea is to first generate a set of input filenames, and remove those finished
+# from the set. Then restart Ger jobs for the rest of filenames in the set.
+function restart(geom=geometries, 𝑓 = scalingfactors)
+    nos = numberofstructures(geom)
+    a = length(𝑓)
+    all = [1:nos;]    # Int64 array containing all job numbers
+    
+    cd("tmp")
 
+    script = raw"for file in *Ger.log; do i=${file#*structure-}; i=${i%-Ger.log}; grep 'SCF Done' $file | wc -l; echo $i; done | paste - - | awk '/" * "$a" * raw"/ {print $2}'"
+    open("restart.sh", "w") do file
+        write(file, "$script")
+    end
+
+    string = read(`bash restart.sh`, String)
+    finished = parse.(Int64, split(string))    # parse the string into an Int64 array
+    unfinished = setdiff(all, finished)    # remove the finished job numbers from all
+    
+    for i in unfinished
+        run(`g16 structure-$i-Ger.gjf`)
+    end
+
+    cd("..")
+end
+
+
+# main program
+if restart == "No"
+    writegjf("Vc")
+    rungaussian("Vc")
+    const 𝑉𝑐 = get𝑉𝑐()
+    writegjf("Ger")          # write .gjf files for cavity volume "Ger" calculation 
+    rungaussian("Ger")
+elseif restart == "Yes"
+    const 𝑉𝑐 = get𝑉𝑐()
+    restart()
+else
+    println("restart only accepts \"Yes\" or \"No\"")
+end
 
 #------------------------------------------------------------------------------
 # Step 1: cavity volume 𝑉𝑐(𝑓) Gaussian jobs and solvent property calculations
 #------------------------------------------------------------------------------
 
-writegjf("Vc")          # write .gjf files for cavity volume "Vc" calculation 
+#writegjf("Vc")          # write .gjf files for cavity volume "Vc" calculation 
 
-rungaussian("Vc")       # run Gaussian jobs
+#rungaussian("Vc")       # run Gaussian jobs
 
-const 𝑉𝑐 = get𝑉𝑐()       # extract cavity volume 𝑉𝑐 from Gaussian output
+#const 𝑉𝑐 = get𝑉𝑐()       # extract cavity volume 𝑉𝑐 from Gaussian output
 
 #calculate𝑠()            # calculate linear scaling 𝑠 from 𝑉𝑐 date
 
@@ -683,9 +722,9 @@ const 𝑉𝑐 = get𝑉𝑐()       # extract cavity volume 𝑉𝑐 from Gauss
 # Step 2: electronic structure Gaussian jobs and pressure calculations 
 #------------------------------------------------------------------------------
 
-writegjf("Ger")          # write .gjf files for cavity volume "Ger" calculation 
+#    writegjf("Ger")      # write .gjf files for cavity volume "Ger" calculation
 
-rungaussian("Ger")       # run Gaussian jobs
+#    rungaussian("Ger")   # run Gaussian jobs
 
 const 𝐺𝑒𝑟 = get𝐺𝑒𝑟()      # extract 𝐺𝑒𝑟 from Gaussian output
 
