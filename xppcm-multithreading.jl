@@ -269,7 +269,7 @@ function gjfger(geom = geometries, 𝑓 = scalingfactors)
                 %nproc=$nproc
                 %mem=$mem
                 #p $keywords
-                # scrf=(iefpcm,solvent=$solvent,read) nosym 6d 10f $(j != 1 ? "geom=check" : "")
+                # scrf=(iefpcm,solvent=$solvent,read) nosym 6d 10f $(j != 1 ? "guess=read" : "")
 
                 title
 
