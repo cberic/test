@@ -660,7 +660,7 @@ end
 # assuming job stopped during electronic energy calculation jobs, i.e., Ger jobs
 # The idea is to first generate a set of input filenames, and remove those finished
 # from the set. Then restart Ger jobs for the rest of filenames in the set.
-function restart(geom=geometries, 𝑓 = scalingfactors)
+function restartger(geom=geometries, 𝑓 = scalingfactors)
     nos = numberofstructures(geom)
     a = length(𝑓)
     all = [1:nos;]    # Int64 array containing all job numbers
@@ -694,7 +694,7 @@ if restart == "no"
     rungaussian("Ger")
 elseif restart == "yes"
     const 𝑉𝑐 = get𝑉𝑐()
-    restart()
+    restartger()
 else
     println("restart only accepts \"yes\" or \"no\"")
 end
