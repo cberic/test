@@ -16,3 +16,12 @@
 # pressure calculation formula, dG/dV
 
 # are gaussian checkpoint files necessary
+
+# Sept 22
+  - multithreading support, add an option in input.jl
+  - test system: 96 structures, b3lyp, 6-31g*, int=finegrid
+    multi:    124 minutes
+    parallel:  
+    perl:     407 minutes
+  - add guess=read for Ger jobs (excluding the first one that generates the .chk file)
+  - add restart feature for Ger jobs. The program will scan through all the existing -Ger.log files and check whether the job is finished (by counting how many "SCF Done" fields are found), and restart the unfinished Ger jobs
