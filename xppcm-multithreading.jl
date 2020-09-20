@@ -215,7 +215,7 @@ function gjfvc(geom = geometries, 𝑓 = scalingfactors)
                 %kjob l301
                 %nproc=1
                 %mem=1000mb
-                #p $method $basis
+                #p $keywords
                 # scrf=(iefpcm,solvent=$solvent,read) nosym guess=only pop=none
 
                 title
@@ -268,7 +268,7 @@ function gjfger(geom = geometries, 𝑓 = scalingfactors)
                 %chk=structure-$i-Ger.chk
                 %nproc=$nproc
                 %mem=$mem
-                #p $method $basis
+                #p $keywords
                 # scrf=(iefpcm,solvent=$solvent,read) nosym 6d 10f
 
                 title
@@ -318,9 +318,9 @@ function gjfgcav(cav = cavity, geom = geometries, 𝑓 = scalingfactors)
                 # also testing for vdw cavity to add the noaddsph keyword
                 write(file, """
                 %kjob l301
-                %nproc=$nproc
-                %mem=$mem
-                #p $method $basis
+                %nproc=1
+                %mem=1000mb
+                #p $keywords
                 # scrf=(iefpcm,solvent=$solvent,read) nosym guess=only pop=none
 
                 title
@@ -442,15 +442,19 @@ end
 #------------------------------------------------------------------------------
 # multithreading for short Vc and Cav calculations.
 # add return value for output file "return "$jobtype finished at time()""
-function rungaussian(jobtype; geom=geometries)
+function rungaussian(jobtype; geom=geometries, multi = multithreading)
     nos = numberofstructures(geom)
     cd("tmp")
     if jobtype == "Vc" || jobtype == "Gcav"
         Threads.@threads for i in 1:nos
             run(`g16 structure-$i-$jobtype.gjf`)
         end
-    elseif jobtype == "Ger"
+    elseif jobtype == "Ger" && multi == "on"
         Threads.@threads for i in 1:nos
+            run(`g16 structure-$i-$jobtype.gjf`)
+        end
+    elseif jobtype == "Ger" && multi == "off"
+        for i in 1:nos
             run(`g16 structure-$i-$jobtype.gjf`)
         end
     end
@@ -660,7 +664,7 @@ end
 # assuming job stopped during electronic energy calculation jobs, i.e., Ger jobs
 # The idea is to first generate a set of input filenames, and remove those finished
 # from the set. Then restart Ger jobs for the rest of filenames in the set.
-function restartger(geom=geometries, 𝑓 = scalingfactors)
+function restartger(geom=geometries, 𝑓 = scalingfactors, multi = multithreading)
     nos = numberofstructures(geom)
     a = length(𝑓)
     all = [1:nos;]    # Int64 array containing all job numbers
@@ -676,8 +680,14 @@ function restartger(geom=geometries, 𝑓 = scalingfactors)
     finished = parse.(Int64, split(string))    # parse the string into an Int64 array
     unfinished = setdiff(all, finished)    # remove the finished job numbers from all
     
-    Threads.@threads for i in unfinished
-        run(`g16 structure-$i-Ger.gjf`)
+    if multi == "off"
+        for i in unfinished
+            run(`g16 structure-$i-Ger.gjf`)
+        end
+    elseif multi == "on"
+        Threads.@threads for i in unfinished
+            run(`g16 structure-$i-Ger.gjf`)
+        end
     end
 
     cd("..")

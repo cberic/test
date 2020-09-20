@@ -1,13 +1,18 @@
 # example input for XP-PCM calculations
 
-const restart = "no"              # yes or no (default). Double quotation
-                                   # is important
-				   
-const molecularity = "uni"         # uni (default) or bi -molecular reaction
+const multithreading = "on"        # on or off. On means each Gaussian
+                                   # job is assigned only 1 cpu core and multiple
+                                   # jobs will be running at the same time. Off 
+                                   # means all cpu cores work on one job at a time. 
 
-const solvent = "cyclohexane"      # cyclohexane (default), benzene, or argon
+const restart = "no"               # yes or no. Notice the lower case
+                                   # and the double quotation.
 
-const cavity = "vdw"               # vdw (default) or ses; for cavitation 
+const molecularity = "uni"         # uni or bi -molecular reaction
+
+const solvent = "cyclohexane"      # cyclohexane, benzene, or argon
+
+const cavity = "vdw"               # vdw or ses; for cavitation 
                                    # energy calculation only
 
 const tesserae = 0.075             # the mean area in Ang^2 of the tesserae by 
@@ -15,17 +20,17 @@ const tesserae = 0.075             # the mean area in Ang^2 of the tesserae by
                                    # is partitioned. default value = 0.075 
 
 const 𝜂 = 3                        # empirical Pauli repulsion parameter
-                                   # 3 (default), 6 or 9
+                                   # 3, 6 or 9
 
-const scalingfactors = [1.2, 1.15, 1.1, 1.05, 1.0, 0.975, 0.951]   # (default)
+const scalingfactors = [1.2, 1.15, 1.1, 1.05, 1.0, 0.975, 0.95]   #
 
 const fitting = "python"            # Murnaghan equation of state fitting method
-                                   # julia (default), python, or mathematica
+                                   # julia, python, or mathematica
+                                   
 # Gaussian 16 parameters
-const nproc = 1
-const mem = "4gb"
-const method = "b3lyp"
-const basis = "6-31g*"
+const nproc = 1                    # change to total cpus if multithreading is off
+const mem = "4gb"                  # change to total memory if multithreading is off
+const keywords = "b3lyp 6-31g*"    # Gaussian keywords; add more if needed
 const charge = 0
 const multiplicity = 1
 
