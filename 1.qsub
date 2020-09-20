@@ -10,5 +10,6 @@ cd $PBS_O_WORKDIR
 module load Gaussian/16
 #export GAUSS_SCRDIR=$PBS_O_WORKDIR/tmp
 
+date
 /scratch/bochen/julia-1.5.1/bin/julia --threads 24 xppcm-test.jl
-
+date

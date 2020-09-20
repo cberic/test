@@ -1,6 +1,10 @@
 # example input for XP-PCM calculations
 
+const restart = "no"              # yes or no (default). Double quotation
+                                   # is important
+				   
 const molecularity = "uni"         # uni (default) or bi -molecular reaction
+
 const solvent = "cyclohexane"      # cyclohexane (default), benzene, or argon
 
 const cavity = "vdw"               # vdw (default) or ses; for cavitation 
@@ -13,13 +17,13 @@ const tesserae = 0.075             # the mean area in Ang^2 of the tesserae by
 const 𝜂 = 3                        # empirical Pauli repulsion parameter
                                    # 3 (default), 6 or 9
 
-const scalingfactors = [1.2, 1.15, 1.1, 1.05, 1.0, 0.975, 0.95]   # (default)
+const scalingfactors = [1.2, 1.15, 1.1, 1.05, 1.0, 0.975, 0.951]   # (default)
 
 const fitting = "python"            # Murnaghan equation of state fitting method
                                    # julia (default), python, or mathematica
 # Gaussian 16 parameters
-const nproc = 24
-const mem = "48gb"
+const nproc = 1
+const mem = "4gb"
 const method = "b3lyp"
 const basis = "6-31g*"
 const charge = 0
