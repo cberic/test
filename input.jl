@@ -52,7 +52,7 @@ const fitting = "python"
 # Gaussian 16 parameters
 const nproc = 1                    # change to total cpus if multithreading is off
 const mem = "4gb"                  # change to total memory if multithreading is off
-const keywords = "b3lyp 6-31g*"    # Gaussian keywords; add more if needed
+const keywords = "b3lyp 6-31g* int=finegrid"    # Gaussian keywords; add more if needed
 const charge = 0
 const multiplicity = 1
 
