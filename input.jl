@@ -5,7 +5,7 @@ Turn multithreading "on" (highly recommended) or "off" for Ger jobs.
 On means each Ger job is assigned only 1 cpu core and multiple jobs will 
 be running at the same time. Off means all cpu cores work on one job at 
 a time. Tests show that multithreading is much faster. Vc and Gcav jobs 
-are set to be multithreaded.
+are set to be always multithreaded.
 =#
 const multithreading = "on"
 
@@ -23,7 +23,7 @@ const molecularity = "uni"         # "uni" or "bi" -molecular reaction
 const solvent = "cyclohexane"      # "cyclohexane", "benzene", or "argon"
 
 const cavity = "vdw"               # "vdw" or "ses" cavity for Gcav jobs
-
+const sphere = "hard"
 const tesserae = 0.075             # the mean area in Ang^2 of the tesserae by 
                                    # which the surfaces of the cavity
                                    # is partitioned. default value = 0.075 
@@ -41,13 +41,13 @@ Include the values inside the [] and separate them by ,
 const scalingfactors = [1.2, 1.15, 1.1, 1.05, 1.0, 0.975, 0.95]
 
 #= fitting
-Code for the nonlinear regression fitting for the Murnaghan equation of state 
-and the linear regression fitting for the activation energy-pressure curve.
-So far, "python" and "mathematica" are implemented. Plan to tranfer to "julia".
-When using "python" or "mathematica", make sure the path to the program is correct 
-and necessary dependencies/packages are installed. For python, "pip install lmfit".
+Program for nonlinear regression fitting for the Murnaghan equation of state.
+Choose from "julia" (recommended), "python", or "mathematica".
+For "julia", install the LsqFit package. For "python", install the lmfit package.
+For "python" or "mathematica", the script will simply call "python" or "math",
+so make sure the call refers to the correct python or mathematica build.
 =#
-const fitting = "python"
+const fitting = "julia"
 
 # Gaussian 16 parameters
 const nproc = 1                    # change to total cpus if multithreading is off

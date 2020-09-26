@@ -1,6 +1,7 @@
 using Statistics
 using Printf
 using DelimitedFiles
+using LsqFit
 
 include("input.jl")
 
@@ -115,16 +116,6 @@ function atomlist(geom = geometries)
     end
     return atoms
 end
-
-# a slower function with much more memory allocations
-#function atomlist2(geometries)
-#    noa = numberofatoms(geometries)
-#    atoms = Array{String}(undef, noa) 
-#    for i in 1:noa
-#        atoms[i] = split(geometries)[4*i-3]
-#    end
-#    return atoms
-#end
 
 
 #= the function below generates an array of arrays of coordinate lines (no atom label)
@@ -391,22 +382,25 @@ end
 
 
 # extract non-electrostatic cavitation energy 𝐸𝑐𝑎𝑣 from gaussian output files
-function get𝐸𝑐𝑎𝑣(geom = geometries, 𝑓 = scalingfactors)
+function get𝑉𝑐𝑎𝑣𝐸𝑐𝑎𝑣(geom = geometries, 𝑓 = scalingfactors)
     nos = numberofstructures(geom)
     a = length(𝑓)
+    𝑉𝑐𝑎𝑣 = Array{Float64}(undef, nos,a)    # 2D array with dimensions nos * a
     𝐸𝑐𝑎𝑣 = Array{Float64}(undef, nos,a)    # 2D array with dimensions nos * a
     Threads.@threads for i in 1:nos
         j = 1    # j should index the length(𝑓)
         open("tmp/structure-$i-Gcav.log") do file
             for line in eachline(file)
-                if occursin("PCM non-electrostatic energy", line)
+                if occursin("GePol: Cavity volume", line)
+                    𝑉𝑐𝑎𝑣[i,j] = parse(Float64, split(line)[5])
+                elseif occursin("PCM non-electrostatic energy", line)
                     𝐸𝑐𝑎𝑣[i,j] = parse(Float64, split(line)[5])
                     j += 1    # j should index the length(𝑓)
                 end
             end
         end
     end
-    return 𝐸𝑐𝑎𝑣
+    return 𝑉𝑐𝑎𝑣, 𝐸𝑐𝑎𝑣
 end
 
 
@@ -524,8 +518,23 @@ end
 # load the LsqFit package; 
 # needs to be installed first by "Pkg.add("LsqFit")"
 #using LsqFit
-function juliafitting()
-    # to be implemented
+function juliafitting(𝑉𝑐 = 𝑉𝑐, 𝐺𝑒𝑟 = 𝐺𝑒𝑟, geom = geometries)
+    nos = numberofstructures(geom)
+    array = Array{Float64}(undef, nos,3)
+    Threads.@threads for i in 1:nos
+    # python: y = (a/b)*(1/x)**b+(a-c)*x; y is Ger, x is Vc
+    # mathematica: a*x ((1/b)*(t[[1, 1]]/x)^(b + 1) + 1) - c*x
+    # a=p[1], b=p[2], c=p[3], x is Vc
+        @. model(x, p) = (p[1]/p[2])*x^(-p[2]) + (p[1]-p[3])*x
+        xdata = 𝑉𝑐[i,:] ./ 𝑉𝑐[i,1]
+        ydata = 𝐺𝑒𝑟[i,:] .- 𝐺𝑒𝑟[i,1]
+        p0 = [0.0, 5.0, 0.0]
+        fit = curve_fit(model, xdata, ydata, p0)
+        array[i,1] = fit.param[1]/𝑉𝑐[i,1]
+        array[i,2] = fit.param[2]
+        array[i,3] = fit.param[3]/𝑉𝑐[i,1]
+    end
+    return array
 end
 
 
@@ -620,7 +629,7 @@ end
 
 function calculate𝑝(𝑉𝑐 = 𝑉𝑐)
     #𝑉𝑐 = get𝑉𝑐()    # 2D array of dimension nos * length(𝑓)
-    abc = murnaghan("python")    # 2D array of dimension nos * 3 
+    abc = murnaghan()    # 2D array of dimension nos * 3 
     𝑎 = abc[:,1]   # 1D array of length nos
     𝑏 = abc[:,2]
     𝑐 = abc[:,3]
@@ -648,17 +657,37 @@ function average𝑝()
 end
 
 
-function calculate𝐺𝑐𝑎𝑣(𝐸𝑐𝑎𝑣 = 𝐸𝑐𝑎𝑣, 𝑉𝑐 = 𝑉𝑐)
-    #𝐸𝑐𝑎𝑣 = get𝐸𝑐𝑎𝑣()    # 2D array of dimension nos*length(𝑓)
+function calculate𝐺𝑐𝑎𝑣(𝐸𝑐𝑎𝑣 = 𝐸𝑐𝑎𝑣, 𝑉𝑐𝑎𝑣 = 𝑉𝑐𝑎𝑣)
+    #𝐸𝑐𝑎𝑣 = get𝑉𝑐𝑎𝑣𝐸𝑐𝑎𝑣()[2]    # 2D array of dimension nos*length(𝑓)
     𝑝̄ = average𝑝()      # 1D array of length(𝑓)
     #𝑉𝑐 = get𝑉𝑐()        # 2D array of dimension nos*length(𝑓)
-    return @. 𝐸𝑐𝑎𝑣 + 𝑝̄ * 𝑉𝑐 * 2.293712569e-4    # 2D array of dimension nos*length(𝑓)
+    return @. 𝐸𝑐𝑎𝑣 + 𝑝̄ * 𝑉𝑐𝑎𝑣 * 2.293712569e-4    # 2D array of dimension nos*length(𝑓)
     # 2.293712569e-4 is the conversion factor from GPa*Å³ to Hartree
 end
+
 
 function calculate𝐺𝑡𝑜𝑡(𝐺𝑒𝑟 = 𝐺𝑒𝑟)
     return 𝐺𝑒𝑟 .+ calculate𝐺𝑐𝑎𝑣()    # 2D array of dimension nos*length(𝑓)
 end
+
+
+function calculateΔ𝐺𝑡𝑜𝑡()
+    𝐺𝑡𝑜𝑡 = calculate𝐺𝑡𝑜𝑡()
+    Δ𝐺𝑡𝑜𝑡 = Array{Float64}(undef, size(𝐺𝑡𝑜𝑡))  # 2D array of dimension nos*length(𝑓)
+    for i in 1:length(𝐺𝑡𝑜𝑡[1,:])
+        @. Δ𝐺𝑡𝑜𝑡[:,i] = (𝐺𝑡𝑜𝑡[:,i] - 𝐺𝑡𝑜𝑡[1,i]) * 627.509    # 1 hartree = 627.509 kcal/mol
+    end
+    return Δ𝐺𝑡𝑜𝑡
+end
+
+
+#function calculateΔ𝑉‡()
+ #   𝑝̄ = average𝑝()    # 1D array of length(𝑓)
+  #  Δ𝐺𝑡𝑜𝑡 = calculateΔ𝐺𝑡𝑜𝑡()   # 2D array of nos * length(𝑓)
+   # Δ𝐺𝑡𝑜𝑡‡ = Δ𝐺𝑡𝑜𝑡[50,:]    # 1D array of length(𝑓)
+    #slope = [ones(length(𝑝̄)) 𝑝̄] \ Δ𝐺𝑡𝑜𝑡‡
+    #return slope * -4.21
+#end
 
 
 # assuming job stopped during electronic energy calculation jobs, i.e., Ger jobs
@@ -677,6 +706,8 @@ function restartger(geom=geometries, 𝑓 = scalingfactors, multi = multithreadi
     end
 
     string = read(`bash restart.sh`, String)
+    rm("restart.sh")
+
     finished = parse.(Int64, split(string))    # parse the string into an Int64 array
     unfinished = setdiff(all, finished)    # remove the finished job numbers from all
     
@@ -689,26 +720,36 @@ function restartger(geom=geometries, 𝑓 = scalingfactors, multi = multithreadi
             run(`g16 structure-$i-Ger.gjf`)
         end
     end
-
     cd("..")
 end
 
 #-------------------------------------
 # main program
 #-------------------------------------
-if restart == "no"
-    writegjf("Vc")
-    rungaussian("Vc")
-    const 𝑉𝑐 = get𝑉𝑐()
-    writegjf("Ger")          # write .gjf files for cavity volume "Ger" calculation 
-    rungaussian("Ger")
-elseif restart == "yes"
-    const 𝑉𝑐 = get𝑉𝑐()
-    restartger()
-else
-    println("restart only accepts \"yes\" or \"no\"")
-end
+#function main(restart = "no")
+    if restart == "no"
+        writegjf("Vc")
+        rungaussian("Vc")
+        const 𝑉𝑐 = get𝑉𝑐()
+        writegjf("Ger")          # write .gjf files for cavity volume "Ger" calculation 
+        rungaussian("Ger")
+    elseif restart == "yes"
+        const 𝑉𝑐 = get𝑉𝑐()
+        restartger()
+    else
+        println("restart only accepts \"yes\" or \"no\"")
+    end
 
+    const 𝐺𝑒𝑟 = get𝐺𝑒𝑟()
+
+    writegjf("Gcav")         # write .gjf files for cavitation energy "Gcav" calculation 
+
+    rungaussian("Gcav")      # run Gaussian jobs
+
+    const (𝑉𝑐𝑎𝑣,𝐸𝑐𝑎𝑣) = get𝑉𝑐𝑎𝑣𝐸𝑐𝑎𝑣()
+
+    writeproperties()        # write properties.dat file
+#end
 #------------------------------------------------------------------------------
 # Step 1: cavity volume 𝑉𝑐(𝑓) Gaussian jobs and solvent property calculations
 #------------------------------------------------------------------------------
@@ -737,7 +778,7 @@ end
 
 #    rungaussian("Ger")   # run Gaussian jobs
 
-const 𝐺𝑒𝑟 = get𝐺𝑒𝑟()      # extract 𝐺𝑒𝑟 from Gaussian output
+#    const 𝐺𝑒𝑟 = get𝐺𝑒𝑟()      # extract 𝐺𝑒𝑟 from Gaussian output
 
 #calculate𝑝()             # calculate pressure 𝑝
 
@@ -745,11 +786,12 @@ const 𝐺𝑒𝑟 = get𝐺𝑒𝑟()      # extract 𝐺𝑒𝑟 from Gaussian
 # Step 3: cavitation energy Gaussian jobs
 #------------------------------------------------------------------------------
 
-writegjf("Gcav")         # write .gjf files for cavitation energy "Gcav" calculation 
+#writegjf("Gcav")         # write .gjf files for cavitation energy "Gcav" calculation 
 
-rungaussian("Gcav")      # run Gaussian jobs
+#rungaussian("Gcav")      # run Gaussian jobs
 
-const 𝐸𝑐𝑎𝑣 = get𝐸𝑐𝑎𝑣()    # extract 𝐺𝑐𝑎𝑣 from Gaussian output
+#const 𝑉𝑐𝑎𝑣 = get𝑉𝑐𝑎𝑣𝐸𝑐𝑎𝑣()[1]
+#const 𝐸𝑐𝑎𝑣 = get𝑉𝑐𝑎𝑣𝐸𝑐𝑎𝑣()[2]    # extract 𝐺𝑐𝑎𝑣 from Gaussian output
 
 #calculate𝐺𝑐𝑎𝑣()           # calculate cavitation energy 𝐺𝑐𝑎𝑣
 
@@ -759,4 +801,4 @@ const 𝐸𝑐𝑎𝑣 = get𝐸𝑐𝑎𝑣()    # extract 𝐺𝑐𝑎𝑣 fro
 # print results
 #------------------------------------------------------------------------------
 
-writeproperties()        # write properties.dat file
+#writeproperties()        # write properties.dat file
