@@ -681,13 +681,13 @@ function calculateΔ𝐺𝑡𝑜𝑡()
 end
 
 
-#function calculateΔ𝑉‡()
- #   𝑝̄ = average𝑝()    # 1D array of length(𝑓)
-  #  Δ𝐺𝑡𝑜𝑡 = calculateΔ𝐺𝑡𝑜𝑡()   # 2D array of nos * length(𝑓)
-   # Δ𝐺𝑡𝑜𝑡‡ = Δ𝐺𝑡𝑜𝑡[50,:]    # 1D array of length(𝑓)
-    #slope = [ones(length(𝑝̄)) 𝑝̄] \ Δ𝐺𝑡𝑜𝑡‡
-    #return slope * -4.21
-#end
+function calculateΔ𝑉activation()
+    𝑝̄ = vec(average𝑝())    # 1D array of length(𝑓)
+    Δ𝐺𝑡𝑜𝑡 = calculateΔ𝐺𝑡𝑜𝑡()   # 2D array of nos * length(𝑓)
+    Δ𝐺𝑡𝑜𝑡activation = Δ𝐺𝑡𝑜𝑡[50,:]    # 1D array of length(𝑓)
+    slope, intercept = [ones(length(𝑝̄)) 𝑝̄] \ Δ𝐺𝑡𝑜𝑡activation
+    return slope * 4.184    # 1 kcal mol⁻¹ / GPa = 4.184 cm³/mol; 4.184 * 10^3 / 10^9 * 10^6
+end
 
 
 # assuming job stopped during electronic energy calculation jobs, i.e., Ger jobs
