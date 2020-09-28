@@ -47,6 +47,7 @@ For "julia", install the LsqFit package. For "python", install the lmfit package
 For "python" or "mathematica", the script will simply call "python" or "math",
 so make sure the call refers to the correct python or mathematica build.
 =#
+# "Pkg.add("LsqFit")"
 const fitting = "julia"
 
 # Gaussian 16 parameters

@@ -6,12 +6,11 @@ using LsqFit
 include("input.jl")
 
 
-# function definitions below
 #------------------------------------------------------------------------------
 # solvent.jl
 #------------------------------------------------------------------------------
-# returns a 5-element tuple of solvent properties: 
-# (dielectric constant 𝜀, density 𝜌, molar mass 𝑀, number of valence electrons, molecular radius (Ang.) )
+# returns a 5-element tuple of (dielectric constant 𝜀, valence electron density 𝜌,
+# molar mass 𝑀, number of valence electrons, molecular radius (Ang.) )
 function solventparameters(s = solvent)
     if s == "cyclohexane"
         return (2.0165, 0.7781, 84.1595, 36, 2.815)
@@ -42,7 +41,7 @@ end
 #------------------------------------------------------------------------------
 function tidygeometries(geom = geometries)
     # remove leading and trailing spaces/blank lines 
-    # and add a space to the begininig
+    # and add a space to the beginning
     # "*" is string concatenation operator
     a = " " * strip(geom)
 
@@ -59,35 +58,22 @@ function tidygeometries(geom = geometries)
 end
 
 
-#= the function below generates an array of blocks; one block is shown
- C    1.10712900   -1.48465400    0.00000000
- C   -0.00001100   -0.72877000    0.00000000
- C    0.00000000    0.72875800    0.00000000
- C   -1.10712300    1.48466300    0.00000000
- H    2.09998900   -1.03986800    0.00000000
- H    1.05995700   -2.56940600    0.00000000
- H   -0.97811200   -1.21104800    0.00000000
- H    0.97811000    1.21101800    0.00000000
- H   -2.09999700    1.03991100    0.00000000
- H   -1.05991600    2.56941400    2.00000000
-=#
-function structures(geom = geometries)
+# 1D array of geometry blocks
+function geometryblocks(geom = geometries)
     return split(tidygeometries(geom), "\n\n", keepempty=false)
 end
 
 
 function numberofstructures(geom = geometries)
-    return length(structures(geom))
+    return length(geometryblocks(geom))
 end
 
 
-#= the function below generates an array of arrays of lines
- C    1.10712900   -1.48465400    0.00000000
-=#
+# 1D array whose elements are 1D arrays of lines in each geometry block
 function structurelines(geom = geometries)
-    blocks = structures(geom)
+    blocks = geometryblocks(geom)
     nos = numberofstructures(geom)
-    # lines is an array of arrays of length nos
+    # lines is an array of length nos of 1D arrays
     # lines[i] is a 1D array of length numberofatoms
     lines = Array{Array{String}}(undef, nos)
     for i in 1:nos
@@ -101,16 +87,16 @@ function numberofatoms(geom = geometries)
     return length(structurelines(geom)[1])
 end
 
-#= the function below generates an array of atoms (no coordinates)
- C
-=#
+
+# nos * noa 2D array of atom lists
 function atomlist(geom = geometries)
     nos = numberofstructures(geom)
     lines = structurelines(geom)
     noa = numberofatoms(geom)
-    atoms = Array{String}(undef, nos,noa)  # 2D array of length nos * noa
+    atoms = Array{String}(undef, nos,noa)
     for i in 1:nos
         for j in 1:noa
+            # get the 1st field of each coordinate line
             atoms[i,j] = split(lines[i][j], keepempty=false, limit=2)[1]
         end
     end
@@ -118,115 +104,96 @@ function atomlist(geom = geometries)
 end
 
 
-#= the function below generates an array of arrays of coordinate lines (no atom label)
- 1.10712900   -1.48465400    0.00000000
-=#
+# nos * noa 2D array of xyz coordinates
 function coordinatelines(geom = geometries)
     nos = numberofstructures(geom)
     lines = structurelines(geom)
     noa = numberofatoms(geom)
+    coordlines = Array{String}(undef, nos,noa)
     for i in 1:nos
         for j in 1:noa
-            lines[i][j] = " " * split(lines[i][j], keepempty=false, limit=2)[2]
+            # get the 2nd-last fields of each coordinate line & add a leading space
+            coordlines[i,j] = " " * split(lines[i][j], keepempty=false, limit=2)[2]
         end
     end
-    return lines    # array (of length nos) of arrays of length noa
+    return coordlines
 end
 
-# a varient of the above function using a 2D array, instead of array of arrays
-#function coordinatelines2(geom = geometries)
-    #nos = numberofstructures(geom)
-    #lines = structurelines(geom)
-    #noa = numberofatoms(geom)
-    #array = Array{String}(undef, nos,noa)
-    #for i in 1:nos
-     #   for j in 1:noa
-     #       array[i,j] = " " * split(lines[i][j], keepempty=false, limit=2)[2]
-     #   end
-    #end
-    #return array
+
+# nos * noa * 3 3D array of each coordinates; not correct
+#function atomcoordinates(geom = geometries)
+    # split into a long 1D array of length nos * nos * 4
+#    array = split(geom)
+#    nos = numberofstructures(geom)
+#    noa = numberofatoms(geom)
+#    coordinates = Array{String}(undef, nos,noa,3)
+#    for i in 1:nos
+#        for j in 1:noa
+#            for k in 1:3
+#                coordinates[i,j,k] = array[(i-1)*40 + (j-1)*4 + k+1]
+#            end
+#        end
+#    end
+#    return coordinates
 #end
-
-
-function atomcoordinates(geom = geometries)
-    # split using the default space dilimiter, generating a very long 1D array
-    array = split(geom)
-    nos = numberofstructures(geom)
-    noa = numberofatoms(geom)
-
-    # 3D array storing each coordinate
-    # the last dimension contains 3 elements corresponding to x, y, and z coordinates
-    coordinates = Array{String}(undef, nos,noa,3)
-    for i in 1:nos
-        for j in 1:noa
-            for k in 1:3
-                coordinates[i,j,k] = array[(i-1)*40 + (j-1)*4 + k+1]
-            end
-        end
-    end
-    return coordinates
-end
 
 
 #------------------------------------------------------------------------------
 # io.jl
 #------------------------------------------------------------------------------
 function writegjf(jobtype)
-    if jobtype == "Vc"
+    if jobtype == "Vc"        # Initial cavitation volume jobs
         gjfvc()
-    elseif jobtype == "Ger"
+    elseif jobtype == "Ger"   # Electronic energy SCRF jobs
         gjfger()
-    elseif jobtype == "Gcav"
+    elseif jobtype == "Gcav"  # Cavitation energy jobs
         gjfgcav()
     end
 end
 
 
-# write gjf files for Vc calculations
+# write gjf files for Vc jobs
 function gjfvc(geom = geometries, 𝑓 = scalingfactors)
     a = length(𝑓)
-    st = structures(geom)
+    geomblocks = geometryblocks(geom)
     nos = numberofstructures(geom)
     noa = numberofatoms(geom)
     atoms = atomlist(geom)
-    lines = coordinatelines(geom)
+    coordlines = coordinatelines(geom)
     sp = solventparameters()
     𝑟ₐ = atomicradii()
     
-    run(`mkdir -p tmp`)  # make a tmp dir in the working folder
-
-    # loop through structures; use nproc=1 and multithreading
-    Threads.@threads for i in 1:nos
-        for j in 1:a   # loop through scaling factors
-            # use writing mode for the first scalingfactor 
-            # and appending mode for the rest
+    run(`mkdir -p tmp`)
+    
+    Threads.@threads for i in 1:nos  # use multithreading
+        for j in 1:a
+            # writing mode for the first and appending mode for other 𝑓
             open("tmp/structure-$i-Vc.gjf", "$(j == 1 ? "w" : "a")") do file
-                # job killed after L301 (%kjob l301);
                 write(file, """
-                %kjob l301
-                %nproc=1
-                %mem=1000mb
-                #p $keywords
-                # scrf=(iefpcm,solvent=$solvent,read) nosym guess=only pop=none
-
-                title
-
-                $charge $multiplicity
-                $(st[i])
-
-                qrep pcmdoc geomview nodis nocav g03defaults tsare=$tesserae
-                nsfe=$noa
-                nvesolv=$(sp[4]) solvmw=$(sp[3]) rsolv=$(sp[5])
-                eps=$(sp[1]) rhos=$(sp[2])                  
-
+                    %kjob l301
+                    %nproc=1
+                    %mem=1000mb
+                    #p $keywords
+                    # scrf=(iefpcm,solvent=$solvent,read) nosym guess=only pop=none
+                    
+                    title
+                    
+                    $charge $multiplicity
+                    $(geomblocks[i])
+                    
+                    qrep pcmdoc geomview nodis nocav g03defaults tsare=$tesserae
+                    nsfe=$noa
+                    nvesolv=$(sp[4]) solvmw=$(sp[3]) rsolv=$(sp[5])
+                    eps=$(sp[1]) rhos=$(sp[2])
+                    
                 """)
-
+                
                 for k in 1:noa
-                    write(file, " $(lines[i][k])  $(𝑟ₐ[atoms[i,k]])  $(𝑓[j])\n")
+                    write(file, " $(coordlines[i,k])    $(𝑟ₐ[atoms[i,k]])    $(𝑓[j])\n")
                 end
-
+                
                 write(file, "\n")
-
+                
                 if j != a  # do not write --link1-- for the last scaling factor
                     write(file, "--link1--\n")
                 end
@@ -239,45 +206,44 @@ end
 # write gjf files for Ger calculations
 function gjfger(geom = geometries, 𝑓 = scalingfactors)
     a = length(𝑓)
-    st = structures(geom)
+    geomblocks = geometryblocks(geom)
     nos = numberofstructures(geom)
     noa = numberofatoms(geom)
     atoms = atomlist(geom)
-    lines = coordinatelines(geom)
+    coordlines = coordinatelines(geom)
     sp = solventparameters()
     𝑟ₐ = atomicradii()
-    𝜀 = calculate𝜀()    # needs data of 𝜀 and 𝜌 at different scalingfactors
+    𝜀 = calculate𝜀()    # data of 𝜀 and 𝑍 needed for the gjf files
     𝑍 = calculate𝑍()
     
-    Threads.@threads for i in 1:nos  # loop through structures and multithreading
-        for j in 1:a   # loop through scaling factors
-            # use writing mode for the first scalingfactor and appending mode for the rest
+    Threads.@threads for i in 1:nos  # use multithreading
+        for j in 1:a
+            # writing mode for the first and appending mode for other 𝑓
             open("tmp/structure-$i-Ger.gjf", "$(j == 1 ? "w" : "a")") do file
-                # job killed after L502
                 write(file, """
-                %kjob l502
-                %chk=structure-$i-Ger.chk
-                %nproc=$nproc
-                %mem=$mem
-                #p $keywords
-                # scrf=(iefpcm,solvent=$solvent,read) nosym 6d 10f $(j != 1 ? "guess=read" : "")
-
-                title
-
-                $charge $multiplicity
-                $(st[i])
-
-                qrep pcmdoc geomview nodis nocav g03defaults tsare=$tesserae
-                nsfe=$noa
-                nvesolv=$(sp[4]) solvmw=$(sp[3]) rsolv=$(sp[5])
-                eps=$(𝜀[j]) rhos=$(𝑍[j])                
-
+                    %kjob l502
+                    %chk=structure-$i-Ger.chk
+                    %nproc=$nproc
+                    %mem=$mem
+                    #p $keywords $(j == 1 ? "" : "guess=read")
+                    # scrf=(iefpcm,solvent=$solvent,read) nosym 6d 10f
+                    
+                    title
+                    
+                    $charge $multiplicity
+                    $(geomblocks[i])
+                    
+                    qrep pcmdoc geomview nodis nocav g03defaults tsare=$tesserae
+                    nsfe=$noa
+                    nvesolv=$(sp[4]) solvmw=$(sp[3]) rsolv=$(sp[5])
+                    eps=$(𝜀[j]) rhos=$(𝑍[j])
+                    
                 """)
-
+                
                 for k in 1:noa
-                    write(file, " $(lines[i][k])  $(𝑟ₐ[atoms[i,k]])  $(𝑓[j])\n")
+                    write(file, " $(coordlines[i,k])    $(𝑟ₐ[atoms[i,k]])    $(𝑓[j])\n")
                 end
-
+                
                 write(file, "\n")
                 # do not write "--link1--" for the last scaling factor
                 if j != a
@@ -292,43 +258,41 @@ end
 # write gjf files for Gcav calculations
 function gjfgcav(cav = cavity, geom = geometries, 𝑓 = scalingfactors)
     a = length(𝑓)
-    st = structures(geom)
+    geomblocks = geometryblocks(geom)
     nos = numberofstructures(geom)
     noa = numberofatoms(geom)
     atoms = atomlist(geom)
-    #lines = coordinatelines(geom)
     sp = solventparameters()
     𝑟ₐ = atomicradii()
-    𝑉ₘ = calculate𝑉ₘ()    # needs data of molar volume of solvent 𝑉ₘ
+    𝑉ₘ = calculate𝑉ₘ()    # molar volume 𝑉ₘ of the solvent
     
-    Threads.@threads for i in 1:nos  # loop through structures and multithreading
-        for j in 1:a   # loop through scaling factors
-            # writing mode for the first scalingfactor and appending mode for the rest
+    Threads.@threads for i in 1:nos  # use multithreading
+        for j in 1:a
+            # writing mode for the first and appending mode for other 𝑓
             open("tmp/structure-$i-Gcav.gjf", "$(j == 1 ? "w" : "a")") do file
-                # job killed after L301
                 # also testing for vdw cavity to add the noaddsph keyword
                 write(file, """
-                %kjob l301
-                %nproc=1
-                %mem=1000mb
-                #p $keywords
-                # scrf=(iefpcm,solvent=$solvent,read) nosym guess=only pop=none
-
-                title
-
-                $charge $multiplicity
-                $(st[i])
-
-                norep pcmdoc geomview nodis cav g03defaults $(cav == "vdw" ? "noaddsph" : "" ) tsare=$tesserae
-                nsfe=$noa
-                Vmol=$(𝑉ₘ[j]) rsolv=$(sp[5])
-
+                    %kjob l301
+                    %nproc=1
+                    %mem=1000mb
+                    #p $keywords
+                    # scrf=(iefpcm,solvent=$solvent,read) nosym guess=only pop=none
+                    
+                    title
+                    
+                    $charge $multiplicity
+                    $(geomblocks[i])
+                    
+                    norep pcmdoc geomview nodis cav g03defaults tsare=$tesserae
+                    nsfe=$noa $(cav == "vdw" ? "noaddsph" : "") 
+                    Vmol=$(𝑉ₘ[j]) rsolv=$(sp[5])
+                    
                 """)
-
+                
                 for k in 1:noa
-                    write(file, " $k  $(𝑟ₐ[atoms[i,k]] * 𝑓[1])  1.0\n")
+                    write(file, " $k    $(𝑟ₐ[atoms[i,k]] * 𝑓[1])    1.0\n")
                 end
-
+                
                 write(file, "\n")
                 # do not write "--link1--" after the last structure
                 if j != a
@@ -340,19 +304,18 @@ function gjfgcav(cav = cavity, geom = geometries, 𝑓 = scalingfactors)
 end
 
 
-# extract volume 𝑉𝑐 from gaussian output files 
-# 𝑉𝑐 as a function of scaling factor 𝑓
+# extract volume 𝑉𝑐 data from gaussian output files
 function get𝑉𝑐(geom = geometries, 𝑓 = scalingfactors)
     nos = numberofstructures(geom)
     a = length(𝑓)
-    𝑉𝑐 = Array{Float64}(undef, nos,a)    # 2D array with dimensions nos * a
+    𝑉𝑐 = Array{Float64}(undef, nos,a)    # nos * a 2D array
     Threads.@threads for i in 1:nos
-        j = 1    # j indexes the length(𝑓)
+        j = 1    # j ranges from 1:length(𝑓)
         open("tmp/structure-$i-Vc.log") do file
             for line in eachline(file)
                 if occursin("GePol: Cavity volume", line)
                     𝑉𝑐[i,j] = parse(Float64, split(line)[5])
-                    j += 1    # j indexes the length(𝑓)
+                    j += 1    # j ranges from 1:length(𝑓)
                 end 
             end
         end
@@ -361,18 +324,18 @@ function get𝑉𝑐(geom = geometries, 𝑓 = scalingfactors)
 end
 
 
-# extract electronic energy 𝐺𝑒𝑟 from gaussian output files
+# extract electronic energy 𝐺𝑒𝑟 data from gaussian output files
 function get𝐺𝑒𝑟(geom = geometries, 𝑓 = scalingfactors)
     nos = numberofstructures(geom)
     a = length(𝑓)
     𝐺𝑒𝑟 = Array{Float64}(undef, nos,a)    # 2D array with dimensions nos * a
     Threads.@threads for i in 1:nos
-        j = 1    # j should index the length(𝑓)
+        j = 1    # j ranges from 1:length(𝑓)
         open("tmp/structure-$i-Ger.log") do file
             for line in eachline(file)
                 if occursin("SCF Done", line)
                     𝐺𝑒𝑟[i,j] = parse(Float64, split(line)[5])
-                    j += 1    # j should index the length(𝑓)
+                    j += 1    # j ranges from 1:length(𝑓)
                 end
             end
         end
@@ -381,21 +344,21 @@ function get𝐺𝑒𝑟(geom = geometries, 𝑓 = scalingfactors)
 end
 
 
-# extract non-electrostatic cavitation energy 𝐸𝑐𝑎𝑣 from gaussian output files
+# extract cavity volume 𝑉𝑐𝑎𝑣 & non-electrostatic cavitation energy 𝐸𝑐𝑎𝑣
 function get𝑉𝑐𝑎𝑣𝐸𝑐𝑎𝑣(geom = geometries, 𝑓 = scalingfactors)
     nos = numberofstructures(geom)
     a = length(𝑓)
-    𝑉𝑐𝑎𝑣 = Array{Float64}(undef, nos,a)    # 2D array with dimensions nos * a
-    𝐸𝑐𝑎𝑣 = Array{Float64}(undef, nos,a)    # 2D array with dimensions nos * a
+    𝑉𝑐𝑎𝑣 = Array{Float64}(undef, nos,a)    # nos * a 2D array
+    𝐸𝑐𝑎𝑣 = Array{Float64}(undef, nos,a)    # nos * a 2D array
     Threads.@threads for i in 1:nos
-        j = 1    # j should index the length(𝑓)
+        j = 1    # j ranges from 1:length(𝑓)
         open("tmp/structure-$i-Gcav.log") do file
             for line in eachline(file)
                 if occursin("GePol: Cavity volume", line)
                     𝑉𝑐𝑎𝑣[i,j] = parse(Float64, split(line)[5])
                 elseif occursin("PCM non-electrostatic energy", line)
                     𝐸𝑐𝑎𝑣[i,j] = parse(Float64, split(line)[5])
-                    j += 1    # j should index the length(𝑓)
+                    j += 1    # j ranges from 1:length(𝑓)
                 end
             end
         end
@@ -404,7 +367,7 @@ function get𝑉𝑐𝑎𝑣𝐸𝑐𝑎𝑣(geom = geometries, 𝑓 = scalingfa
 end
 
 
-# write the properties.dat file; the Printf package is used
+# use the Printf package to write the properties.dat file
 function writeproperties(𝑉𝑐 = 𝑉𝑐, 𝐺𝑒𝑟 = 𝐺𝑒𝑟, 𝐸𝑐𝑎𝑣 = 𝐸𝑐𝑎𝑣, geom = geometries, 𝑓 = scalingfactors)
     nos = numberofstructures(geom)
     a = length(𝑓)
@@ -434,8 +397,6 @@ end
 #------------------------------------------------------------------------------
 # rungaussian.jl
 #------------------------------------------------------------------------------
-# multithreading for short Vc and Cav calculations.
-# add return value for output file "return "$jobtype finished at time()""
 function rungaussian(jobtype; geom=geometries, multi = multithreading)
     nos = numberofstructures(geom)
     cd("tmp")
@@ -457,54 +418,51 @@ end
 
 
 #------------------------------------------------------------------------------
-# arithmetic.jl
+# algebra.jl
 #------------------------------------------------------------------------------
-# calculate linear scaling factor 𝑠, as the cubic root of volume scaling 𝑉𝑐/𝑉𝑐𝑓=1.2
-function calculate𝑠(𝑉𝑐 = 𝑉𝑐, geom = geometries, 𝑓 = scalingfactors)
+# linear scaling factor 𝑠, as the cubic root of the volume scaling
+function calculate𝑠(𝑉𝑐 = 𝑉𝑐)  # 𝑉𝑐 is a global variable
     #𝑉𝑐 = get𝑉𝑐()
-    # @. is a maroc for vectoried operation
-    return @. cbrt(𝑉𝑐/𝑉𝑐[:,1]) # 2D array of dimensions nos * a
+    # @. is a macro for vectoried operation/broadcasting
+    return @. cbrt(𝑉𝑐/𝑉𝑐[:,1])    # nos * a 2D array
 end
 
 
-# 𝑠̄ is the average of 𝑠 over all structures at the same scalingfactor 𝑓
+# average of 𝑠 over all structures at the same scalingfactor 𝑓
 function average𝑠()
     𝑠 = calculate𝑠()
-    # use the mean function in the Staticstics package
-    return mean(𝑠, dims=1)   # 1D array of length a
+    # the mean function from the Staticstics package
+    return mean(𝑠, dims=1)    # 1D array of length a
 end
 
 
-# calculate dielectric permitivity 𝜀 as a function of 𝑠̄
+# dielectric permitivity 𝜀 = 1 + (𝜀₀-1)/𝑠̄³
 function calculate𝜀()
     𝜀₀ = solventparameters()[1]
     𝑠̄ = average𝑠()
-    # 𝜀 = 1 + (𝜀₀-1)/𝑠̄³
-    return @. 1 + (𝜀₀ - 1) / 𝑠̄^3    # using vectorized "dot" operator for 1D array
+    return @. 1 + (𝜀₀ - 1) / 𝑠̄^3    # 1D array of length a
 end
 
 
-# calculate Pauli repulson barrier 𝑍 as a function of 𝑠̄ and 𝜂
+# Pauli repulson barrier 𝑍 = 𝑍₀/𝑠̄⁽³⁺𝜂⁾, where 𝑍₀ = 𝜌₀
 function calculate𝑍(𝜂=𝜂)
     𝜌₀ = solventparameters()[2]
     𝑠̄ = average𝑠()
-    # 𝑍 = 𝑍₀/𝑠̄⁽³⁺𝜂⁾   𝑍₀ = 𝜌₀
-    return @. 𝜌₀ / 𝑠̄^(3+𝜂)    # using vectorized "dot" operator for 1D array
+    return @. 𝜌₀ / 𝑠̄^(3+𝜂)    # 1D array of length a
 end
 
 
-# calculate the molar volume of solvent 𝑉ₘ as a function of 𝑠̄
+# molar volume of solvent 𝑉ₘ = (𝑀/𝜌₀) * 𝑠̄³
 function calculate𝑉ₘ()
     (𝜌₀, 𝑀) = solventparameters()[2:3]
     𝑠̄ = average𝑠()
-    # 𝑉ₘ = (𝑀/𝜌₀) * 𝑠̄³
-    return @. (𝑀/𝜌₀) * 𝑠̄^3    # using vectorized "dot" operator for 1D array
+    return @. (𝑀/𝜌₀) * 𝑠̄^3    # 1D array of length a
 end
 
 
-# Murnaghan equation of state fitting to calculate pressure 𝑝;
+# Murnaghan equation of state fitting for pressure 𝑝 calculation
 # three methods - julia (default), python, or mathematica
-function murnaghan(ft = fitting)
+function murnaghan_eos(ft = fitting)
     if ft == "julia"
         return juliafitting()
     elseif ft =="python"
@@ -515,12 +473,10 @@ function murnaghan(ft = fitting)
 end
 
 
-# load the LsqFit package; 
-# needs to be installed first by "Pkg.add("LsqFit")"
-#using LsqFit
+# using LsqFit
 function juliafitting(𝑉𝑐 = 𝑉𝑐, 𝐺𝑒𝑟 = 𝐺𝑒𝑟, geom = geometries)
     nos = numberofstructures(geom)
-    array = Array{Float64}(undef, nos,3)
+    abc_parameters = Array{Float64}(undef, nos,3)
     Threads.@threads for i in 1:nos
     # python: y = (a/b)*(1/x)**b+(a-c)*x; y is Ger, x is Vc
     # mathematica: a*x ((1/b)*(t[[1, 1]]/x)^(b + 1) + 1) - c*x
@@ -530,22 +486,22 @@ function juliafitting(𝑉𝑐 = 𝑉𝑐, 𝐺𝑒𝑟 = 𝐺𝑒𝑟, geom = g
         ydata = 𝐺𝑒𝑟[i,:] .- 𝐺𝑒𝑟[i,1]
         p0 = [0.0, 5.0, 0.0]
         fit = curve_fit(model, xdata, ydata, p0)
-        array[i,1] = fit.param[1]/𝑉𝑐[i,1]
-        array[i,2] = fit.param[2]
-        array[i,3] = fit.param[3]/𝑉𝑐[i,1]
+        abc_parameters[i,1] = fit.param[1]/𝑉𝑐[i,1]
+        abc_parameters[i,2] = fit.param[2]
+        abc_parameters[i,3] = fit.param[3]/𝑉𝑐[i,1]
     end
-    return array
+    return abc_parameters    # nos * 3 2D array
 end
 
 
-# need to install the lmfit package `pip install lmfit`
-# make sure to use the correct python verion
-# note the python call with full path inside the function
+# Using the lmfit package (to install: `pip install lmfit`)
+# Make sure to use the correct python verion and
+# the path to python inside the function is correct.
 function pythonfitting(𝑉𝑐 = 𝑉𝑐, 𝐺𝑒𝑟 = 𝐺𝑒𝑟, geom = geometries)
     nos = numberofstructures(geom)
     #𝑉𝑐 = get𝑉𝑐()
     #𝐺𝑒𝑟 = get𝐺𝑒𝑟()
-    array = Array{Float64}(undef, nos,3)
+    abc_parameters = Array{Float64}(undef, nos,3)
     Threads.@threads for i in 1:nos
         script = """#!/usr/bin/env python
             #<examples/doc_model1.py>
@@ -563,7 +519,7 @@ function pythonfitting(𝑉𝑐 = 𝑉𝑐, 𝐺𝑒𝑟 = 𝐺𝑒𝑟, geom = 
             def murnaghan(x, a, b, c):
                 "1-d gaussian: murnaghan(x, a,b, c)"
                 return (a/b)*(1/x)**b+(a-c)*x
-                  
+            
             gmod = Model(murnaghan)
             result = gmod.fit(y, x=x, a=0, b=5, c=0)
             
@@ -571,30 +527,30 @@ function pythonfitting(𝑉𝑐 = 𝑉𝑐, 𝐺𝑒𝑟 = 𝐺𝑒𝑟, geom = 
             
             #<end examples/doc_model1.py>"""
         
-        # read in fitting results and write to structure-$i-fitting.out files
+        # write fitting results to structure-$i-fitting.out files
         results = read(pipeline(`echo $script`, `/scratch/bochen/Python-2.7.18/bin/python`), String)
         #results = read(pipeline(`echo $script`, `python3`), String)
         open("tmp/structure-$i-fitting.out", "w") do file
             write(file, results)
         end
-
-        # use an awk script to extract the a, b, c parameters of the equation of state.
+        
+        # use an awk script to extract the a, b, c parameters
         awkscript = raw"/a:/ {a=$2}; /b:/ {b=$2}; /c:/ {c=$2}; END {print a,b,c}"
         abc = read(`awk $awkscript "tmp/structure-$i-fitting.out"`, String)
-        array[i,1] = parse(Float64, split(abc)[1])/𝑉𝑐[i,1]
-        array[i,2] = parse(Float64, split(abc)[2])
-        array[i,3] = parse(Float64, split(abc)[3])/𝑉𝑐[i,1]
+        abc_parameters[i,1] = parse(Float64, split(abc)[1])/𝑉𝑐[i,1]
+        abc_parameters[i,2] = parse(Float64, split(abc)[2])
+        abc_parameters[i,3] = parse(Float64, split(abc)[3])/𝑉𝑐[i,1]
     end
-    return array   # 2D array of dimension nos * 3
+    return abc_parameters   # nos * 3 2D array
 end
 
 
-
+#= Not working; to be fully implemented.
 function mathematicafitting(𝑉𝑐 = 𝑉𝑐, 𝐺𝑒𝑟 = 𝐺𝑒𝑟, geom = geometries)
     nos = numberofstructures(geom)
     #𝑉𝑐 = get𝑉𝑐()
     #𝐺𝑒𝑟 = get𝐺𝑒𝑟()
-    array = Array{Float64}(undef, nos,3)
+    abc_parameters = Array{Float64}(undef, nos,3)
     Threads.@threads for i in 1:nos
         # write data to Vc-Ger.dat file which is then read by Mathematica
         # the DelimitedFiles package is used
@@ -623,74 +579,66 @@ function mathematicafitting(𝑉𝑐 = 𝑉𝑐, 𝐺𝑒𝑟 = 𝐺𝑒𝑟, ge
         # extraction of abc parameters to be implemented
     end
     rm("tmp/Vc-Ger.dat")
-    return array    # 2D array of dimension nos * 3
+    return abc_parameters    # 2D array of dimension nos * 3
 end
+=#
 
 
 function calculate𝑝(𝑉𝑐 = 𝑉𝑐)
-    #𝑉𝑐 = get𝑉𝑐()    # 2D array of dimension nos * length(𝑓)
-    abc = murnaghan()    # 2D array of dimension nos * 3 
+    #𝑉𝑐 = get𝑉𝑐()    # nos * a 2D array
+    abc = murnaghan_eos()    # nos * 3 2D array
     𝑎 = abc[:,1]   # 1D array of length nos
     𝑏 = abc[:,2]
     𝑐 = abc[:,3]
-    #for i in 1:nos
-     #   𝑎[i] = abc[i,1]
-      #  𝑏[i] = abc[i,2]
-       # 𝑐[i] = abc[i,3]
-        #    for j in 1:a
-            # $p[$n_fact]=($a * (($volume[1] / $volume[$n_fact]) ** ($b + 1) -1 ) + $c)*$Eh_o_Ang3_to_GPa;
-            # 4359.74417 is the conversion factor from hartree/Å³ to GPa
-            #𝑝[i,j] = (𝑎[i] * ((𝑉𝑐[i,1] / 𝑉𝑐[i,j]) ^ (𝑏[i] + 1) - 1) + 𝑐[i]) * 4359.74417
-            #𝑝[i,j] = (𝑎[i] * (1 - (𝑉𝑐[i,1] / 𝑉𝑐[i,j]) ^ 𝑏[i] ) + 𝑐[i]) * 4359.74417
-        #end
-    #end
-    # 4359.74417 is the conversion factor from hartree/Å³ to GPa
-    return @. (𝑎 * ( (𝑉𝑐[:,1]/𝑉𝑐)^(𝑏+1) - 1 ) + 𝑐) * 4359.74417    # 2D array of dimension nos * length(𝑓)
-    #return @. (𝑎 * (1 - (𝑉𝑐[:,1]/𝑉𝑐)^𝑏) + 𝑐) * 4359.74417    # 2D array of dimension nos * length(𝑓)
+    # $p[$n_fact]=($a * (($volume[1] / $volume[$n_fact]) ** ($b + 1) -1 ) + $c)*$Eh_o_Ang3_to_GPa;
+    #𝑝[i,j] = (𝑎[i] * ((𝑉𝑐[i,1] / 𝑉𝑐[i,j]) ^ (𝑏[i] + 1) - 1) + 𝑐[i]) * 4359.74417
+    #𝑝[i,j] = (𝑎[i] * (1 - (𝑉𝑐[i,1] / 𝑉𝑐[i,j]) ^ 𝑏[i] ) + 𝑐[i]) * 4359.74417
+    
+    # nos * a 2D array; 1 hartree/Å³ = 4359.74417 GPa
+    return @. (𝑎 * ( (𝑉𝑐[:,1]/𝑉𝑐)^(𝑏+1) - 1 ) + 𝑐) * 4359.74417 
+    #return @. (𝑎 * (1 - (𝑉𝑐[:,1]/𝑉𝑐)^𝑏) + 𝑐) * 4359.74417
 end
 
 
+# average of 𝑝 over all structures at the same scalingfactor 𝑓
 function average𝑝()
-    𝑝 = calculate𝑝()         # 2D array of dimension nos*length(𝑓)
-    return mean(𝑝, dims=1)   # 1D array of length(𝑓)
-    # use the mean function in the Staticstics package
+    𝑝 = calculate𝑝()    # nos * a 2D array
+    return vec(mean(𝑝, dims=1))   # 1D array of length a
 end
 
 
 function calculate𝐺𝑐𝑎𝑣(𝐸𝑐𝑎𝑣 = 𝐸𝑐𝑎𝑣, 𝑉𝑐𝑎𝑣 = 𝑉𝑐𝑎𝑣)
-    #𝐸𝑐𝑎𝑣 = get𝑉𝑐𝑎𝑣𝐸𝑐𝑎𝑣()[2]    # 2D array of dimension nos*length(𝑓)
-    𝑝̄ = average𝑝()      # 1D array of length(𝑓)
-    #𝑉𝑐 = get𝑉𝑐()        # 2D array of dimension nos*length(𝑓)
-    return @. 𝐸𝑐𝑎𝑣 + 𝑝̄ * 𝑉𝑐𝑎𝑣 * 2.293712569e-4    # 2D array of dimension nos*length(𝑓)
-    # 2.293712569e-4 is the conversion factor from GPa*Å³ to Hartree
+    𝑝̄ = average𝑝()      # 1D array of length a
+    #𝐸𝑐𝑎𝑣 and 𝑉𝑐𝑎𝑣 are nos * a 2D arrays; 1 GPa*Å³ = 2.293712569e-4 Hartree
+    return @. 𝐸𝑐𝑎𝑣 + 𝑝̄ * 𝑉𝑐𝑎𝑣 * 2.293712569e-4    # nos * a 2D array
 end
 
 
 function calculate𝐺𝑡𝑜𝑡(𝐺𝑒𝑟 = 𝐺𝑒𝑟)
-    return 𝐺𝑒𝑟 .+ calculate𝐺𝑐𝑎𝑣()    # 2D array of dimension nos*length(𝑓)
+    return 𝐺𝑒𝑟 .+ calculate𝐺𝑐𝑎𝑣()    # nos * a 2D array
 end
 
 
 function calculateΔ𝐺𝑡𝑜𝑡()
     𝐺𝑡𝑜𝑡 = calculate𝐺𝑡𝑜𝑡()
-    Δ𝐺𝑡𝑜𝑡 = Array{Float64}(undef, size(𝐺𝑡𝑜𝑡))  # 2D array of dimension nos*length(𝑓)
+    Δ𝐺𝑡𝑜𝑡 = Array{Float64}(undef, size(𝐺𝑡𝑜𝑡))  # nos * a 2D array
     for i in 1:length(𝐺𝑡𝑜𝑡[1,:])
-        @. Δ𝐺𝑡𝑜𝑡[:,i] = (𝐺𝑡𝑜𝑡[:,i] - 𝐺𝑡𝑜𝑡[1,i]) * 627.509    # 1 hartree = 627.509 kcal/mol
+        @. Δ𝐺𝑡𝑜𝑡[:,i] = (𝐺𝑡𝑜𝑡[:,i] - 𝐺𝑡𝑜𝑡[1,i]) * 627.509  # 1 hartree = 627.509 kcal/mol
     end
     return Δ𝐺𝑡𝑜𝑡
 end
 
-
+#= need to figure out how to calculate barrier; use the TS structure or the maximum?
 function calculateΔ𝑉activation()
-    𝑝̄ = vec(average𝑝())    # 1D array of length(𝑓)
-    Δ𝐺𝑡𝑜𝑡 = calculateΔ𝐺𝑡𝑜𝑡()   # 2D array of nos * length(𝑓)
-    Δ𝐺𝑡𝑜𝑡activation = Δ𝐺𝑡𝑜𝑡[50,:]    # 1D array of length(𝑓)
+    𝑝̄ = average𝑝()    # 1D array of a
+    Δ𝐺𝑡𝑜𝑡 = calculateΔ𝐺𝑡𝑜𝑡()   # nos * a 2D array
+    Δ𝐺𝑡𝑜𝑡activation = Δ𝐺𝑡𝑜𝑡[50,:]    # 1D array of a
     slope, intercept = [ones(length(𝑝̄)) 𝑝̄] \ Δ𝐺𝑡𝑜𝑡activation
     return slope * 4.184    # 1 kcal mol⁻¹ / GPa = 4.184 cm³/mol; 4.184 * 10^3 / 10^9 * 10^6
 end
+=#
 
-
-# assuming job stopped during electronic energy calculation jobs, i.e., Ger jobs
+# restart from previously interupted Ger jobs
 # The idea is to first generate a set of input filenames, and remove those finished
 # from the set. Then restart Ger jobs for the rest of filenames in the set.
 function restartger(geom=geometries, 𝑓 = scalingfactors, multi = multithreading)
@@ -699,33 +647,34 @@ function restartger(geom=geometries, 𝑓 = scalingfactors, multi = multithreadi
     all = [1:nos;]    # Int64 array containing all job numbers
     
     cd("tmp")
-
+    
+    # awk script to return the finished job numbers
     script = raw"for file in *Ger.log; do i=${file#*structure-}; i=${i%-Ger.log}; grep 'SCF Done' $file | wc -l; echo $i; done | paste - - | awk '/" * "$a" * raw"/ {print $2}'"
     open("restart.sh", "w") do file
         write(file, "$script")
     end
-
+    
     string = read(`bash restart.sh`, String)
     rm("restart.sh")
-
-    finished = parse.(Int64, split(string))    # parse the string into an Int64 array
-    unfinished = setdiff(all, finished)    # remove the finished job numbers from all
     
-    if multi == "off"
-        for i in unfinished
+    finished = parse.(Int64, split(string))    # the finished job numbers
+    unfinished = setdiff(all, finished)  # remove the finished job numbers from all
+    
+    if multi == "on"
+        Threads.@threads for i in unfinished
             run(`g16 structure-$i-Ger.gjf`)
         end
-    elseif multi == "on"
-        Threads.@threads for i in unfinished
+    elseif multi == "off"
+        for i in unfinished
             run(`g16 structure-$i-Ger.gjf`)
         end
     end
     cd("..")
 end
 
-#-------------------------------------
-# main program
-#-------------------------------------
+#------------------------------------------------------------------------------
+# main procedure
+#------------------------------------------------------------------------------
 #function main(restart = "no")
     if restart == "no"
         writegjf("Vc")
