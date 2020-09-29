@@ -1,8 +1,0 @@
-perl xp_pes2020.1.1.pl \
-4 \
-1a.com \
-1b.com \
-endo-2TS.com \
-endo-2.com \
-1.2 1.15 1.10 1.05 1.00 0.975 0.95 \
-C6H12 3 vdw 1.2 0.075 1 py &
