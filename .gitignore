@@ -1,8 +1,16 @@
 .DS_Store
 test*
 96*
-tmp*
+tmp
 Bimolecular
 meso
 notebook.jl
 note.md
+1.qsub
+1.sh
+irc2xppcm-3.sh
+restart.jl
+TS*log
+Vc-Ger.dat
+xppcm.ipynb
+regression.jl

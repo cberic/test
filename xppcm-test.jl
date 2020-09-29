@@ -397,20 +397,48 @@ end
 #------------------------------------------------------------------------------
 # rungaussian.jl
 #------------------------------------------------------------------------------
-function rungaussian(jobtype; geom=geometries, multi = multithreading)
+# check if g16 or g09 is installed and loaded
+function gaussianversion()
+    script = raw"""
+        #!/usr/bin/bash
+        which g16 > /dev/null 2>&1
+        a=$?
+        which g09 > /dev/null 2>&1
+        b=$?
+        if [[ $a == 0 ]]; then
+            echo g16
+        elif [[ $b == 0 ]]; then
+            echo g09
+        else
+            echo "missing"
+        fi"""
+    open("checkgaussian.sh", "w") do file
+        write(file, script)
+    end
+    version = strip(read(`bash checkgaussian.sh`, String))
+    rm("checkgaussian.sh")
+    if version === Missing
+        println("g16 and g09 not found")
+    else
+        return version
+    end    
+end
+
+
+function rungaussian(jobtype, geom = geometries, multi = multithreading, gau = gaussian)
     nos = numberofstructures(geom)
     cd("tmp")
     if jobtype == "Vc" || jobtype == "Gcav"
         Threads.@threads for i in 1:nos
-            run(`g16 structure-$i-$jobtype.gjf`)
+            run(`$gau structure-$i-$jobtype.gjf`)
         end
     elseif jobtype == "Ger" && multi == "on"
         Threads.@threads for i in 1:nos
-            run(`g16 structure-$i-$jobtype.gjf`)
+            run(`$gau structure-$i-$jobtype.gjf`)
         end
     elseif jobtype == "Ger" && multi == "off"
         for i in 1:nos
-            run(`g16 structure-$i-$jobtype.gjf`)
+            run(`$gau structure-$i-$jobtype.gjf`)
         end
     end
     cd("..")
@@ -676,6 +704,7 @@ end
 # main procedure
 #------------------------------------------------------------------------------
 #function main(restart = "no")
+const gaussian = gaussianversion()
     if restart == "no"
         writegjf("Vc")
         rungaussian("Vc")
