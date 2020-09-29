@@ -186,7 +186,7 @@ function gjfvc(geom = geometries, 𝑓 = scalingfactors)
                     nvesolv=$(sp[4]) solvmw=$(sp[3]) rsolv=$(sp[5])
                     eps=$(sp[1]) rhos=$(sp[2])
                     
-                """)
+                    """)
                 
                 for k in 1:noa
                     write(file, " $(coordlines[i,k])    $(𝑟ₐ[atoms[i,k]])    $(𝑓[j])\n")
@@ -221,8 +221,7 @@ function gjfger(geom = geometries, 𝑓 = scalingfactors)
             # writing mode for the first and appending mode for other 𝑓
             open("tmp/structure-$i-Ger.gjf", "$(j == 1 ? "w" : "a")") do file
                 write(file, """
-                    %kjob l502
-                    %chk=structure-$i-Ger.chk
+                    "$(j == 1 ? "" : "%kjob l502\n")"%chk=structure-$i-Ger.chk
                     %nproc=$nproc
                     %mem=$mem
                     #p $keywords $(j == 1 ? "" : "guess=read")
@@ -238,7 +237,7 @@ function gjfger(geom = geometries, 𝑓 = scalingfactors)
                     nvesolv=$(sp[4]) solvmw=$(sp[3]) rsolv=$(sp[5])
                     eps=$(𝜀[j]) rhos=$(𝑍[j])
                     
-                """)
+                    """)
                 
                 for k in 1:noa
                     write(file, " $(coordlines[i,k])    $(𝑟ₐ[atoms[i,k]])    $(𝑓[j])\n")
@@ -287,7 +286,7 @@ function gjfgcav(cav = cavity, geom = geometries, 𝑓 = scalingfactors)
                     nsfe=$noa $(cav == "vdw" ? "noaddsph" : "") 
                     Vmol=$(𝑉ₘ[j]) rsolv=$(sp[5])
                     
-                """)
+                    """)
                 
                 for k in 1:noa
                     write(file, " $k    $(𝑟ₐ[atoms[i,k]] * 𝑓[1])    1.0\n")
