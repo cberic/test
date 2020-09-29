@@ -221,7 +221,7 @@ function gjfger(geom = geometries, 𝑓 = scalingfactors)
             # writing mode for the first and appending mode for other 𝑓
             open("tmp/structure-$i-Ger.gjf", "$(j == 1 ? "w" : "a")") do file
                 write(file, """
-                    "$(j == 1 ? "" : "%kjob l502\n")"%chk=structure-$i-Ger.chk
+                    $(j == 1 ? "" : "%kjob l502\n")%chk=structure-$i-Ger.chk
                     %nproc=$nproc
                     %mem=$mem
                     #p $keywords $(j == 1 ? "" : "guess=read")
@@ -630,12 +630,12 @@ end
 # average of 𝑝 over all structures at the same scalingfactor 𝑓
 function average𝑝()
     𝑝 = calculate𝑝()    # nos * a 2D array
-    return vec(mean(𝑝, dims=1))   # 1D array of length a
+    return mean(𝑝, dims=1)   # 1 * a 2D array
 end
 
 
 function calculate𝐺𝑐𝑎𝑣(𝐸𝑐𝑎𝑣 = 𝐸𝑐𝑎𝑣, 𝑉𝑐𝑎𝑣 = 𝑉𝑐𝑎𝑣)
-    𝑝̄ = average𝑝()      # 1D array of length a
+    𝑝̄ = average𝑝()      # 1 * a 2D array
     #𝐸𝑐𝑎𝑣 and 𝑉𝑐𝑎𝑣 are nos * a 2D arrays; 1 GPa*Å³ = 2.293712569e-4 Hartree
     return @. 𝐸𝑐𝑎𝑣 + 𝑝̄ * 𝑉𝑐𝑎𝑣 * 2.293712569e-4    # nos * a 2D array
 end
@@ -657,10 +657,10 @@ end
 
 #= need to figure out how to calculate barrier; use the TS structure or the maximum?
 function calculateΔ𝑉activation()
-    𝑝̄ = average𝑝()    # 1D array of a
+    𝑝̄ = average𝑝()    # 1 * a 2D array
     Δ𝐺𝑡𝑜𝑡 = calculateΔ𝐺𝑡𝑜𝑡()   # nos * a 2D array
     Δ𝐺𝑡𝑜𝑡activation = Δ𝐺𝑡𝑜𝑡[50,:]    # 1D array of a
-    slope, intercept = [ones(length(𝑝̄)) 𝑝̄] \ Δ𝐺𝑡𝑜𝑡activation
+    slope, intercept = [ones(length(𝑝̄)) vec(𝑝̄)] \ Δ𝐺𝑡𝑜𝑡activation
     return slope * 4.184    # 1 kcal mol⁻¹ / GPa = 4.184 cm³/mol; 4.184 * 10^3 / 10^9 * 10^6
 end
 =#
