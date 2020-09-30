@@ -399,34 +399,19 @@ end
 #------------------------------------------------------------------------------
 # check if g16 or g09 is installed and loaded
 function gaussianversion()
-    script = raw"""
-        #!/usr/bin/bash
-        which g16 > /dev/null 2>&1
-        a=$?
-        which g09 > /dev/null 2>&1
-        b=$?
-        if [[ $a == 0 ]]; then
-            echo g16
-        elif [[ $b == 0 ]]; then
-            echo g09
-        else
-            echo "missing"
-        fi"""
-    open("checkgaussian.sh", "w") do file
-        write(file, script)
-    end
-    version = strip(read(`bash checkgaussian.sh`, String))
-    rm("checkgaussian.sh")
-    if version === Missing
-        println("g16 and g09 not found")
+    if typeof(Sys.which("g16")) === String
+        return "g16"
+    elseif typeof(Sys.which("g09")) === String
+        return "g09"
     else
-        return version
-    end    
+        println("g16 and g09 not found")
+    end
 end
 
 
-function rungaussian(jobtype, geom = geometries, multi = multithreading, gau = gaussian)
+function rungaussian(jobtype, geom = geometries, multi = multithreading)
     nos = numberofstructures(geom)
+    gau = gaussianversion()
     cd("tmp")
     if jobtype == "Vc" || jobtype == "Gcav"
         Threads.@threads for i in 1:nos
@@ -704,7 +689,6 @@ end
 # main procedure
 #------------------------------------------------------------------------------
 #function main(restart = "no")
-const gaussian = gaussianversion()
     if restart == "no"
         writegjf("Vc")
         rungaussian("Vc")
