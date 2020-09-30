@@ -1,6 +1,6 @@
 using Statistics
 using Printf
-using DelimitedFiles
+#using DelimitedFiles
 using LsqFit
 
 include("input.jl")
@@ -29,7 +29,7 @@ end
 function atomicradii()
     return Dict(
     "H" => 1.20,    "1" => 1.20,
-    "B" => 1.92,    "5" => 1.92,  
+    "B" => 1.92,    "5" => 1.92,
     "C" => 1.70,    "6" => 1.70,
     "N" => 1.55,    "7" => 1.55,
     "O" => 1.52,    "8" => 1.52,
@@ -44,7 +44,7 @@ function tidygeometries(geom = geometries)
     # and add a space to the beginning
     # "*" is string concatenation operator
     a = " " * strip(geom)
-
+    
     # change block separators to "NEXT"
     # r"" represents a regular expression
     b = replace(a, r"\s*\n+\s*\n+\s*" => "NEXT")
@@ -673,13 +673,14 @@ function restartger(geom=geometries, 𝑓 = scalingfactors, multi = multithreadi
     finished = parse.(Int64, split(string))    # the finished job numbers
     unfinished = setdiff(all, finished)  # remove the finished job numbers from all
     
+    gau = gaussianversion()
     if multi == "on"
         Threads.@threads for i in unfinished
-            run(`g16 structure-$i-Ger.gjf`)
+            run(`$gau structure-$i-Ger.gjf`)
         end
     elseif multi == "off"
         for i in unfinished
-            run(`g16 structure-$i-Ger.gjf`)
+            run(`$gau structure-$i-Ger.gjf`)
         end
     end
     cd("..")
