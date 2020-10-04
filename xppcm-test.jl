@@ -632,11 +632,18 @@ function calculate𝐺𝑡𝑜𝑡(𝐺𝑒𝑟 = 𝐺𝑒𝑟)
 end
 
 
-function calculateΔ𝐺𝑡𝑜𝑡()
+function calculateΔ𝐺𝑡𝑜𝑡(mol = molecularity)
     𝐺𝑡𝑜𝑡 = calculate𝐺𝑡𝑜𝑡()
     Δ𝐺𝑡𝑜𝑡 = Array{Float64}(undef, size(𝐺𝑡𝑜𝑡))  # nos * a 2D array
-    for i in 1:length(𝐺𝑡𝑜𝑡[1,:])
-        @. Δ𝐺𝑡𝑜𝑡[:,i] = (𝐺𝑡𝑜𝑡[:,i] - 𝐺𝑡𝑜𝑡[1,i]) * 627.509  # 1 hartree = 627.509 kcal/mol
+    if mol == "uni"
+        for i in 1:length(𝐺𝑡𝑜𝑡[1,:])
+            @. Δ𝐺𝑡𝑜𝑡[:,i] = (𝐺𝑡𝑜𝑡[:,i] - 𝐺𝑡𝑜𝑡[1,i]) * 627.509  # 1 hartree = 627.509 kcal/mol
+        end
+    elseif mol == "bi"
+        Δ𝐺𝑡𝑜𝑡[:,1] .= Δ𝐺𝑡𝑜𝑡[:,2] .= 0.0
+        for i in 3:length(𝐺𝑡𝑜𝑡[1,:])
+            @. Δ𝐺𝑡𝑜𝑡[:,i] = (𝐺𝑡𝑜𝑡[:,i] - 𝐺𝑡𝑜𝑡[1,i] - 𝐺𝑡𝑜𝑡[2,i]) * 627.509  # 1 hartree = 627.509 kcal/mol
+        end
     end
     return Δ𝐺𝑡𝑜𝑡
 end
