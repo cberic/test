@@ -73,8 +73,8 @@ end
 function structurelines(geom = geometries)
     blocks = geometryblocks(geom)
     nos = numberofstructures(geom)
-    # lines is an array of length nos of 1D arrays
-    # lines[i] is a 1D array of length numberofatoms
+    # lines is a 1D array (with nos elements) of 1D arrays
+    # lines[i] is a 1D array with length of numberofatoms
     lines = Array{Array{String}}(undef, nos)
     for i in 1:nos
         lines[i] = split(blocks[i], "\n", keepempty=false)
@@ -83,59 +83,49 @@ function structurelines(geom = geometries)
 end
 
 
+# 1D array of length nos
 function numberofatoms(geom = geometries)
-    return length(structurelines(geom)[1])
+    nos = numberofstructures(geom)
+    noa = Array{Int64}(undef, nos)
+    for i in 1:nos
+        noa[i] = length(structurelines(geom)[i])
+    end
+    return noa 
 end
 
 
-# nos * noa 2D array of atom lists
+# nos * maximum(noa) 2D array of atom lists
 function atomlist(geom = geometries)
     nos = numberofstructures(geom)
     lines = structurelines(geom)
     noa = numberofatoms(geom)
-    atoms = Array{String}(undef, nos,noa)
+    # some elements of the 2D array may be "nothing"
+    atoms = Array{Union{Nothing, String}}(nothing, nos,maximum(noa))
     for i in 1:nos
-        for j in 1:noa
+        for j in 1:noa[i]
             # get the 1st field of each coordinate line
-            atoms[i,j] = split(lines[i][j], keepempty=false, limit=2)[1]
+            atoms[i,j] = split(lines[i][j], limit=2)[1]
         end
     end
     return atoms
 end
 
 
-# nos * noa 2D array of xyz coordinates
+# nos * maximum(noa) 2D array of xyz coordinates
 function coordinatelines(geom = geometries)
     nos = numberofstructures(geom)
     lines = structurelines(geom)
     noa = numberofatoms(geom)
-    coordlines = Array{String}(undef, nos,noa)
+    # some elements of the 2D array may be "missing"
+    coordlines = Array{Union{Missing, String}}(missing, nos,maximum(noa))
     for i in 1:nos
-        for j in 1:noa
+        for j in 1:noa[i]
             # get the 2nd-last fields of each coordinate line & add a leading space
-            coordlines[i,j] = " " * split(lines[i][j], keepempty=false, limit=2)[2]
+            coordlines[i,j] = " " * split(lines[i][j], limit=2)[2]
         end
     end
     return coordlines
 end
-
-
-# nos * noa * 3 3D array of each coordinates; not correct
-#function atomcoordinates(geom = geometries)
-    # split into a long 1D array of length nos * nos * 4
-#    array = split(geom)
-#    nos = numberofstructures(geom)
-#    noa = numberofatoms(geom)
-#    coordinates = Array{String}(undef, nos,noa,3)
-#    for i in 1:nos
-#        for j in 1:noa
-#            for k in 1:3
-#                coordinates[i,j,k] = array[(i-1)*40 + (j-1)*4 + k+1]
-#            end
-#        end
-#    end
-#    return coordinates
-#end
 
 
 #------------------------------------------------------------------------------
@@ -163,7 +153,7 @@ function gjfvc(geom = geometries, 𝑓 = scalingfactors)
     sp = solventparameters()
     𝑟ₐ = atomicradii()
     
-    run(`mkdir -p tmp`)
+    mkpath("tmp")    # creat a tmp folder in current directory
     
     Threads.@threads for i in 1:nos  # use multithreading
         for j in 1:a
@@ -182,13 +172,13 @@ function gjfvc(geom = geometries, 𝑓 = scalingfactors)
                     $(geomblocks[i])
                     
                     qrep pcmdoc geomview nodis nocav g03defaults tsare=$tesserae
-                    nsfe=$noa
+                    nsfe=$(noa[i])
                     nvesolv=$(sp[4]) solvmw=$(sp[3]) rsolv=$(sp[5])
                     eps=$(sp[1]) rhos=$(sp[2])
                     
                     """)
                 
-                for k in 1:noa
+                for k in 1:noa[i]
                     write(file, " $(coordlines[i,k])    $(𝑟ₐ[atoms[i,k]])    $(𝑓[j])\n")
                 end
                 
@@ -233,13 +223,13 @@ function gjfger(geom = geometries, 𝑓 = scalingfactors)
                     $(geomblocks[i])
                     
                     qrep pcmdoc geomview nodis nocav g03defaults tsare=$tesserae
-                    nsfe=$noa
+                    nsfe=$(noa[i])
                     nvesolv=$(sp[4]) solvmw=$(sp[3]) rsolv=$(sp[5])
                     eps=$(𝜀[j]) rhos=$(𝑍[j])
                     
                     """)
                 
-                for k in 1:noa
+                for k in 1:noa[i]
                     write(file, " $(coordlines[i,k])    $(𝑟ₐ[atoms[i,k]])    $(𝑓[j])\n")
                 end
                 
@@ -283,12 +273,12 @@ function gjfgcav(cav = cavity, geom = geometries, 𝑓 = scalingfactors)
                     $(geomblocks[i])
                     
                     norep pcmdoc geomview nodis cav g03defaults tsare=$tesserae
-                    nsfe=$noa $(cav == "vdw" ? "noaddsph" : "") 
+                    nsfe=$(noa[i]) $(cav == "vdw" ? "noaddsph" : "") 
                     Vmol=$(𝑉ₘ[j]) rsolv=$(sp[5])
                     
                     """)
                 
-                for k in 1:noa
+                for k in 1:noa[i]
                     write(file, " $k    $(𝑟ₐ[atoms[i,k]] * 𝑓[1])    1.0\n")
                 end
                 
@@ -386,7 +376,7 @@ function writeproperties(𝑉𝑐 = 𝑉𝑐, 𝐺𝑒𝑟 = 𝐺𝑒𝑟, 𝐸�
             write(file, "#    𝑓       𝑉𝑐(𝑓)      𝑠(𝑓)         𝑠̄(𝑓,𝑛ₛ)      𝜀(𝑠̄)        𝑍(𝑠̄)        𝑉ₘ(𝑠̄)      𝐺𝑒𝑟(𝑓)          𝑝(𝑓)     𝑝̄(𝑠̄)      𝐸𝑐𝑎𝑣(𝑓)      𝐺𝑐𝑎𝑣(𝑓)      𝐺𝑡𝑜𝑡(𝑓)          Δ𝐺𝑡𝑜𝑡\n")
             for j in 1:a
                 @printf(file, "%d    %.2f    %7.3f    %.6f    %.6f    %.6f    %.6f    %7.3f    %.8f    %.3f    %.3f    %.8f    %.8f    %.8f    %5.2f\n", 
-                               j,    𝑓[j],   𝑉𝑐[i,j], 𝑠[i,j],  𝑠̄[j],   𝜀[j],   𝑍[j],  𝑉ₘ[j], 𝐺𝑒𝑟[i,j], 𝑝[i,j], 𝑝̄[j], 𝐸𝑐𝑎𝑣[i,j], 𝐺𝑐𝑎𝑣[i,j], 𝐺𝑡𝑜𝑡[i,j], Δ𝐺𝑡𝑜𝑡[i,j])
+                            j,    𝑓[j],   𝑉𝑐[i,j], 𝑠[i,j],  𝑠̄[j],   𝜀[j],   𝑍[j],  𝑉ₘ[j], 𝐺𝑒𝑟[i,j], 𝑝[i,j], 𝑝̄[j], 𝐸𝑐𝑎𝑣[i,j], 𝐺𝑐𝑎𝑣[i,j], 𝐺𝑡𝑜𝑡[i,j], Δ𝐺𝑡𝑜𝑡[i,j])
             end
             write(file, "\n")
         end
@@ -424,6 +414,42 @@ function rungaussian(jobtype, geom = geometries, multi = multithreading)
     elseif jobtype == "Ger" && multi == "off"
         for i in 1:nos
             run(`$gau structure-$i-$jobtype.gjf`)
+        end
+    end
+    cd("..")
+end
+
+
+# restart from previously interupted Ger jobs
+# The idea is to first generate a set of input filenames, and remove those finished
+# from the set. Then restart Ger jobs for the rest of filenames in the set.
+function restartger(geom=geometries, 𝑓 = scalingfactors, multi = multithreading)
+    nos = numberofstructures(geom)
+    a = length(𝑓)
+    all = [1:nos;]    # Int64 array containing all job numbers
+    
+    cd("tmp")
+    
+    # awk script to return the finished job numbers
+    script = raw"for file in *Ger.log; do i=${file#*structure-}; i=${i%-Ger.log}; grep 'SCF Done' $file | wc -l; echo $i; done | paste - - | awk '/" * "$a" * raw"/ {print $2}'"
+    open("restart.sh", "w") do file
+        write(file, "$script")
+    end
+    
+    string = read(`bash restart.sh`, String)
+    rm("restart.sh")
+    
+    finished = parse.(Int64, split(string))    # the finished job numbers
+    unfinished = setdiff(all, finished)  # remove the finished job numbers from all
+    
+    gau = gaussianversion()
+    if multi == "on"
+        Threads.@threads for i in unfinished
+            run(`$gau structure-$i-Ger.gjf`)
+        end
+    elseif multi == "off"
+        for i in unfinished
+            run(`$gau structure-$i-Ger.gjf`)
         end
     end
     cd("..")
@@ -541,8 +567,8 @@ function pythonfitting(𝑉𝑐 = 𝑉𝑐, 𝐺𝑒𝑟 = 𝐺𝑒𝑟, geom = 
             #<end examples/doc_model1.py>"""
         
         # write fitting results to structure-$i-fitting.out files
-        results = read(pipeline(`echo $script`, `/scratch/bochen/Python-2.7.18/bin/python`), String)
-        #results = read(pipeline(`echo $script`, `python3`), String)
+        #results = read(pipeline(`echo $script`, `/scratch/bochen/Python-2.7.18/bin/python`), String)
+        results = read(pipeline(`echo $script`, `python`), String)
         open("tmp/structure-$i-fitting.out", "w") do file
             write(file, results)
         end
@@ -598,15 +624,10 @@ end
 
 
 function calculate𝑝(𝑉𝑐 = 𝑉𝑐)
-    #𝑉𝑐 = get𝑉𝑐()    # nos * a 2D array
     abc = murnaghan_eos()    # nos * 3 2D array
     𝑎 = abc[:,1]   # 1D array of length nos
     𝑏 = abc[:,2]
     𝑐 = abc[:,3]
-    # $p[$n_fact]=($a * (($volume[1] / $volume[$n_fact]) ** ($b + 1) -1 ) + $c)*$Eh_o_Ang3_to_GPa;
-    #𝑝[i,j] = (𝑎[i] * ((𝑉𝑐[i,1] / 𝑉𝑐[i,j]) ^ (𝑏[i] + 1) - 1) + 𝑐[i]) * 4359.74417
-    #𝑝[i,j] = (𝑎[i] * (1 - (𝑉𝑐[i,1] / 𝑉𝑐[i,j]) ^ 𝑏[i] ) + 𝑐[i]) * 4359.74417
-    
     # nos * a 2D array; 1 hartree/Å³ = 4359.74417 GPa
     return @. (𝑎 * ( (𝑉𝑐[:,1]/𝑉𝑐)^(𝑏+1) - 1 ) + 𝑐) * 4359.74417 
     #return @. (𝑎 * (1 - (𝑉𝑐[:,1]/𝑉𝑐)^𝑏) + 𝑐) * 4359.74417
@@ -648,6 +669,7 @@ function calculateΔ𝐺𝑡𝑜𝑡(mol = molecularity)
     return Δ𝐺𝑡𝑜𝑡
 end
 
+
 #= need to figure out how to calculate barrier; use the TS structure or the maximum?
 function calculateΔ𝑉activation()
     𝑝̄ = average𝑝()    # 1 * a 2D array
@@ -658,117 +680,30 @@ function calculateΔ𝑉activation()
 end
 =#
 
-# restart from previously interupted Ger jobs
-# The idea is to first generate a set of input filenames, and remove those finished
-# from the set. Then restart Ger jobs for the rest of filenames in the set.
-function restartger(geom=geometries, 𝑓 = scalingfactors, multi = multithreading)
-    nos = numberofstructures(geom)
-    a = length(𝑓)
-    all = [1:nos;]    # Int64 array containing all job numbers
-    
-    cd("tmp")
-    
-    # awk script to return the finished job numbers
-    script = raw"for file in *Ger.log; do i=${file#*structure-}; i=${i%-Ger.log}; grep 'SCF Done' $file | wc -l; echo $i; done | paste - - | awk '/" * "$a" * raw"/ {print $2}'"
-    open("restart.sh", "w") do file
-        write(file, "$script")
-    end
-    
-    string = read(`bash restart.sh`, String)
-    rm("restart.sh")
-    
-    finished = parse.(Int64, split(string))    # the finished job numbers
-    unfinished = setdiff(all, finished)  # remove the finished job numbers from all
-    
-    gau = gaussianversion()
-    if multi == "on"
-        Threads.@threads for i in unfinished
-            run(`$gau structure-$i-Ger.gjf`)
-        end
-    elseif multi == "off"
-        for i in unfinished
-            run(`$gau structure-$i-Ger.gjf`)
-        end
-    end
-    cd("..")
-end
 
 #------------------------------------------------------------------------------
 # main procedure
 #------------------------------------------------------------------------------
-#function main(restart = "no")
-    if restart == "no"
-        writegjf("Vc")
-        rungaussian("Vc")
-        const 𝑉𝑐 = get𝑉𝑐()
-        writegjf("Ger")          # write .gjf files for cavity volume "Ger" calculation 
-        rungaussian("Ger")
-    elseif restart == "yes"
-        const 𝑉𝑐 = get𝑉𝑐()
-        restartger()
-    else
-        println("restart only accepts \"yes\" or \"no\"")
-    end
+if restart == "no"
+    # Step 1: cavity volume 𝑉𝑐(𝑓) Gaussian jobs and solvent property calculations
+    writegjf("Vc")
+    rungaussian("Vc")
+    const 𝑉𝑐 = get𝑉𝑐()
+    # Step 2: electronic structure Gaussian jobs and pressure calculations
+    writegjf("Ger")
+    rungaussian("Ger")
+elseif restart == "yes"
+    const 𝑉𝑐 = get𝑉𝑐()
+    restartger()
+else
+    println("restart only accepts \"yes\" or \"no\"")
+end
+const 𝐺𝑒𝑟 = get𝐺𝑒𝑟()
 
-    const 𝐺𝑒𝑟 = get𝐺𝑒𝑟()
-
-    writegjf("Gcav")         # write .gjf files for cavitation energy "Gcav" calculation 
-
-    rungaussian("Gcav")      # run Gaussian jobs
-
-    const (𝑉𝑐𝑎𝑣,𝐸𝑐𝑎𝑣) = get𝑉𝑐𝑎𝑣𝐸𝑐𝑎𝑣()
-
-    writeproperties()        # write properties.dat file
-#end
-#------------------------------------------------------------------------------
-# Step 1: cavity volume 𝑉𝑐(𝑓) Gaussian jobs and solvent property calculations
-#------------------------------------------------------------------------------
-
-#writegjf("Vc")          # write .gjf files for cavity volume "Vc" calculation 
-
-#rungaussian("Vc")       # run Gaussian jobs
-
-#const 𝑉𝑐 = get𝑉𝑐()       # extract cavity volume 𝑉𝑐 from Gaussian output
-
-#calculate𝑠()            # calculate linear scaling 𝑠 from 𝑉𝑐 date
-
-#average𝑠()              # calculated the average of 𝑠 over all structures
-
-#calculate𝜀()            # calculate dielectric permitivity 𝜀
-
-#calculate𝑍()            # calculate Pauli repulsion barrier 𝑍
-
-#calculate𝑉ₘ()           # calculate the molar volume of solvent 𝑉ₘ
-
-#------------------------------------------------------------------------------
-# Step 2: electronic structure Gaussian jobs and pressure calculations 
-#------------------------------------------------------------------------------
-
-#    writegjf("Ger")      # write .gjf files for cavity volume "Ger" calculation
-
-#    rungaussian("Ger")   # run Gaussian jobs
-
-#    const 𝐺𝑒𝑟 = get𝐺𝑒𝑟()      # extract 𝐺𝑒𝑟 from Gaussian output
-
-#calculate𝑝()             # calculate pressure 𝑝
-
-#------------------------------------------------------------------------------
 # Step 3: cavitation energy Gaussian jobs
-#------------------------------------------------------------------------------
+writegjf("Gcav")
+rungaussian("Gcav")
+const (𝑉𝑐𝑎𝑣,𝐸𝑐𝑎𝑣) = get𝑉𝑐𝑎𝑣𝐸𝑐𝑎𝑣()
 
-#writegjf("Gcav")         # write .gjf files for cavitation energy "Gcav" calculation 
-
-#rungaussian("Gcav")      # run Gaussian jobs
-
-#const 𝑉𝑐𝑎𝑣 = get𝑉𝑐𝑎𝑣𝐸𝑐𝑎𝑣()[1]
-#const 𝐸𝑐𝑎𝑣 = get𝑉𝑐𝑎𝑣𝐸𝑐𝑎𝑣()[2]    # extract 𝐺𝑐𝑎𝑣 from Gaussian output
-
-#calculate𝐺𝑐𝑎𝑣()           # calculate cavitation energy 𝐺𝑐𝑎𝑣
-
-#calculate𝐺𝑡𝑜𝑡()            # calculate total energy 𝐺𝑡𝑜𝑡
-
-#------------------------------------------------------------------------------
-# print results
-#------------------------------------------------------------------------------
-
-#writeproperties()        # write properties.dat file
+# print results to properties.dat file
+writeproperties()
