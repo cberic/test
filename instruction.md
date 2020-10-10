@@ -27,7 +27,7 @@ which will open the julia REPL, and and in the PEPL, type
 using Pkg
 Pkg.add("LsqFit")
 ```
-The installation may take more than 1 minute. After installing the LsqFit package, run the following command to test it is working:
+The installation may take more than 1 minute. After installing the LsqFit package, run the following command to test if it is working:
 ``` julia
 using LsqFit  # this may take >1 minute to load
 
@@ -65,19 +65,19 @@ You may exit the julia REPL using
 ``` julia
 exit()
 ```
-# Running xppcm calculations
+# Running XP-PCM calculations
 
 Copy `xppcm-test.jl` and `input.jl` to a working folder. Modify `input.jl` according to the instructions in the file. 
 
 Make sure Gaussian09 or Gaussian16 is properly installed, and `g09` or `g16` will actually call the program. The script will use `g16` over `g09` if both are installed. 
 
-Then run the xppcm calculations (the following command uses 24 cores/threads for the job):
+Then run the following command (4 cpu cores/threads are assigned) to start the XP-PCM calculation:
 
 ``` bash
-julia --threads 24 xppcm-test.jl
+julia --threads 4 xppcm-test.jl
 ```
 
-Below is an example PBS script for running the calculation on a cluster. Modify it according your cluster specifications. Important thing is to let the computing node know the paths to `g09`/`g16` and `julia`.
+Below is an example PBS script for running XP-PCM calculations on a cluster. Modify the PBS script according your cluster specifications. Important thing is to let the computing node know the paths to `g09`/`g16` and `julia`.
 
 ``` pbs
 #!/bin/bash                                                          
