@@ -19,7 +19,7 @@ function solventparameters(s = solvent)
     elseif s == "argon"
         return (1.43, 1.3954, 39.948, 8, 1.705)
     else 
-        println("Solvent not implemented. Try cyclohexane, benzene, or argon")
+        error("solvent not implemented. Try cyclohexane, benzene, or argon")
     end
 end
 
@@ -431,7 +431,7 @@ function restartger(geom=geometries, 𝑓 = scalingfactors, multi = multithreadi
     cd("tmp")
     
     # awk script to return the finished job numbers
-    script = raw"for file in *Ger.log; do i=${file#*structure-}; i=${i%-Ger.log}; grep 'SCF Done' $file | wc -l; echo $i; done | paste - - | awk '/" * "$a" * raw"/ {print $2}'"
+    script = raw"for file in *Ger.log; do i=${file#*structure-}; i=${i%-Ger.log}; grep 'SCF Done' $file | wc -l; echo $i; done | paste - - | awk '/^" * "$a" * raw"/ {print $2}'"
     open("restart.sh", "w") do file
         write(file, "$script")
     end
@@ -442,14 +442,16 @@ function restartger(geom=geometries, 𝑓 = scalingfactors, multi = multithreadi
     finished = parse.(Int64, split(string))    # the finished job numbers
     unfinished = setdiff(all, finished)  # remove the finished job numbers from all
     
-    gau = gaussianversion()
-    if multi == "on"
-        Threads.@threads for i in unfinished
-            run(`$gau structure-$i-Ger.gjf`)
-        end
-    elseif multi == "off"
-        for i in unfinished
-            run(`$gau structure-$i-Ger.gjf`)
+    if isempty(unfinished) == false
+        gau = gaussianversion()
+        if multi == "on"
+            Threads.@threads for i in unfinished
+                run(`$gau structure-$i-Ger.gjf`)
+            end
+        elseif multi == "off"
+            for i in unfinished
+                run(`$gau structure-$i-Ger.gjf`)
+            end
         end
     end
     cd("..")
@@ -696,7 +698,7 @@ elseif restart == "yes"
     const 𝑉𝑐 = get𝑉𝑐()
     restartger()
 else
-    println("restart only accepts \"yes\" or \"no\"")
+    error("restart only accepts \"yes\" or \"no\"")
 end
 const 𝐺𝑒𝑟 = get𝐺𝑒𝑟()
 
