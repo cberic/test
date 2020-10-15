@@ -420,27 +420,30 @@ function rungaussian(jobtype, geom = geometries, multi = multithreading)
 end
 
 
-# restart from previously interupted Ger jobs
-# The idea is to first generate a set of input filenames, and remove those finished
-# from the set. Then restart Ger jobs for the rest of filenames in the set.
+# restart from previously interupted/unfinished Ger jobs
 function restartger(geom=geometries, 𝑓 = scalingfactors, multi = multithreading)
     nos = numberofstructures(geom)
     a = length(𝑓)
-    all = [1:nos;]    # Int64 array containing all job numbers
     
     cd("tmp")
-    
-    # awk script to return the finished job numbers
-    script = raw"for file in *Ger.log; do i=${file#*structure-}; i=${i%-Ger.log}; grep 'SCF Done' $file | wc -l; echo $i; done | paste - - | awk '/^" * "$a" * raw"/ {print $2}'"
-    open("restart.sh", "w") do file
-        write(file, "$script")
+    unfinished = Int64[]   # empty array to collect the unfinished job numbers
+    for i in 1:nos
+        if isfile("structure-$i-Ger.log") == false
+            push!(unfinished,i)    # collect i if no file found
+        else    # file found; then check the number of scf energies in the file
+            open("structure-$i-Ger.log", "r") do file
+                j = 0
+                for line in eachline(file)
+                    if occursin("SCF Done", line)
+                        j += 1
+                    end
+                end
+                if j != a
+                    push!(unfinished,i)  # collect i if !a energies found
+                end
+            end
+        end
     end
-    
-    string = read(`bash restart.sh`, String)
-    rm("restart.sh")
-    
-    finished = parse.(Int64, split(string))    # the finished job numbers
-    unfinished = setdiff(all, finished)  # remove the finished job numbers from all
     
     if isempty(unfinished) == false
         gau = gaussianversion()
@@ -584,45 +587,6 @@ function pythonfitting(𝑉𝑐 = 𝑉𝑐, 𝐺𝑒𝑟 = 𝐺𝑒𝑟, geom = 
     end
     return abc_parameters   # nos * 3 2D array
 end
-
-
-#= Not working; to be fully implemented.
-function mathematicafitting(𝑉𝑐 = 𝑉𝑐, 𝐺𝑒𝑟 = 𝐺𝑒𝑟, geom = geometries)
-    nos = numberofstructures(geom)
-    #𝑉𝑐 = get𝑉𝑐()
-    #𝐺𝑒𝑟 = get𝐺𝑒𝑟()
-    abc_parameters = Array{Float64}(undef, nos,3)
-    Threads.@threads for i in 1:nos
-        # write data to Vc-Ger.dat file which is then read by Mathematica
-        # the DelimitedFiles package is used
-        open("tmp/Vc-Ger.dat", "w") do file
-            writedlm(file, [𝑉𝑐[i,:] 𝐺𝑒𝑟[i,:]])
-        end
-        script = """###!/usr/local/bin/WolframScript -script
-
-                    (* generate high-precision samples of a mixed distribution *)
-
-                    t = Import["tmp/Vc-Ger.dat", "Table"]
-
-                    Print[murnaghan-eos]
-
-                    << NonlinearRegression`
-
-                    Print[NonlinearRegress[t, 
-                    t[[1, 2]] + a*x ((1/b)*(t[[1, 1]]/x)^(b + 1) + 1) - c*x, {a, b, 
-                    c}, x, RegressionReport -> {BestFitParameters, ParameterCITable, 
-                    ANOVATable, BestFit, PredictedResponse}]]"""
-        results = read(`math -script $script`, String)
-        #results = read(pipeline(`echo $script`, `math`), String)
-        open("tmp/structure-$i-fitting.out", "w") do file
-            write(file, results)
-        end
-        # extraction of abc parameters to be implemented
-    end
-    rm("tmp/Vc-Ger.dat")
-    return abc_parameters    # 2D array of dimension nos * 3
-end
-=#
 
 
 function calculate𝑝(𝑉𝑐 = 𝑉𝑐)
