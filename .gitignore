@@ -1,7 +1,7 @@
 .DS_Store
 test*
 96*
-tmp
+tmp*
 Bimolecular
 meso
 notebook.jl
@@ -15,3 +15,6 @@ Vc-Ger.dat
 xppcm.ipynb
 regression.jl
 xppcm-julia.zip
+.vstags
+geometries-1.xyz
+xp_pes2020.1.4.3-tdy.pl
