@@ -416,7 +416,7 @@ function gaussianversion()
     elseif typeof(Sys.which("g09")) === String
         return "g09"
     else
-        println("g16 and g09 not found")
+        error("g16 and g09 not found. Make sure g16 or g09 correctly calls Gaussian16 or Gaussian09")
     end
 end
 
