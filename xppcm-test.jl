@@ -528,13 +528,11 @@ end
 
 # Murnaghan equation of state fitting for pressure 𝑝 calculation
 # three methods - julia (default), python, or mathematica
-function murnaghan_eos(ft = fitting)
+function murnaghan_eos(ft = "julia")
     if ft == "julia"
         return juliafitting()
     elseif ft =="python"
         return pythonfitting()
-    elseif ft == "mathematica"
-        return mathematicafitting()
     end
 end
 

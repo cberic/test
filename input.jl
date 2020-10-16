@@ -6,7 +6,6 @@
 # be running at the same time. Off means all cpu cores work on one job at 
 # a time. Tests show that multithreading is much faster. Vc and Gcav jobs 
 # are set to be always multithreaded.
-
 const multithreading = "on"
 
 # restart
@@ -15,7 +14,6 @@ const multithreading = "on"
 # Yes means to restart from previously interupted Ger jobs. The program will 
 # read all existing Ger.log files and figure out which jobs are finished and 
 # which are not, and then restart the Ger jobs for the unfinished jobs.
-
 const restart = "no"
 
 const molecularity = "bi"         # "uni" or "bi"-molecular reaction
@@ -29,24 +27,12 @@ const tesserae = 0.075             # the mean area in Ang^2 of the tesserae by
 # 𝜂
 # Empirical Pauli repulsion parameter; recommended values: 3, 6 or 9
 # Larger 𝜂 leads to higher calculated pressures
-
 const 𝜂 = 3
 
 # scalingfactors
 # Scaling factors of the vdW atomic radii for constructing the cavity.
 # Include the values inside the [] and separate them by ,
-
 const scalingfactors = [1.2, 1.15, 1.1, 1.05, 1.0, 0.975, 0.95]
-
-# fitting
-# Program for nonlinear regression fitting for the Murnaghan equation of state.
-# Choose from "julia" (recommended), "python", or "mathematica".
-# For "julia", install the LsqFit package. For "python", install the lmfit package.
-# For "python" or "mathematica", the script will simply call "python" or "math",
-# so make sure the call refers to the correct python or mathematica build.
-
-# "Pkg.add("LsqFit")"
-const fitting = "julia"
 
 # Gaussian 09/16 parameters
 const nproc = 1     # change to total cpus if multithreading is off
