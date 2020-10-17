@@ -5,14 +5,14 @@ const solvent = "cyclohexane"
 
 # The default dielectric permittivity of the solvent may be set close to 1
 # for the calculations on charged systems. Comment it out to use the default value.
-const dielectric = 1.1
+#const dielectric = 1.1
 
-# Choose either the Bondi vdW radii and the corresponding set of scaling factors
-# or the Rahm vdW radii and corresponding scaling factors
-const radiustype = "bondi"
-const scalingfactors = [1.2, 1.15, 1.1, 1.05, 1.0, 0.975, 0.95]
-#const radiustype = "rahm"
-#const scalingfactors = [1.3, 1.25, 1.2, 1.15, 1.1, 1.05, 1.0, 0.975, 0.95]
+# Choose either the Bondi or Rahm vdW radii and the corresponding set of 
+# scaling factors
+#const radiustype = "bondi"
+#const scalingfactors = [1.2, 1.15, 1.1, 1.05, 1.0, 0.975, 0.95]
+const radiustype = "rahm"
+const scalingfactors = [1.3, 1.25, 1.2, 1.15, 1.1, 1.05, 1.0, 0.975, 0.95]
 
 # The mean area in Ang^2 of the tesserae by which the surfaces of the cavity
 # is partitioned. Suggested value = 0.075.
@@ -34,6 +34,6 @@ const multiplicity = 1
 # Blank lines and spaces are ok.
 const geometries = """
 
-H 0.0 0.0 0.0
+He 0.0 0.0 0.0
 
 """

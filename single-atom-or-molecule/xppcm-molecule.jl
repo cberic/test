@@ -267,7 +267,7 @@ function gjfger(geom = geometries, 𝑓 = scalingfactors)
                 $charge $multiplicity
                 $g
                 
-                rep pcmdoc geomview nodis nocav g03defaults tsare=$tesserae
+                qrep pcmdoc geomview nodis nocav g03defaults tsare=$tesserae
                 nsfe=$noa
                 nvesolv=$(sp[4]) solvmw=$(sp[3]) rsolv=$(sp[5])
                 eps=$(𝜀[j]) rhos=$(𝑍[j])
@@ -313,7 +313,7 @@ function get𝐺𝑒𝑟(geom = geometries, 𝑓 = scalingfactors)
     open("Ger.log") do file
         for line in eachline(file)
             if occursin("SCF Done", line)
-                𝐺𝑒𝑟[i,j] = parse(Float64, split(line)[5])
+                𝐺𝑒𝑟[j] = parse(Float64, split(line)[5])
                 j += 1    # j ranges from 1:length(𝑓)
             end
         end
@@ -331,10 +331,10 @@ function writeproperties(𝑉𝑐 = 𝑉𝑐, 𝐺𝑒𝑟 = 𝐺𝑒𝑟, 𝑓 
     𝑍 = calculate𝑍()
     𝑝 = calculate𝑝()
     open("properties.dat", "w") do file
-            write(file, "#    𝑓       𝑉𝑐(𝑓)      𝑠(𝑓)         𝜀(𝑠)        𝑍(𝑠)        𝐺𝑒𝑟(𝑓)          𝑝(𝑓)\n")
+            write(file, "#    𝑓       𝑉𝑐(𝑓) Å³   𝑠(𝑓)         𝜀(𝑠)        𝑍(𝑠)        𝐺𝑒𝑟(𝑓) a.u.     𝑝(𝑓) GPa\n")
         for j in 1:a
-            @printf(file, "%d    %.2f    %7.3f    %.6f    %.6f    %.6f    %.8f    %.3f\n", 
-                        j,    𝑓[j],   𝑉𝑐[i,j], 𝑠[i,j],  𝑠̄[j],   𝜀[j],   𝑍[j],  𝐺𝑒𝑟[i,j], 𝑝[i,j])
+            @printf(file, "%d    %.2f    %7.3f    %.6f    %.6f    %9.6f    %.8f    %6.3f\n", 
+                        j,    𝑓[j],   𝑉𝑐[j], 𝑠[j],  𝜀[j],   𝑍[j],  𝐺𝑒𝑟[j], 𝑝[j])
         end
     end
 end
