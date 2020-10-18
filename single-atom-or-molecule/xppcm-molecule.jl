@@ -12,6 +12,7 @@ include("input.jl")
 # molar mass 𝑀, number of valence electrons, molecular radius (Ang.) )
 function solventparameters(s = solvent)
     if s == "cyclohexane"
+        # if dielectric is defined in input.jl, use it, otherwise use default
         𝜀 = @isdefined(dielectric) ? dielectric : 2.0165
         return (𝜀, 0.7781, 84.1595, 36, 2.815)
     elseif s == "benzene"
@@ -289,7 +290,7 @@ end
 
 
 # extract volume 𝑉𝑐 data from gaussian output files
-function get𝑉𝑐(geom = geometries, 𝑓 = scalingfactors)
+function get𝑉𝑐(𝑓 = scalingfactors)
     a = length(𝑓)
     𝑉𝑐 = Array{Float64}(undef, a)
     j = 1    # j ranges from 1:length(𝑓)
@@ -306,7 +307,7 @@ end
 
 #! get the HOMO and LUMO energies
 # extract electronic energy 𝐺𝑒𝑟 data from gaussian output files
-function get𝐺𝑒𝑟(geom = geometries, 𝑓 = scalingfactors)
+function get𝐺𝑒𝑟(𝑓 = scalingfactors)
     a = length(𝑓)
     𝐺𝑒𝑟 = Array{Float64}(undef, a)
     j = 1    # j ranges from 1:length(𝑓)
@@ -322,7 +323,24 @@ function get𝐺𝑒𝑟(geom = geometries, 𝑓 = scalingfactors)
 end
 
 
-#! print HOMO and LUMO
+function getorbitalenergy(𝑓 = scalingfactors)
+    a = length(𝑓)
+    orbital = Array{String}(undef, a)
+    j = 0
+    open("Ger.log") do file
+        for line in eachline(file)
+            if occursin("Population analysis", line)
+                j += 1    # j ranges from 1:length(𝑓)
+            end
+            if occursin("eigenvalues", line)
+                isassigned(orbital, j) ? orbital[j] *= (line * "\n") : orbital[j] = line * "\n"
+            end
+        end
+    end
+    return orbital
+end
+
+
 # use the Printf package to write the properties.dat file
 function writeproperties(𝑉𝑐 = 𝑉𝑐, 𝐺𝑒𝑟 = 𝐺𝑒𝑟, 𝑓 = scalingfactors)
     a = length(𝑓)
@@ -330,11 +348,18 @@ function writeproperties(𝑉𝑐 = 𝑉𝑐, 𝐺𝑒𝑟 = 𝐺𝑒𝑟, 𝑓 
     𝜀 = calculate𝜀()
     𝑍 = calculate𝑍()
     𝑝 = calculate𝑝()
+    Eorbital = getorbitalenergy()
     open("properties.dat", "w") do file
-            write(file, "#    𝑓       𝑉𝑐(𝑓) Å³   𝑠(𝑓)         𝜀(𝑠)        𝑍(𝑠)        𝐺𝑒𝑟(𝑓) a.u.     𝑝(𝑓) GPa\n")
+        write(file, "#    𝑓       𝑉𝑐(𝑓) Å³   𝑠(𝑓)         𝜀(𝑠)        𝑍(𝑠)        𝐺𝑒𝑟(𝑓) a.u.     𝑝(𝑓) GPa\n")
         for j in 1:a
             @printf(file, "%d    %.2f    %7.3f    %.6f    %.6f    %9.6f    %.8f    %6.3f\n", 
                         j,    𝑓[j],   𝑉𝑐[j], 𝑠[j],  𝜀[j],   𝑍[j],  𝐺𝑒𝑟[j], 𝑝[j])
+        end
+        write(file, "\n")
+        for j in 1:a
+            @printf(file, "𝑓 = %.2f    𝑝 = %6.3f GPa ----orbital energies in a.u.----\n", 𝑓[j], 𝑝[j])
+            write(file, Eorbital[j])
+            write(file, "\n")
         end
     end
 end
@@ -418,12 +443,12 @@ end
 # Step 1: cavity volume 𝑉𝑐(𝑓) Gaussian jobs and solvent property calculations
 writegjf("Vc")
 rungaussian("Vc")
-const 𝑉𝑐 = get𝑉𝑐()
+𝑉𝑐 = get𝑉𝑐()
 
 # Step 2: electronic structure Gaussian jobs and pressure calculations
 writegjf("Ger")
 rungaussian("Ger")
-const 𝐺𝑒𝑟 = get𝐺𝑒𝑟()
+𝐺𝑒𝑟 = get𝐺𝑒𝑟()
 
 # print results to properties.dat file
 writeproperties()
