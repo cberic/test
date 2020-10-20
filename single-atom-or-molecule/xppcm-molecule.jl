@@ -216,7 +216,7 @@ function gjfvc(geom = geometries, 𝑓 = scalingfactors)
                 #p $keywords
                 # scrf=(iefpcm,solvent=$solvent,read) nosym guess=only pop=none
                 
-                title
+                scaling factor = $(𝑓[i])
                 
                 $charge $multiplicity
                 $g
@@ -258,12 +258,13 @@ function gjfger(geom = geometries, 𝑓 = scalingfactors)
         # writing mode for the first and appending mode for other 𝑓
         open("Ger.gjf", "$(j == 1 ? "w" : "a")") do file
             write(file, """
+                %chk=Ger.chk
                 %nproc=$nproc
                 %mem=$mem
-                #p $keywords
+                #p $keywords $(j == 1 ? "" : "guess=read")
                 # scrf=(iefpcm,solvent=$solvent,read) nosym 6d 10f
                 
-                title
+                scaling factor = $(𝑓[j])
                 
                 $charge $multiplicity
                 $g
@@ -305,7 +306,6 @@ function get𝑉𝑐(𝑓 = scalingfactors)
     return 𝑉𝑐
 end
 
-#! get the HOMO and LUMO energies
 # extract electronic energy 𝐺𝑒𝑟 data from gaussian output files
 function get𝐺𝑒𝑟(𝑓 = scalingfactors)
     a = length(𝑓)
