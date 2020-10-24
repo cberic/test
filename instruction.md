@@ -2,7 +2,7 @@
 
 https://julialang.org/downloads/
 
-Use the latest version 1.5.2. Run the following commands to download and extract the julia package:
+Use the latest version. Run the following commands to download and extract the julia package:
 
 ``` bash
 wget https://julialang-s3.julialang.org/bin/linux/x64/1.5/julia-1.5.2-linux-x86_64.tar.gz
@@ -31,7 +31,7 @@ The installation may take more than 1 minute. After installing the LsqFit packag
 ``` julia
 using LsqFit  # this may take >1 minute to load
 
-xdata=[ 1.0
+xdata = [ 1.0
         0.9410359787896052
         0.892747272010167
         0.8440028046803102
@@ -80,7 +80,7 @@ julia --threads 4 xppcm-test.jl
 Below is an example PBS script for running XP-PCM calculations on a cluster. Modify the PBS script according your cluster specifications. Important thing is to let the computing node know the paths to `g09`/`g16` and `julia`.
 
 ``` pbs
-#!/bin/bash                                                          
+#!/bin/bash
 #PBS -q parallel
 #PBS -l nodes=1:ppn=24
 #PBS -l mem=48gb

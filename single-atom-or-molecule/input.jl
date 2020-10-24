@@ -4,7 +4,7 @@
 solvent = "cyclohexane"
 
 # The default dielectric permittivity of the solvent may be set close to 1
-# for the calculations on charged systems. Comment it out to use the default value.
+# for calculations on charged systems. Comment it out to use the default value.
 #dielectric = 1.1
 
 # Choose either the Bondi or Rahm vdW radii and the corresponding set of 
