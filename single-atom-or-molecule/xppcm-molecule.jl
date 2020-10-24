@@ -1,4 +1,3 @@
-#using Statistics
 using Printf
 using LsqFit
 
@@ -295,7 +294,7 @@ function get𝑉𝑐(𝑓 = scalingfactors)
     a = length(𝑓)
     𝑉𝑐 = Array{Float64}(undef, a)
     j = 1    # j ranges from 1:length(𝑓)
-    open("Vc.log") do file
+    open("Vc.log", "r") do file
         for line in eachline(file)
             if occursin("GePol: Cavity volume", line)
                 𝑉𝑐[j] = parse(Float64, split(line)[5])
@@ -306,12 +305,13 @@ function get𝑉𝑐(𝑓 = scalingfactors)
     return 𝑉𝑐
 end
 
+
 # extract electronic energy 𝐺𝑒𝑟 data from gaussian output files
 function get𝐺𝑒𝑟(𝑓 = scalingfactors)
     a = length(𝑓)
     𝐺𝑒𝑟 = Array{Float64}(undef, a)
     j = 1    # j ranges from 1:length(𝑓)
-    open("Ger.log") do file
+    open("Ger.log", "r") do file
         for line in eachline(file)
             if occursin("SCF Done", line)
                 𝐺𝑒𝑟[j] = parse(Float64, split(line)[5])
@@ -440,15 +440,19 @@ end
 #------------------------------------------------------------------------------
 # main
 #------------------------------------------------------------------------------
-# Step 1: cavity volume 𝑉𝑐(𝑓) Gaussian jobs and solvent property calculations
-writegjf("Vc")
-rungaussian("Vc")
-𝑉𝑐 = get𝑉𝑐()
+function main()
+    # Step 1: cavity volume 𝑉𝑐(𝑓) Gaussian jobs and solvent property calculations
+    writegjf("Vc")
+    rungaussian("Vc")
+    𝑉𝑐 = get𝑉𝑐()
 
-# Step 2: electronic structure Gaussian jobs and pressure calculations
-writegjf("Ger")
-rungaussian("Ger")
-𝐺𝑒𝑟 = get𝐺𝑒𝑟()
+    # Step 2: electronic structure Gaussian jobs and pressure calculations
+    writegjf("Ger")
+    rungaussian("Ger")
+    𝐺𝑒𝑟 = get𝐺𝑒𝑟()
 
-# print results to properties.dat file
-writeproperties()
+    # print results to properties.dat file
+    writeproperties()
+end
+
+main()
