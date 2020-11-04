@@ -110,7 +110,7 @@ Let's use the Helium atom as an example. First, give the xyz coordinate in `inpu
 # Blank lines and spaces are ok.
 geometries = """
 
-He 0.0 0.0 0.0
+H 0.0 0.0 0.0
 
 """
 ```
@@ -121,9 +121,9 @@ Then, modify the Gaussian parameters as needed, such as the functional/basis set
 # Gaussian 09/16 parameters
 nproc = 1
 mem = "1gb"
-keywords = "b3lyp 6-31g* int=finegrid"    # Gaussian keywords; add more if needed
+keywords = "pbe1pbe/aug-cc-pvtz scf=(Damp,fermi,conver=6)int=finegrid"    # Gaussian keywords; add more if needed
 charge = 0
-multiplicity = 1
+multiplicity = 2
 ```
 
 Finally, modify the XP-PCM parameters as necessary. If not sure, use the default.
@@ -134,14 +134,14 @@ solvent = "cyclohexane"
 
 # The default dielectric permittivity of the solvent may be set close to 1
 # for calculations on charged systems. Comment it out to use the default value.
-dielectric = 1.002
+dielectric = 1.0025
 
 # Choose either the Bondi or Rahm vdW radii and the corresponding set of 
 # scaling factors
 #radiustype = "bondi"
 #scalingfactors = [1.2, 1.15, 1.1, 1.05, 1.0, 0.975, 0.95]
 radiustype = "rahm"
-scalingfactors = [1.3, 1.25, 1.2, 1.15, 1.1, 1.05, 1.0, 0.975, 0.95]
+scalingfactors = [1.3, 1.25, 1.2, 1.15, 1.1, 1.05, 1.0, 0.975, 0.95, 0.925, 0.90]
 
 # The mean area in Ang^2 of the tesserae by which the surfaces of the cavity
 # is partitioned. Suggested value = 0.075.
@@ -163,10 +163,10 @@ I will use the second approach here.
 ``` julia
 # first calculation for the neutral
 julia xppcm-molecule.jl
-mv properties.dat He-neutral.dat
+mv properties.dat H.dat
 # modify the change and multiplicity in input.jl
 julia xppcm-molecule.jl
-mv properties.dat He-cation.dat
+mv properties.dat H+.dat
 ```
 
 ## Understanding the output
@@ -174,56 +174,38 @@ mv properties.dat He-cation.dat
 The XP-PCM calculation will generate two Gaussian input files (`Vc.gjf` and `Ger.gjf`) and correspondingly two Gaussian output files (`Vc.log` and `Ger.log`). A third output file is the `properties.dat` file that contains the xppcm results in a tabular form, and the orbital energies extracted from `Ger.log` without additional munipulation.
 
 - 𝑓 is the scaling factor for the vdW radii
-- 𝐺𝑒𝑟 is the energy in a.u. (or hartree)
+- 𝐺𝑒𝑟 is the energy in a.u. (hartree)
 - 𝑝 is the pressure in GPa
 
 ```
 #    𝑓       𝑉𝑐(𝑓) Å³   𝑠(𝑓)         𝜀(𝑠)        𝑍(𝑠)        𝐺𝑒𝑟(𝑓) a.u.     𝑝(𝑓) GPa
-1    1.30     22.143    1.000000    1.002000     0.778100    -2.90699560     0.143
-2    1.25     19.685    0.961538    1.002250     1.107487    -2.90692950     0.260
-3    1.20     17.416    0.923076    1.002543     1.599188    -2.90678300     0.515
-4    1.15     15.328    0.884606    1.002889     2.345786    -2.90645949     1.091
-5    1.10     13.415    0.846158    1.003301     3.499232    -2.90574716     2.442
-6    1.05     11.667    0.807683    1.003796     5.319456    -2.90417935     5.739
-7    1.00     10.079    0.769237    1.004394     8.250732    -2.90073320    14.119
-8    0.97      9.342    0.750011    1.004741    10.361561    -2.89768272    22.548
-9    0.95      8.641    0.730762    1.005125    13.093410    -2.89316146    36.486
+1    1.30     33.611    1.000000    1.002500     0.778100    -0.50064868     0.605
+2    1.25     29.880    0.961538    1.002812     1.107485    -0.50029183     0.886
+3    1.20     26.436    0.923077    1.003179     1.599162    -0.49967170     1.378
+4    1.15     23.267    0.884612    1.003611     2.345625    -0.49859023     2.260
+5    1.10     20.362    0.846148    1.004127     3.499600    -0.49670410     3.881
+6    1.05     17.710    0.807692    1.004745     5.318927    -0.49343167     6.943
+7    1.00     15.299    0.769238    1.005492     8.250696    -0.48782262    12.909
+8    0.97     14.180    0.750006    1.005926    10.362177    -0.48370646    17.853
+9    0.95     13.117    0.730776    1.006406    13.091101    -0.47840695    24.928
+10    0.93     12.108    0.711536    1.006940    16.644183    -0.47163473    35.153
+11    0.90     11.153    0.692314    1.007534    21.296322    -0.46306111    50.058
 
-𝑓 = 1.30    𝑝 =  0.143 GPa ----orbital energies in a.u.----
- Alpha  occ. eigenvalues --   -0.64975
- Alpha virt. eigenvalues --    1.11994
+𝑓 = 1.30    𝑝 =  0.605 GPa ----orbital energies in a.u.----
+ Alpha  occ. eigenvalues --   -0.33424
+ Alpha virt. eigenvalues --    0.04595   0.13452   0.13452   0.13452   0.26293
+ Alpha virt. eigenvalues --    0.68687   0.68687   0.68687   0.68690   0.68690
+ Alpha virt. eigenvalues --    0.82876   0.82876   0.82876   0.85799   2.67715
+ Alpha virt. eigenvalues --    3.56037   3.56037   3.56037   3.56037   3.56037
+ Alpha virt. eigenvalues --    3.73019   3.73019   3.73019   5.18807
+  Beta virt. eigenvalues --   -0.01906   0.09190   0.22903   0.22903   0.22903
+  Beta virt. eigenvalues --    0.36905   0.80335   0.80335   0.80335   0.80337
+  Beta virt. eigenvalues --    0.80337   0.99548   0.99548   0.99548   1.00938
+  Beta virt. eigenvalues --    2.89616   3.76606   3.76606   3.76606   3.76607
+  Beta virt. eigenvalues --    3.76607   3.98265   3.98265   3.98265   5.41091
 
-𝑓 = 1.25    𝑝 =  0.260 GPa ----orbital energies in a.u.----
- Alpha  occ. eigenvalues --   -0.64969
- Alpha virt. eigenvalues --    1.12015
+  ...
 
-𝑓 = 1.20    𝑝 =  0.515 GPa ----orbital energies in a.u.----
- Alpha  occ. eigenvalues --   -0.64954
- Alpha virt. eigenvalues --    1.12060
-
-𝑓 = 1.15    𝑝 =  1.091 GPa ----orbital energies in a.u.----
- Alpha  occ. eigenvalues --   -0.64921
- Alpha virt. eigenvalues --    1.12160
-
-𝑓 = 1.10    𝑝 =  2.442 GPa ----orbital energies in a.u.----
- Alpha  occ. eigenvalues --   -0.64848
- Alpha virt. eigenvalues --    1.12379
-
-𝑓 = 1.05    𝑝 =  5.739 GPa ----orbital energies in a.u.----
- Alpha  occ. eigenvalues --   -0.64689
- Alpha virt. eigenvalues --    1.12863
-
-𝑓 = 1.00    𝑝 = 14.119 GPa ----orbital energies in a.u.----
- Alpha  occ. eigenvalues --   -0.64338
- Alpha virt. eigenvalues --    1.13926
-
-𝑓 = 0.97    𝑝 = 22.548 GPa ----orbital energies in a.u.----
- Alpha  occ. eigenvalues --   -0.64028
- Alpha virt. eigenvalues --    1.14870
-
-𝑓 = 0.95    𝑝 = 36.486 GPa ----orbital energies in a.u.----
- Alpha  occ. eigenvalues --   -0.63567
- Alpha virt. eigenvalues --    1.16275
 ```
 
 Let's compare the XP-PCM results of the neutral and the cation. The scaling factors 𝑓 and 𝑠, volume 𝑉𝑐, dielectric constant 𝜀, Pauli repulsion barrier 𝑍 are the same for both species, because these parameters are based on the same atomic radius, scaling factors and solvent properties.
@@ -231,66 +213,62 @@ Let's compare the XP-PCM results of the neutral and the cation. The scaling fact
 The energy 𝐺𝑒𝑟 and pressure 𝑝 are different for the two species at the same scaling factor. The neutral helium atom has one more electron than the cation, and its electron density is more diffuse than the cation, which leads to a stronger repulsion exerted by the solvent continuum and thus a higher pressure for the neutral.
 
 ```
-# neutral Helium
+# The neutral H
 #    𝑓       𝑉𝑐(𝑓) Å³   𝑠(𝑓)         𝜀(𝑠)        𝑍(𝑠)        𝐺𝑒𝑟(𝑓) a.u.     𝑝(𝑓) GPa
-1    1.30     22.143    1.000000    1.002000     0.778100    -2.90699560     0.143
-2    1.25     19.685    0.961538    1.002250     1.107487    -2.90692950     0.260
-3    1.20     17.416    0.923076    1.002543     1.599188    -2.90678300     0.515
-4    1.15     15.328    0.884606    1.002889     2.345786    -2.90645949     1.091
-5    1.10     13.415    0.846158    1.003301     3.499232    -2.90574716     2.442
-6    1.05     11.667    0.807683    1.003796     5.319456    -2.90417935     5.739
-7    1.00     10.079    0.769237    1.004394     8.250732    -2.90073320    14.119
-8    0.97      9.342    0.750011    1.004741    10.361561    -2.89768272    22.548
-9    0.95      8.641    0.730762    1.005125    13.093410    -2.89316146    36.486
+1    1.30     33.611    1.000000    1.002500     0.778100    -0.50064868     0.605
+2    1.25     29.880    0.961538    1.002812     1.107485    -0.50029183     0.886
+3    1.20     26.436    0.923077    1.003179     1.599162    -0.49967170     1.378
+4    1.15     23.267    0.884612    1.003611     2.345625    -0.49859023     2.260
+5    1.10     20.362    0.846148    1.004127     3.499600    -0.49670410     3.881
+6    1.05     17.710    0.807692    1.004745     5.318927    -0.49343167     6.943
+7    1.00     15.299    0.769238    1.005492     8.250696    -0.48782262    12.909
+8    0.97     14.180    0.750006    1.005926    10.362177    -0.48370646    17.853
+9    0.95     13.117    0.730776    1.006406    13.091101    -0.47840695    24.928
+10    0.93     12.108    0.711536    1.006940    16.644183    -0.47163473    35.153
+11    0.90     11.153    0.692314    1.007534    21.296322    -0.46306111    50.058
 
-# cation Helium
+# THe cation H+
 #    𝑓       𝑉𝑐(𝑓) Å³   𝑠(𝑓)         𝜀(𝑠)        𝑍(𝑠)        𝐺𝑒𝑟(𝑓) a.u.     𝑝(𝑓) GPa
-1    1.30     22.143    1.000000    1.002000     0.778100    -1.99345028     0.020
-2    1.25     19.685    0.961538    1.002250     1.107487    -1.99348860     0.026
-3    1.20     17.416    0.923076    1.002543     1.599188    -1.99352264     0.041
-4    1.15     15.328    0.884606    1.002889     2.345786    -1.99353653     0.086
-5    1.10     13.415    0.846158    1.003301     3.499232    -1.99349310     0.221
-6    1.05     11.667    0.807683    1.003796     5.319456    -1.99330558     0.652
-7    1.00     10.079    0.769237    1.004394     8.250732    -1.99278113     2.103
-8    0.97      9.342    0.750011    1.004741    10.361561    -1.99227228     3.883
-9    0.95      8.641    0.730762    1.005125    13.093410    -1.99148485     7.301
+1    1.30     33.611    1.000000    1.002500     0.778100    -0.00032938    -0.066
+2    1.25     29.880    0.961538    1.002812     1.107485    -0.00038534    -0.081
+3    1.20     26.436    0.923077    1.003179     1.599162    -0.00045335    -0.102
+4    1.15     23.267    0.884612    1.003611     2.345625    -0.00053745    -0.133
+5    1.10     20.362    0.846148    1.004127     3.499600    -0.00064146    -0.178
+6    1.05     17.710    0.807692    1.004745     5.318927    -0.00077211    -0.246
+7    1.00     15.299    0.769238    1.005492     8.250696    -0.00093778    -0.350
+8    0.97     14.180    0.750006    1.005926    10.362177    -0.00103771    -0.423
+9    0.95     13.117    0.730776    1.006406    13.091101    -0.00115078    -0.513
+10    0.93     12.108    0.711536    1.006940    16.644183    -0.00127908    -0.628
+11    0.90     11.153    0.692314    1.007534    21.296322    -0.00142633    -0.774
 ```
 
 The vertical IP can be calculated by taking the energy difference between the neutral and the cation Ger(cation)-Ger(neutral) at the same scaling factor.
 
 ```
-# 𝑝(𝑓) GPa    IP in a.u.    IP in eV
- 0.143       0.91354532     24.858
- 0.260       0.91344089     24.856
- 0.515       0.91326036     24.851
- 1.091       0.91292296     24.841
- 2.442       0.91225406     24.823
- 5.739       0.91087377     24.786
-14.119       0.90795206     24.706
-22.548       0.90541044     24.637
-36.486       0.90167661     24.535
+#p/GPa      IP/eV      EA/eV      
+0.605      13.6144      0.418942  
+0.886      13.6032      0.320166  
+1.378      13.5844      0.169439  
+2.260      13.5527      -0.0604011
+3.881      13.4986      -0.408699 
+6.943      13.406      -0.928894  
+12.909      13.2488      -1.68747 
+17.853      13.1341      -2.17955 
+24.928      12.9868      -2.76017 
+35.153      12.799      -3.44031  
+50.058      12.5617      -4.23054 
 ```
 
-IP decreases as the pressure increases. The reason is that at high pressure, the valence electrons in the neutral He atom experiences a stronger repulsion than at low pressure; consequently it is easier to remove one valence electron from He at high pressure than at low pressure.
+IP decreases as the pressure increases. The reason is that at high pressure, the valence electrons in the neutral H atom experiences a stronger repulsion than at low pressure; consequently it is easier to remove one valence electron from H at high pressure than at low pressure.
 
-Similarly, vertical EAs can be calculated by taking the energy differences between the neutral and the anion Ger(neutral)-Ger(anion) at the same scaling factors. Negative EA indicates destabilization when one electron is added to the neutral. Due to the lack of diffuse functions in the basis set, the calculated energies of the anions are not reliable, so are the EA values.
-
-
-```
-# 𝑝(𝑓) GPa   IP in eV     EA in eV
- 0.143       24.858       -11.124
- 0.260       24.856       -11.131
- 0.515       24.851       -11.146
- 1.091       24.841       -11.180
- 2.442       24.823       -11.255
- 5.739       24.786       -11.419
-14.119       24.706       -11.781
-22.548       24.637       -12.102
-36.486       24.535       -12.579
-```
+Similarly, vertical EAs can be calculated by taking the energy differences between the neutral and the anion Ger(neutral)-Ger(anion) at the same scaling factors. Negative EA indicates destabilization when one electron is added to the neutral. 
 
 # Testing calculations for H to Ar
 
-Changes of Mulliken electronegativities of atoms at 50 GPa, calculated at the pbe1pbe/aug-cc-pvtz level. The energy units are in eV.
+The figure below shows the calculated EAs of H through Ar at PBE0/aug-cc-pVTZ level by XP-PCM at scaling factore f=1.3, which on average corresponds to about 0.3 GPa for all the calculated atoms. The agreement with the experimetnal EA values (~0 GPa) is good except for the Noble gas elements. We did not investigate why the computed EAs for the Noble gas elements are too negative compared with the experimental values, but it is unlikely due to the XP-PCM methodology. One may try other functional or basis set to see if there is any improvement.
 
-![](~/Dropbox/work/DIPC/Conceptual-DFT/electronegativity.png)
+![](EA.png)
+
+The figure below Changes of Mulliken electronegativities of atoms at ~50 GPa (f=0.9), relative to those at ~0.3 GPa (f =1.3), calculated at the pbe1pbe/aug-cc-pvtz level. Comparison was made to the changes of Allen electronegativity in the same pressure range from the Martin Rahm 2019 paper. If we ignore the Noble gas elements, the general trend of the two curves are very similar. 
+
+![](electronegativity-change.png)
