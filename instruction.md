@@ -93,3 +93,37 @@ module load Gaussian/16
 
 /scratch/user/julia-1.5.1/bin/julia --threads 24 xppcm-test.jl
 ```
+
+# Understand the output
+
+When the calculation starts, a `tmp` folder will be created in the working directory and all Gaussian jobs will be run in that folder. Gaussian input and output files for different structures will be numbered sequentially according to the order of their coordinates given in the `input.jl` file. When the calculation is done, the XP-PCM data will be printed to the `properties.dat` file in the working directory. Below shows the structure of a working folder
+
+```
+├── properties.dat    # XP-PCM output
+├── xppcm-test.jl     # XP-PCM script
+├── input.jl          # XP-PCM input
+└── tmp               # A fold created by the script for Gaussian jobs
+    ├── tesserae.off
+    ├── structure-3-Vc.log
+    ├── structure-3-Vc.gjf
+    ├── structure-3-Ger.log
+    ├── structure-3-Ger.gjf
+    ├── structure-3-Ger.chk
+    ├── structure-3-Gcav.log
+    ├── structure-3-Gcav.gjf
+    ├── structure-2-Vc.log
+    ├── structure-2-Vc.gjf
+    ├── structure-2-Ger.log
+    ├── structure-2-Ger.gjf
+    ├── structure-2-Ger.chk
+    ├── structure-2-Gcav.log
+    ├── structure-2-Gcav.gjf
+    ├── structure-1-Vc.log
+    ├── structure-1-Vc.gjf
+    ├── structure-1-Ger.log
+    ├── structure-1-Ger.gjf
+    ├── structure-1-Ger.chk
+    ├── structure-1-Gcav.log
+    ├── structure-1-Gcav.gjf
+    └── charge.off
+```

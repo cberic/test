@@ -26,3 +26,7 @@ single-atom-or-molecule/properties.dat
 single-atom-or-molecule/tesserae.off
 single-atom-or-molecule/Vc.gjf
 single-atom-or-molecule/Vc.log
+single-atom-or-molecule/*.dat
+single-atom-or-molecule/*.gz
+error
+out
