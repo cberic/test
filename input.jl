@@ -49,6 +49,7 @@ const multiplicity = 1
 # Separate each geometry by one or more blank lines.
 # Do not include comments or other text in the """ block.
 # Leading or trailing spaces on each line are ok.
+# Atoms may be specified by element symbols or atomic numbers.
 const geometries = """
 
 6   1.095015   -0.347434    0.000511
