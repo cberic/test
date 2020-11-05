@@ -12,11 +12,15 @@ include("input.jl")
 # molar mass 𝑀, number of valence electrons, molecular radius (Ang.) )
 function solventparameters(s = solvent)
     if s == "cyclohexane"
-        return (2.0165, 0.7781, 84.1595, 36, 2.815)
+        # if dielectric is defined in input.jl, use it, otherwise use default
+        𝜀 = @isdefined(dielectric) ? dielectric : 2.0165
+        return (𝜀, 0.7781, 84.1595, 36, 2.815)
     elseif s == "benzene"
-        return (2.2706, 0.8756, 78.1118, 30, 2.63)
+        𝜀 = @isdefined(dielectric) ? dielectric : 2.2706
+        return (𝜀, 0.8756, 78.1118, 30, 2.63)
     elseif s == "argon"
-        return (1.43, 1.3954, 39.948, 8, 1.705)
+        𝜀 = @isdefined(dielectric) ? dielectric : 1.43
+        return (𝜀, 1.3954, 39.948, 8, 1.705)
     else 
         error("solvent not implemented. Try cyclohexane, benzene, or argon")
     end
@@ -27,33 +31,53 @@ end
 #------------------------------------------------------------------------------
 function atomicradii()
     return Dict(
+    #1s
     "H" => 1.20,    "1" => 1.20,
     "He"=> 1.40,    "2" => 1.40,
+    #2s
     "Li"=> 1.82,    "3" => 1.82,
     "Be"=> 1.53,    "4" => 1.53,
+    #2p
     "B" => 1.92,    "5" => 1.92,
     "C" => 1.70,    "6" => 1.70,
     "N" => 1.55,    "7" => 1.55,
     "O" => 1.52,    "8" => 1.52,
     "F" => 1.47,    "9" => 1.47,
     "Ne"=> 1.54,    "10"=> 1.54,
+    #3s
     "Na"=> 2.27,    "11"=> 2.27,
     "Mg"=> 1.73,    "12"=> 1.73,
+    #3p
     "Al"=> 1.84,    "13"=> 1.84,
     "Si"=> 2.10,    "14"=> 2.10,
     "P" => 1.80,    "15"=> 1.80,
     "S" => 1.80,    "16"=> 1.80,
     "Cl"=> 1.75,    "17"=> 1.75,
     "Ar"=> 1.88,    "18"=> 1.88,
+    #4s
     "K" => 2.75,    "19"=> 2.75,
     "Ca"=> 2.31,    "20"=> 2.31,
-
+    #4p
     "Ga"=> 1.87,    "31"=> 1.87,
     "Ge"=> 2.11,    "32"=> 2.11,
     "As"=> 1.85,    "33"=> 1.85,
     "Se"=> 1.90,    "34"=> 1.90,
     "Br"=> 1.85,    "35"=> 1.85,
-    "Kr"=> 2.02,    "36"=> 2.02
+    "Kr"=> 2.02,    "36"=> 2.02,
+    #5p
+    "In"=> 1.93,    "49"=> 1.93,
+    "Sn"=> 2.17,    "50"=> 2.17,
+    "Sb"=> 2.06,    "51"=> 2.06,
+    "Te"=> 2.06,    "52"=> 2.06,
+    "I" => 1.98,    "53"=> 1.98,
+    "Xe"=> 2.16,    "54"=> 2.16,
+    #6p
+    "Tl"=> 1.96,    "81"=> 1.96,
+    "Pb"=> 2.02,    "82"=> 2.02,
+    "Bi"=> 2.07,    "83"=> 2.07,
+    "Po"=> 1.97,    "84"=> 1.97,
+    "At"=> 2.02,    "85"=> 2.02,
+    "Rn"=> 2.20,    "86"=> 2.20
     # add more if needed from https://en.wikipedia.org/wiki/Van_der_Waals_radius
     )
 end
@@ -670,26 +694,30 @@ end
 #------------------------------------------------------------------------------
 # main.jl
 #------------------------------------------------------------------------------
-if restart == "no"
-    # Step 1: cavity volume 𝑉𝑐(𝑓) Gaussian jobs and solvent property calculations
-    writegjf("Vc")
-    rungaussian("Vc")
-    const 𝑉𝑐 = get𝑉𝑐()
-    # Step 2: electronic structure Gaussian jobs and pressure calculations
-    writegjf("Ger")
-    rungaussian("Ger")
-elseif restart == "yes"
-    const 𝑉𝑐 = get𝑉𝑐()
-    restartger()
-else
-    error("restart only accepts \"yes\" or \"no\"")
-end
-const 𝐺𝑒𝑟 = get𝐺𝑒𝑟()
+#function main()
+    if restart == "no"
+        # Step 1: cavity volume 𝑉𝑐(𝑓) Gaussian jobs and solvent property calculations
+        writegjf("Vc")
+        rungaussian("Vc")
+        const 𝑉𝑐 = get𝑉𝑐()
+        # Step 2: electronic structure Gaussian jobs and pressure calculations
+        writegjf("Ger")
+        rungaussian("Ger")
+    elseif restart == "yes"
+        const 𝑉𝑐 = get𝑉𝑐()
+        restartger()
+    else
+        error("restart only accepts \"yes\" or \"no\"")
+    end
+    const 𝐺𝑒𝑟 = get𝐺𝑒𝑟()
+    
+    # Step 3: cavitation energy Gaussian jobs
+    writegjf("Gcav")
+    rungaussian("Gcav")
+    const (𝑉𝑐𝑎𝑣,𝐸𝑐𝑎𝑣) = get𝑉𝑐𝑎𝑣𝐸𝑐𝑎𝑣()
+    
+    # print results to properties.dat file
+    writeproperties()
+#end
 
-# Step 3: cavitation energy Gaussian jobs
-writegjf("Gcav")
-rungaussian("Gcav")
-const (𝑉𝑐𝑎𝑣,𝐸𝑐𝑎𝑣) = get𝑉𝑐𝑎𝑣𝐸𝑐𝑎𝑣()
-
-# print results to properties.dat file
-writeproperties()
+#main()

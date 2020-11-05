@@ -24,6 +24,10 @@ const tesserae = 0.075             # the mean area in Ang^2 of the tesserae by
                                    # which the surfaces of the cavity
                                    # is partitioned. default value = 0.075 
 
+# The default dielectric permittivity of the solvent may be set close to 1
+# for calculations on charged systems.
+const dielectric = 1.0025
+
 # 𝜂
 # Empirical Pauli repulsion parameter; recommended values: 3, 6 or 9
 # Larger 𝜂 leads to higher calculated pressures
