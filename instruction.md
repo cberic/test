@@ -2,7 +2,7 @@
 
 https://julialang.org/downloads/
 
-Use the latest version 1.5.2. Run the following commands to download and extract the julia package:
+Use the latest version. Run the following commands to download and extract the julia package:
 
 ``` bash
 wget https://julialang-s3.julialang.org/bin/linux/x64/1.5/julia-1.5.2-linux-x86_64.tar.gz
@@ -31,7 +31,7 @@ The installation may take more than 1 minute. After installing the LsqFit packag
 ``` julia
 using LsqFit  # this may take >1 minute to load
 
-xdata=[ 1.0
+xdata = [ 1.0
         0.9410359787896052
         0.892747272010167
         0.8440028046803102
@@ -80,7 +80,7 @@ julia --threads 4 xppcm-test.jl
 Below is an example PBS script for running XP-PCM calculations on a cluster. Modify the PBS script according your cluster specifications. Important thing is to let the computing node know the paths to `g09`/`g16` and `julia`.
 
 ``` pbs
-#!/bin/bash                                                          
+#!/bin/bash
 #PBS -q parallel
 #PBS -l nodes=1:ppn=24
 #PBS -l mem=48gb
@@ -92,4 +92,38 @@ cd $PBS_O_WORKDIR
 module load Gaussian/16
 
 /scratch/user/julia-1.5.1/bin/julia --threads 24 xppcm-test.jl
+```
+
+# Understand the output
+
+When the calculation starts, a `tmp` folder will be created in the working directory and all Gaussian jobs will be run in that folder. Gaussian input and output files for different structures will be numbered sequentially according to the order of their coordinates given in the `input.jl` file. When the calculation is done, the XP-PCM data will be printed to the `properties.dat` file in the working directory. Below shows the structure of a working folder
+
+```
+├── properties.dat    # XP-PCM output
+├── xppcm-test.jl     # XP-PCM script
+├── input.jl          # XP-PCM input
+└── tmp               # A fold created by the script for Gaussian jobs
+    ├── tesserae.off
+    ├── structure-3-Vc.log
+    ├── structure-3-Vc.gjf
+    ├── structure-3-Ger.log
+    ├── structure-3-Ger.gjf
+    ├── structure-3-Ger.chk
+    ├── structure-3-Gcav.log
+    ├── structure-3-Gcav.gjf
+    ├── structure-2-Vc.log
+    ├── structure-2-Vc.gjf
+    ├── structure-2-Ger.log
+    ├── structure-2-Ger.gjf
+    ├── structure-2-Ger.chk
+    ├── structure-2-Gcav.log
+    ├── structure-2-Gcav.gjf
+    ├── structure-1-Vc.log
+    ├── structure-1-Vc.gjf
+    ├── structure-1-Ger.log
+    ├── structure-1-Ger.gjf
+    ├── structure-1-Ger.chk
+    ├── structure-1-Gcav.log
+    ├── structure-1-Gcav.gjf
+    └── charge.off
 ```

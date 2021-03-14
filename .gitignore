@@ -18,3 +18,15 @@ xppcm-julia.zip
 .vstags
 geometries-1.xyz
 xp_pes2020.1.4.3-tdy.pl
+single-atom-or-molecule/charge.off
+single-atom-or-molecule/Ger.chk
+single-atom-or-molecule/Ger.gjf
+single-atom-or-molecule/Ger.log
+single-atom-or-molecule/properties.dat
+single-atom-or-molecule/tesserae.off
+single-atom-or-molecule/Vc.gjf
+single-atom-or-molecule/Vc.log
+single-atom-or-molecule/*.dat
+single-atom-or-molecule/*.gz
+error
+out
