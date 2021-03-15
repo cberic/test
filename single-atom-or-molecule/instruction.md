@@ -102,7 +102,7 @@ The output will be printed to the `properties.dat` file when the calculation is 
 
 ## Prepare the input file
 
-Let's use the Helium atom as an example. First, give the xyz coordinate in `input.jl`, as one would do for a normal Gaussian calculation, but here in the geometry block with triple quotation marks.
+Let's use the Hydrogen atom as an example. First, give the xyz coordinate in `input.jl`, as one would do for a normal Gaussian calculation, but here in the geometry block with triple quotation marks.
 
 ``` julia
 # Keep the coordinates (in Angstrom) within the triple """ block.

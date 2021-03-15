@@ -1,5 +1,12 @@
 # Example input for XP-PCM calculation on a single atom or molecule
 
+# Pressure calculation method. The default is "analytical". 
+# Uncomment below to use the numerical method
+#pressurecalc = "numerical"
+
+# Path to modified link files for analytical pressure calculation 
+path_to_modified_links = "/home/investigator/software/g09-D.01/xp-pcm/exe-dir"
+
 # Only "cyclohexane", "benzene", and "argon" are currently implemented
 solvent = "cyclohexane"
 
