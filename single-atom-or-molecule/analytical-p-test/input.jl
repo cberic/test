@@ -1,11 +1,9 @@
-# Example input for XP-PCM calculation on a single atom or molecule
+# Example input for XP-PCM calculation on a single atom with analytical P
 
-# Pressure calculation method. The default is "analytical". 
-# Uncomment below to use the numerical method
-#pressurecalc = "numerical"
-
-# Path to modified link files for analytical pressure calculation 
-#path_to_modified_links = "/home/investigator/software/g09-D.01/xp-pcm/exe-dir"
+# How to calculate electron density. Default is to use the cubegen untility.
+# Uncomment the below to calculate electron density through 
+# the electric field gradients 
+efg = true
 
 # Only "cyclohexane", "benzene", and "argon" are currently implemented
 solvent = "cyclohexane"
