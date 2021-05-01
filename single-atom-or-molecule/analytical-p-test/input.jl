@@ -30,7 +30,7 @@ tesserae = 0.075
 # Gaussian 09/16 parameters
 nproc = 4
 mem = "4gb"
-keywords = "pbe1pbe/aug-cc-pvtz scf=(Damp,fermi,conver=6) int=finegrid"
+keywords = "pbe1pbe scf=(Damp,fermi,conver=6) int=finegrid gen"
 #keywords = "pbe1pbe/aug-cc-pvtz"    # Gaussian keywords; add more if needed
 charge = 0
 multiplicity = 1
