@@ -351,16 +351,17 @@ function gjfgeranalytical(geom = geometries, 𝑓 = scalingfactors)
     𝑟ₐ = atomicradii()
     𝜀 = calculate𝜀()    # data of 𝜀 and 𝑍 needed for the gjf files
     𝑍 = calculate𝑍()
-
-    for j in 1:a
+    n = getnumberoftesserae()
+    
         # writing mode for the first and appending mode for other 𝑓
-        open("Ger.gjf", "$(j == 1 ? "w" : "a")") do file
+    open("Ger.gjf", "w") do file
+        for j in 1:a
             write(file, """
                 %chk=$(𝑓[j]).chk
                 %nproc=$nproc
                 %mem=$mem
                 #p $keywords
-                # scrf=(iefpcm,solvent=$solvent,read) iop(5/33=1) nosym 6d 10f
+                # scrf=(iefpcm,solvent=$solvent,read) iop(5/33=1) prop(efg,grid) nosym 6d 10f
                 
                 scaling factor = $(𝑓[j])
                 
@@ -377,6 +378,8 @@ function gjfgeranalytical(geom = geometries, 𝑓 = scalingfactors)
             for k in 1:noa
                 write(file, " $(coordlines[k])    $(𝑟ₐ[atoms[k]])    $(𝑓[j])\n")
             end
+            write(file, "\n")
+            write(file, "$(n[j]), 1, $(round(Int, 𝑓[j]*1000)), $(round(Int, 𝑓[j]*1000+1))\n")
             write(file, "\n")
             # do not write "--link1--" for the last scaling factor
             if j != a
@@ -422,7 +425,7 @@ end
 
 # extract and calculate the xyz coordinates of the centers of the tesserae
 # from tesserae-𝑓.off 
-function writetesserae(geom = geometries, 𝑓 = scalingfactors)
+function writetesseragrid(geom = geometries, 𝑓 = scalingfactors)
     n = getnumberoftesserae()
     atoms = atomlist(geom)
     a = length(𝑓)
@@ -455,10 +458,34 @@ function writetesserae(geom = geometries, 𝑓 = scalingfactors)
                 linecount += 1 
             end
         end
-        writedlm("$(𝑓[j]).tsrcoord", tesseraecoordinates * 𝑟ₐ[atoms[1]] * 𝑓[j])
+        #writedlm("$(𝑓[j]).tsrcoord", tesseraecoordinates * 𝑟ₐ[atoms[1]] * 𝑓[j])
+        writedlm("fort.$(round(Int, 𝑓[j]*1000))", tesseraecoordinates * 𝑟ₐ[atoms[1]] * 𝑓[j])
     end
 end
 
+
+# extract Electric Field Gradients from fort.1201 etc files
+function getEFG(𝑓 = scalingfactors)
+    n = getnumberoftesserae()
+    a = length(𝑓)
+    efgsum = zeros(a)
+    for j in 1:a
+        linecount = 1
+        open("fort.$(round(Int, 𝑓[j]*1000+1))", "r") do file
+            for line in eachline(file)
+                if linecount % 4 == 2
+                    # zz component of the EFG
+                    efgsum[j] += parse(Float64, split(line)[4])
+                elseif linecount % 4 == 3
+                    # yy and xx components of the EFG
+                    efgsum[j] += sum([parse(Float64, s) for s in split(line)[1:2]])
+                end
+                linecount += 1
+            end
+        end
+    end
+    return @. efgsum / 4 / pi / n
+end
 
 # extract electronic energy 𝐺𝑒𝑟 data from gaussian output files
 function getPauli𝐸(𝑓 = scalingfactors)
@@ -520,7 +547,8 @@ function getedensity(𝑓 = scalingfactors)
     for j in 1:a
         open("$(𝑓[j]).cube", "r") do file
             for line in eachline(file)
-                edensity[j] += parse(Float64, split(line)[4])
+                # negative sign for a negative number of edensity
+                edensity[j] -= parse(Float64, split(line)[4])
             end
         end
     end
@@ -562,16 +590,17 @@ function debug(𝑉𝑐 = 𝑉𝑐, 𝐺𝑒𝑟 = 𝐺𝑒𝑟, 𝑓 = scalingf
     𝜀 = calculate𝜀()
     𝑍 = calculate𝑍()
     PauliE = getPauli𝐸()
-    edensity = getedensity()
+    edensity1 = getedensity()
+    edensity2 = getEFG()
     alpha = calculateAlpha()
     𝑝n = calculatenumerical𝑝()
     𝑝a = calculateanalytical𝑝()
     Eorbital = getorbitalenergy()
     open("debug.dat", "w") do file
-        write(file, "#    𝑓       𝑉𝑐(𝑓) Å³   𝑠(𝑓)         𝜀(𝑠)        𝑍(𝑠)        𝐺𝑒𝑟(𝑓) a.u.     𝑝a(𝑓) GPa      PauliE(𝑓)     edensity/nts     Alpha(𝑓)\n")
+        write(file, "#    𝑓       𝑉𝑐(𝑓) Å³   𝑠(𝑓)         𝜀(𝑠)        𝑍(𝑠)        𝐺𝑒𝑟(𝑓) a.u.     𝑝a(𝑓) GPa      PauliE(𝑓)     edensity     efg/nts     Alpha(𝑓)\n")
         for j in 1:a
-            @printf(file, "%d    %.3f     %7.3f    %.6f    %.6f    %9.6f    %.8f    %6.3f    %9.6f    %9.6f    %9.6f\n", 
-                            j,   𝑓[j],   𝑉𝑐[j],   𝑠[j],    𝜀[j],   𝑍[j],   𝐺𝑒𝑟[j],  𝑝a[j],     PauliE[j], edensity[j], alpha[j])
+            @printf(file, "%d    %.3f     %7.3f    %.6f    %.6f    %9.6f    %.8f    %6.3f    %9.6f    %9.6f    %9.6f    %9.6f\n", 
+                            j,   𝑓[j],   𝑉𝑐[j],   𝑠[j],    𝜀[j],   𝑍[j],   𝐺𝑒𝑟[j],  𝑝a[j],  PauliE[j], edensity1[j], edensity2[j], alpha[j])
         end
     end
 end
@@ -668,10 +697,10 @@ function calculateanalytical𝑝(𝜂 = 𝜂, 𝑉𝑐 = 𝑉𝑐)
     #@. firstterm = (3 + 𝜂) / (3 * 𝑉𝑐 * 1.88973^3) * Pauli𝐸  # 1 angstrom = 1.88973 bohr; all in atomic units
     # $alpha[$n_fact]*$edensity[$n_fact]/$nts;  
     alpha = calculateAlpha()
-    edensity = getedensity()
+    # if efg == true, use getEFG() to calculate electron density, otherwise use getedensity()
+    @isdefined(efg) && efg == true ? edensity = getEFG() : edensity = getedensity()
     #@. secondterm = alpha * edensity * 1.88973^3
-    # RC300421: changed the sign of the second term from minus to plus (the sign minus must be used when the electron density is computed from the gradient of the electric field). 
-    return @. ((3 + 𝜂)/(3 * 𝑉𝑐 * 1.88973^3) * Pauli𝐸 + alpha * edensity) * 1.88973^3 * 4359.74417 # 1 hartree/Å³ = 4359.74417 GPa, 
+    return @. ((3 + 𝜂)/(3 * 𝑉𝑐 * 1.88973^3) * Pauli𝐸 - alpha * edensity) * 1.88973^3 * 4359.74417 # 1 hartree/Å³ = 4359.74417 GPa, 
 end
 
 #------------------------------------------------------------------------------
@@ -694,6 +723,7 @@ function main(𝑓 = scalingfactors)
     global 𝑉𝑐 = get𝑉𝑐()
 
     # Step 2: electronic structure Gaussian jobs
+    writetesseragrid()
     writegjf("Ger")
     rungaussian("Ger")
     global 𝐺𝑒𝑟 = get𝐺𝑒𝑟()
@@ -702,10 +732,10 @@ function main(𝑓 = scalingfactors)
     # formchk K_xp-060.chk 42.fchk 
     # cubegen 0 density=scf 42.fchk 42.cube -5 < fort.42
 #    if !isnumerical
-        writetesserae()
         for j in 𝑓
             run(`formchk $j.chk $j.fchk`)
-            write("1.sh", "cubegen 0 density=scf $j.fchk $j.cube -5 < $j.tsrcoord")
+            #write("1.sh", "cubegen 0 density=scf $j.fchk $j.cube -5 < $j.tsrcoord")
+            write("1.sh", "cubegen 0 density=scf $j.fchk $j.cube -5 < fort.$(round(Int, j*1000))")            
             run(`bash 1.sh`)
         end
         run(`rm -rf 1.sh`)
