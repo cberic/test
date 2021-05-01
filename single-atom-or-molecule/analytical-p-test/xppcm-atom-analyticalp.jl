@@ -1,5 +1,3 @@
-# custum basis set keyword gen 
-
 using Printf
 using LsqFit
 using DelimitedFiles
