@@ -209,7 +209,7 @@ function custombasis()
     end
 end
 
-# write gjf files for Vc jobs
+# write a single gjf file for Vc jobs
 function gjfvc(geom = geometries, 𝑓 = scalingfactors)
     a = length(𝑓)
     g = tidygeometries(geom)
@@ -256,7 +256,7 @@ function gjfvc(geom = geometries, 𝑓 = scalingfactors)
 end
 
 
-# write gjf files for Vc jobs in analytical pressure calculation
+# separate gjf files for Vc jobs for each scaling factors
 function gjfvc2(geom = geometries, 𝑓 = scalingfactors)
     a = length(𝑓)
     g = tidygeometries(geom)
