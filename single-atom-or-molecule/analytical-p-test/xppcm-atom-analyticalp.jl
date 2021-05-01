@@ -1,4 +1,3 @@
-# 2 checkpoint files, old.chk
 # custum basis set keyword gen 
 
 using Printf
@@ -206,6 +205,12 @@ function writegjf(jobtype)
 end
 
 
+function custombasis()
+    if occursin(" gen", lowercase(keywords)) || occursin("/gen", lowercase(keywords))
+        return tidygeometries(read("gen", String))
+    end
+end
+
 # write gjf files for Vc jobs
 function gjfvc(geom = geometries, 𝑓 = scalingfactors)
     a = length(𝑓)
@@ -215,6 +220,7 @@ function gjfvc(geom = geometries, 𝑓 = scalingfactors)
     coordlines = coordinatelines(geom)
     sp = solventparameters()
     𝑟ₐ = atomicradii()
+    gen = custombasis()
     
     for i in 1:a
         # writing mode for the first and appending mode for other 𝑓
@@ -230,7 +236,7 @@ function gjfvc(geom = geometries, 𝑓 = scalingfactors)
                 
                 $charge $multiplicity
                 $g
-                
+                $(gen===nothing ? "" : "\n$gen\n")
                 qrep pcmdoc geomview nodis nocav g03defaults tsare=$tesserae
                 nsfe=$noa
                 nvesolv=$(sp[4]) solvmw=$(sp[3]) rsolv=$(sp[5])
@@ -261,6 +267,7 @@ function gjfvc2(geom = geometries, 𝑓 = scalingfactors)
     coordlines = coordinatelines(geom)
     sp = solventparameters()
     𝑟ₐ = atomicradii()
+    gen = custombasis()
     
     for i in 1:a
         open("Vc-$(𝑓[i]).gjf", "w") do file
@@ -275,7 +282,7 @@ function gjfvc2(geom = geometries, 𝑓 = scalingfactors)
                 
                 $charge $multiplicity
                 $g
-                
+                $(gen===nothing ? "" : "\n$gen\n")
                 qrep pcmdoc geomview nodis nocav g03defaults tsare=$tesserae
                 nsfe=$noa
                 nvesolv=$(sp[4]) solvmw=$(sp[3]) rsolv=$(sp[5])
@@ -303,6 +310,7 @@ function gjfgernumerical(geom = geometries, 𝑓 = scalingfactors)
     𝑟ₐ = atomicradii()
     𝜀 = calculate𝜀()    # data of 𝜀 and 𝑍 needed for the gjf files
     𝑍 = calculate𝑍()
+    gen = custombasis()
 
     for j in 1:a
         # writing mode for the first and appending mode for other 𝑓
@@ -318,7 +326,7 @@ function gjfgernumerical(geom = geometries, 𝑓 = scalingfactors)
                 
                 $charge $multiplicity
                 $g
-                
+                $(gen===nothing ? "" : "\n$gen\n")
                 qrep pcmdoc geomview nodis nocav g03defaults tsare=$tesserae
                 nsfe=$noa
                 nvesolv=$(sp[4]) solvmw=$(sp[3]) rsolv=$(sp[5])
@@ -352,22 +360,23 @@ function gjfgeranalytical(geom = geometries, 𝑓 = scalingfactors)
     𝜀 = calculate𝜀()    # data of 𝜀 and 𝑍 needed for the gjf files
     𝑍 = calculate𝑍()
     n = getnumberoftesserae()
+    gen = custombasis()
     
         # writing mode for the first and appending mode for other 𝑓
     open("Ger.gjf", "w") do file
         for j in 1:a
             write(file, """
-                %chk=$(𝑓[j]).chk
+                $(j == 1 ? "" : "%oldchk=$(𝑓[j-1]).chk\n")%chk=$(𝑓[j]).chk
                 %nproc=$nproc
                 %mem=$mem
-                #p $keywords
+                #p $keywords $(j == 1 ? "" : "guess=read")
                 # scrf=(iefpcm,solvent=$solvent,read) iop(5/33=1) prop(efg,grid) nosym 6d 10f
                 
                 scaling factor = $(𝑓[j])
                 
                 $charge $multiplicity
                 $g
-                
+                $(gen===nothing ? "" : "\n$gen\n")
                 qrep pcmdoc geomview nodis nocav g03defaults tsare=$tesserae
                 nsfe=$noa
                 nvesolv=$(sp[4]) solvmw=$(sp[3]) rsolv=$(sp[5])
