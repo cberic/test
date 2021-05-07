@@ -1,10 +1,5 @@
 # Example input for XP-PCM calculation on a single atom with analytical P
 
-# How to calculate electron density. Default is to use the cubegen untility.
-# Uncomment the below to calculate electron density through 
-# the electric field gradients 
-efg = true
-
 # Only "cyclohexane", "benzene", and "argon" are currently implemented
 solvent = "cyclohexane"
 
@@ -14,10 +9,10 @@ solvent = "cyclohexane"
 
 # Choose either the Bondi or Rahm vdW radii and the corresponding set of 
 # scaling factors
-radiustype = "bondi"
-scalingfactors = [1.2, 1.15, 1.1, 1.05, 1.0, 0.975, 0.95]
-#radiustype = "rahm"
-#scalingfactors = [1.3, 1.25, 1.2, 1.15, 1.1, 1.05, 1.0, 0.975, 0.95, 0.925, 0.90]
+#radiustype = "bondi"
+#scalingfactors = [1.2, 1.15, 1.1, 1.05, 1.0, 0.975, 0.95]
+radiustype = "rahm"
+scalingfactors = [1.3, 1.25, 1.2, 1.15, 1.1, 1.05, 1.0, 0.975, 0.95, 0.925, 0.90]
 
 # The mean area in Ang^2 of the tesserae by which the surfaces of the cavity
 # is partitioned. Suggested value = 0.075.

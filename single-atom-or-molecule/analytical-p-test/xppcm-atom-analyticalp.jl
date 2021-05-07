@@ -112,15 +112,41 @@ function atomicradii(type = radiustype)
             "S" => 2.14,    "16"=> 2.14,
             "Cl"=> 2.06,    "17"=> 2.06,
             "Ar"=> 1.97,    "18"=> 1.97,
+            #4s
             "K" => 2.34,    "19"=> 2.34,
             "Ca"=> 2.70,    "20"=> 2.70,
+            #3d
+            "Sc"=> 2.63,    "21"=> 2.63,
+            "Ti"=> 2.57,    "22"=> 2.57,
+            "V" => 2.51,    "23"=> 2.51,
+            "Cr"=> 2.32,    "24"=> 2.32,
+            "Mn"=> 2.42,    "25"=> 2.42,
+            "Fe"=> 2.37,    "26"=> 2.37,
+            "Co"=> 2.33,    "27"=> 2.33,
+            "Ni"=> 2.19,    "28"=> 2.19,
+            "Cu"=> 2.16,    "29"=> 2.16,
+            "Zn"=> 2.22,    "30"=> 2.22,
             #4p
             "Ga"=> 2.33,    "31"=> 2.33,
             "Ge"=> 2.34,    "32"=> 2.34,
-            "As"=> 2.31,    "33"=> 2.31,
-            "Se"=> 2.24,    "34"=> 2.24,
+            "As"=> 2.29,    "33"=> 2.29,
+            "Se"=> 2.25,    "34"=> 2.25,
             "Br"=> 2.19,    "35"=> 2.19,
             "Kr"=> 2.12,    "36"=> 2.12,
+            #5s
+            "Rb"=> 2.40,    "37"=> 2.40,
+            "Sr"=> 2.79,    "38"=> 2.79,
+            #4d
+            "Y" => 2.74,    "39"=> 2.74,
+            "Zr"=> 2.69,    "40"=> 2.69,
+            "Nb"=> 2.51,    "41"=> 2.51,
+            "Mo"=> 2.44,    "42"=> 2.44,
+            "Tc"=> 2.52,    "43"=> 2.52,
+            "Ru"=> 2.37,    "44"=> 2.37,
+            "Rh"=> 2.33,    "45"=> 2.33,
+            "Pd"=> 2.15,    "46"=> 2.15,
+            "Ag"=> 2.25,    "47"=> 2.25,
+            "Cd"=> 2.38,    "48"=> 2.38,
             #5p
             "In"=> 2.46,    "49"=> 2.46,
             "Sn"=> 2.48,    "50"=> 2.48,
@@ -148,7 +174,7 @@ end
 function tidygeometries(geom = geometries)
     # remove leading and trailing spaces/blank lines 
     # and add a space to the beginning
-    # "*" is string concatenation operator
+    # "*" is the string concatenation operator
     a = " " * strip(geom)
     
     # remove leading and trailing spaces of each coordinate line 
@@ -704,6 +730,7 @@ function calculateanalytical𝑝(𝜂 = 𝜂, 𝑉𝑐 = 𝑉𝑐)
     #@. firstterm = (3 + 𝜂) / (3 * 𝑉𝑐 * 1.88973^3) * Pauli𝐸  # 1 angstrom = 1.88973 bohr; all in atomic units
     # $alpha[$n_fact]*$edensity[$n_fact]/$nts;  
     alpha = calculateAlpha()
+    efg = true
     # if efg == true, use getEFG() to calculate electron density, otherwise use getedensity()
     @isdefined(efg) && efg == true ? edensity = getEFG() : edensity = getedensity()
     #@. secondterm = alpha * edensity * 1.88973^3
@@ -739,14 +766,14 @@ function main(𝑓 = scalingfactors)
     # formchk K_xp-060.chk 42.fchk 
     # cubegen 0 density=scf 42.fchk 42.cube -5 < fort.42
 #    if !isnumerical
-        for j in 𝑓
-            run(`formchk $j.chk $j.fchk`)
+#        for j in 𝑓
+#            run(`formchk $j.chk $j.fchk`)
             #write("1.sh", "cubegen 0 density=scf $j.fchk $j.cube -5 < $j.tsrcoord")
-            write("1.sh", "cubegen 0 density=scf $j.fchk $j.cube -5 < fort.$(round(Int, j*1000))")            
-            run(`bash 1.sh`)
-        end
-        run(`rm -rf 1.sh`)
-        debug()
+#            write("1.sh", "cubegen 0 density=scf $j.fchk $j.cube -5 < fort.$(round(Int, j*1000))")            
+#            run(`bash 1.sh`)
+#        end
+#        run(`rm -rf 1.sh`)
+#        debug()
 #    end
     # print results to properties.dat file
     writeproperties()
