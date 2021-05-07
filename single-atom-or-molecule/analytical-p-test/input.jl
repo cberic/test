@@ -1,10 +1,11 @@
-# Example input for XP-PCM calculation on a single atom with analytical P
+# Example input for XP-PCM calculation on a single atom 
+# Both numerical and analytical pressures will be computed
 
 # Only "cyclohexane", "benzene", and "argon" are currently implemented
 solvent = "cyclohexane"
 
-# The default dielectric permittivity of the solvent may be set close to 1
-# for calculations on charged systems. Comment it out to use the default value.
+# Change the dielectric permittivity of the solvent to be close to 1 for
+# calculations on charged systems. Leave the below commented to use the default value.
 #dielectric = 1.0025
 
 # Choose either the Bondi or Rahm vdW radii and the corresponding set of 
@@ -23,6 +24,7 @@ tesserae = 0.075
 𝜂 = 6
 
 # Gaussian 09/16 parameters
+# If "gen" is used, provide the custom basis set in a separate file named "gen"
 nproc = 4
 mem = "4gb"
 keywords = "pbe1pbe scf=(Damp,fermi,conver=6) int=finegrid gen"
