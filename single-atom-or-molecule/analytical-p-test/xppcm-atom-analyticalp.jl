@@ -222,7 +222,9 @@ end
 #------------------------------------------------------------------------------
 function writegjf(jobtype)
     if jobtype == "Vc"        # Cavitation volume jobs
-        isnumerical ? gjfvc() : gjfvc2()
+        #isnumerical ? gjfvc() : gjfvc2()
+        gjfvc()
+        gjfvc2()
     elseif jobtype == "Ger"   # Electronic energy SCRF jobs
         isnumerical ? gjfgernumerical() : gjfgeranalytical()
     end
@@ -602,9 +604,9 @@ function writeproperties(𝑉𝑐 = 𝑉𝑐, 𝐺𝑒𝑟 = 𝐺𝑒𝑟, 𝑓 
     𝑝a = calculateanalytical𝑝()
     Eorbital = getorbitalenergy()
     open("properties.dat", "w") do file
-        write(file, "#    𝑓       𝑉𝑐(𝑓) Å³   𝑠(𝑓)         𝜀(𝑠)        𝑍(𝑠)        𝐺𝑒𝑟(𝑓) a.u.     𝑝(𝑓)-numeric. -analyt.GPa\n")
+        write(file, "#     𝑓         𝑉𝑐(𝑓) Å³   𝑠(𝑓)        𝜀(𝑠)        𝑍(𝑠)        𝐺𝑒𝑟(𝑓) a.u.    𝑝(𝑓)-numeric. -analyt.GPa\n")
         for j in 1:a
-            @printf(file, "%d    %.3f     %7.3f    %.6f    %.6f    %9.6f    %.8f    %6.3f    %6.3f\n", 
+            @printf(file, "%2d    %.3f     %7.3f    %.6f    %.6f    %9.6f    %.8f    %6.3f    %6.3f\n", 
                             j,   𝑓[j],   𝑉𝑐[j],   𝑠[j],    𝜀[j],   𝑍[j],   𝐺𝑒𝑟[j],  𝑝n[j],  𝑝a[j])
         end
         write(file, "\n")
@@ -632,7 +634,7 @@ function debug(𝑉𝑐 = 𝑉𝑐, 𝐺𝑒𝑟 = 𝐺𝑒𝑟, 𝑓 = scalingf
     open("debug.dat", "w") do file
         write(file, "#    𝑓       𝑉𝑐(𝑓) Å³   𝑠(𝑓)         𝜀(𝑠)        𝑍(𝑠)        𝐺𝑒𝑟(𝑓) a.u.     𝑝a(𝑓) GPa      PauliE(𝑓)     edensity     efg/nts     Alpha(𝑓)\n")
         for j in 1:a
-            @printf(file, "%d    %.3f     %7.3f    %.6f    %.6f    %9.6f    %.8f    %6.3f    %9.6f    %9.6f    %9.6f    %9.6f\n", 
+            @printf(file, "%2d    %.3f     %7.3f    %.6f    %.6f    %9.6f    %.8f    %6.3f    %9.6f    %9.6f    %9.6f    %9.6f\n", 
                             j,   𝑓[j],   𝑉𝑐[j],   𝑠[j],    𝜀[j],   𝑍[j],   𝐺𝑒𝑟[j],  𝑝a[j],  PauliE[j], edensity1[j], edensity2[j], alpha[j])
         end
     end
@@ -777,6 +779,9 @@ function main(𝑓 = scalingfactors)
 #    end
     # print results to properties.dat file
     writeproperties()
+    write("1.sh", "rm -rf fort.* tesserae-*.off Vc-*.gjf Vc-*.log")
+    run(`bash 1.sh`)
+    run(`rm -rf 1.sh`)
 end
 
 main()

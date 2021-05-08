@@ -30,13 +30,13 @@ mem = "4gb"
 keywords = "pbe1pbe scf=(Damp,fermi,conver=6) int=finegrid gen"
 #keywords = "pbe1pbe/aug-cc-pvtz"    # Gaussian keywords; add more if needed
 charge = 0
-multiplicity = 1
+multiplicity = 2
 
 # Keep the coordinates (in Angstrom) within the triple """ block.
 # Do not include comments or other text in the """ block.
 # Blank lines and spaces are ok.
 geometries = """
 
-Ar 0.0 0.0 0.0
+H 0.0 0.0 0.0
 
 """

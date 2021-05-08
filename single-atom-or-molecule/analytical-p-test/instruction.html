@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Downloading and installing Julia</title>
+        <style>
+</style>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/katex.min.css" integrity="sha384-yFRtMMDnQtDRO8rLpMIKrtPCD5jdktao2TV19YiZYWMDkUR5GQZR/NOVTdquEx1j" crossorigin="anonymous">
+<link href="https://cdn.jsdelivr.net/npm/katex-copytex@latest/dist/katex-copytex.min.css" rel="stylesheet" type="text/css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item { list-style-type: none; } .task-list-item-checkbox { margin-left: -20px; vertical-align: middle; }
+</style>
+        
+        <script src="https://cdn.jsdelivr.net/npm/katex-copytex@latest/dist/katex-copytex.min.js"></script>
+        
+    </head>
+    <body class="vscode-body vscode-light">
+        <h1 id="downloading-and-installing-julia">Downloading and installing Julia</h1>
+<p><a href="https://julialang.org/downloads/">https://julialang.org/downloads/</a></p>
+<p>Use the latest version; choose the corresponding version for Linux/Mac/Windows. For Linux, run the following commands to download and extract the julia package:</p>
+<pre><code class="language-bash"><div>wget https://julialang-s3.julialang.org/bin/linux/x64/1.6/julia-1.6.1-linux-x86_64.tar.gz
+
+tar -xzvf julia-1.6.1-linux-x86_64.tar.gz
+</div></code></pre>
+<p>Add julia to PATH (replace &quot;pathtojulia&quot; in the following command with the actual path on your machine):</p>
+<pre><code class="language-bash"><div><span class="hljs-built_in">export</span> PATH=/pathtojulia/julia-1.6.1/bin:<span class="hljs-variable">$PATH</span>
+</div></code></pre>
+<h1 id="installing-the-lsqfit-package">Installing the LsqFit package</h1>
+<p>This package will be used for the least-square fitting of the Ger-V curve to compute the numberial pressure.
+In your terminal, type <code>julia</code>, which will open the julia REPL, and in the PEPL, type</p>
+<pre><code class="language-julia"><div><span class="hljs-keyword">using</span> Pkg
+Pkg.add(<span class="hljs-string">&quot;LsqFit&quot;</span>)
+</div></code></pre>
+<p>The installation of the LsqFit package may take a while. After installing the LsqFit package, run the following command to test if it is working:</p>
+<pre><code class="language-julia"><div><span class="hljs-keyword">using</span> LsqFit  <span class="hljs-comment"># this may take &gt;1 minute to load</span>
+
+xdata = [ <span class="hljs-number">1.0</span>
+        <span class="hljs-number">0.9410359787896052</span>
+        <span class="hljs-number">0.892747272010167</span>
+        <span class="hljs-number">0.8440028046803102</span>
+        <span class="hljs-number">0.7944607563872212</span>
+        <span class="hljs-number">0.768315877119944</span>
+        <span class="hljs-number">0.7444147421008809</span>]
+
+ydata = [ <span class="hljs-number">0.0</span>
+        <span class="hljs-number">0.002892932000008841</span>
+        <span class="hljs-number">0.007156206999979986</span>
+        <span class="hljs-number">0.012909014999991086</span>
+        <span class="hljs-number">0.020529311000018424</span>
+        <span class="hljs-number">0.025222962999976062</span>
+        <span class="hljs-number">0.03096462100000963</span>]
+
+p0 = [<span class="hljs-number">0.0</span>, <span class="hljs-number">5.0</span>, <span class="hljs-number">0.0</span>]
+
+@. model(x, p) = (p[<span class="hljs-number">1</span>]/p[<span class="hljs-number">2</span>])*x^(-p[<span class="hljs-number">2</span>]) + (p[<span class="hljs-number">1</span>]-p[<span class="hljs-number">3</span>])*x
+
+fit = curve_fit(model, xdata, ydata, p0)
+
+print(fit.param)
+</div></code></pre>
+<p>The last command should print an array of 3 floating numbers:</p>
+<pre><code class="language-julia"><div>[<span class="hljs-number">0.04396688697055344</span>, <span class="hljs-number">4.864867834353412</span>, <span class="hljs-number">0.0533354593802239</span>]
+</div></code></pre>
+<p>You may exit the julia REPL using</p>
+<pre><code class="language-julia"><div>exit()
+</div></code></pre>
+<h1 id="running-xp-pcm-calculations">Running XP-PCM calculations</h1>
+<p>Copy <code>xppcm-atom-analyticalp.jl</code> (the name may be different depending the specific version of the script) and <code>input.jl</code> to a working folder. The input file <code>input.jl</code> contains Julia codes that specify the calculation parameters. The script <code>xppcm-atom-analyticalp.jl</code> will read those parameters before running the XP-PCM calculation. Modify <code>input.jl</code> according to the instructions in the file.</p>
+<p>Make sure Gaussian09 or Gaussian16 is properly installed and the exact command <code>g09</code> or <code>g16</code> will actually call the program. The script will prefer <code>g16</code> over <code>g09</code> if both are installed.</p>
+<p>Then use the following command (4 cpu cores/threads are assigned) to run an XP-PCM calculation:</p>
+<pre><code class="language-bash"><div>julia --threads 4 xppcm-atom-analyticalp.jl
+</div></code></pre>
+<p>Below is an example PBS script for running XP-PCM calculations on a cluster. Modify the PBS script according your cluster specifications. Important thing is to let the computing node know the paths to <code>g09</code>/<code>g16</code> and <code>julia</code>.</p>
+<pre><code class="language-pbs"><code><div>#!/bin/bash
+#PBS -q parallel
+#PBS -l nodes=1:ppn=4
+#PBS -l mem=8gb
+#PBS -l cput=24:00:00 
+#PBS -N xppcm
+
+cd $PBS_O_WORKDIR
+
+module load Gaussian/16
+
+/scratch/user/julia-1.5.1/bin/julia --threads 4 xppcm-atom-analyticalp.jl
+</div></code></code></pre>
+<p>The output will be printed to the <code>properties.dat</code> file when the calculation is finished.</p>
+<h1 id="the-input-file">The input file</h1>
+<p>Here we use the Hydrogen atom as an example. First, give the xyz coordinate in <code>input.jl</code>, as one would do for a normal Gaussian calculation, but here in the geometry block with triple quotation marks.</p>
+<pre><code class="language-julia"><div><span class="hljs-comment"># Keep the coordinates (in Angstrom) within the triple &quot;&quot;&quot; block.</span>
+<span class="hljs-comment"># Do not include comments or other text in the &quot;&quot;&quot; block.</span>
+<span class="hljs-comment"># Blank lines and spaces are ok.</span>
+geometries = <span class="hljs-string">&quot;&quot;&quot;
+
+H 0.0 0.0 0.0
+
+&quot;&quot;&quot;</span>
+</div></code></pre>
+<p>Then, modify the Gaussian parameters as needed, such as the functional/basis set, charge, and multiplicity. Custom basis set can be used by specifiying the &quot;gen&quot; keyword. The custom basis set should be provided by a separate file named <code>gen</code>.</p>
+<pre><code class="language-julia"><div><span class="hljs-comment"># Gaussian 09/16 parameters</span>
+<span class="hljs-comment"># If &quot;gen&quot; is used, provide the custom basis set in a separate file named &quot;gen&quot;</span>
+nproc = <span class="hljs-number">4</span>
+mem = <span class="hljs-string">&quot;4gb&quot;</span>
+keywords = <span class="hljs-string">&quot;pbe1pbe scf=(Damp,fermi,conver=6) int=finegrid gen&quot;</span>
+charge = <span class="hljs-number">0</span>
+multiplicity = <span class="hljs-number">2</span>
+</div></code></pre>
+<p>In the <code>gen</code> file:</p>
+<pre><code><code><div>H 0
+6-31g*
+****
+</div></code></code></pre>
+<p>Finally, modify the XP-PCM parameters as necessary. If not sure, use the default.</p>
+<pre><code class="language-julia"><div><span class="hljs-comment"># Only &quot;cyclohexane&quot;, &quot;benzene&quot;, and &quot;argon&quot; are currently implemented</span>
+solvent = <span class="hljs-string">&quot;cyclohexane&quot;</span>
+
+<span class="hljs-comment"># Change the dielectric permittivity of the solvent to be close to 1 for</span>
+<span class="hljs-comment"># calculations on charged systems. Leave the below commented to use the default value.</span>
+<span class="hljs-comment">#dielectric = 1.0025</span>
+
+<span class="hljs-comment"># Choose either the Bondi or Rahm vdW radii and the corresponding set of </span>
+<span class="hljs-comment"># scaling factors</span>
+<span class="hljs-comment">#radiustype = &quot;bondi&quot;</span>
+<span class="hljs-comment">#scalingfactors = [1.2, 1.15, 1.1, 1.05, 1.0, 0.975, 0.95]</span>
+radiustype = <span class="hljs-string">&quot;rahm&quot;</span>
+scalingfactors = [<span class="hljs-number">1.3</span>, <span class="hljs-number">1.25</span>, <span class="hljs-number">1.2</span>, <span class="hljs-number">1.15</span>, <span class="hljs-number">1.1</span>, <span class="hljs-number">1.05</span>, <span class="hljs-number">1.0</span>, <span class="hljs-number">0.975</span>, <span class="hljs-number">0.95</span>, <span class="hljs-number">0.925</span>, <span class="hljs-number">0.90</span>]
+
+<span class="hljs-comment"># The mean area in Ang^2 of the tesserae by which the surfaces of the cavity</span>
+<span class="hljs-comment"># is partitioned. Suggested value = 0.075.</span>
+tesserae = <span class="hljs-number">0.075</span>
+
+<span class="hljs-comment"># Empirical Pauli repulsion parameter; recommended values: 3, 6 or 9</span>
+<span class="hljs-comment"># Larger 𝜂 leads to higher calculated pressures</span>
+𝜂 = <span class="hljs-number">6</span>
+</div></code></pre>
+<h1 id="run-the-calculations-for-multiple-atoms">Run the calculations for multiple atoms</h1>
+<p>Right now the input filename <code>input.jl</code> is hard-coded. If the filename is changed, the script will not work.</p>
+<p>So if we want to calculate multiple atoms, we may (1) use separate folders for each atom; copy the script and input file to each folder, and run the calculation separately, or (2) calculate the first atom, rename its output file, and then modify the input and calculate the second atom in the same folder.</p>
+<p>The second approach is illustrated below.</p>
+<pre><code class="language-julia"><div><span class="hljs-comment"># first calculation for the H atom</span>
+julia xppcm-atom-analyticalp.jl
+mv properties.dat H.dat
+<span class="hljs-comment"># modify the charge, multiplicity, and custom basis set etc. as necessary in input.jl for the He atom</span>
+julia xppcm-atom-analyticalp.jl
+mv properties.dat He.dat
+</div></code></pre>
+<h1 id="understand-the-output">Understand the output</h1>
+<p>The script and the XP-PCM calculation will generate several intermediate files, which will be deleted after the job finishes. The remainig files are Gaussian input files <code>Vc.gjf</code> and <code>Ger.gjf</code>, corresponding output files <code>Vc.log</code> and <code>Ger.log</code>, and checkpoint files of the Ger calculations for each scaling factor. The file <code>properties.dat</code> contains  xppcm results in a tabular form and the orbital energies extracted from <code>Ger.log</code> without additional munipulation.</p>
+<ul>
+<li>𝑓 is the scaling factor of the vdW radii</li>
+<li>𝑉𝑐 is the cavity volume</li>
+<li>𝑠 is the cubic root of the volume ratio</li>
+<li>𝜀(𝑠) is the dielectric permitivity of the solvent</li>
+<li>𝑍(𝑠) is the density of the solvent</li>
+<li>𝐺𝑒𝑟 is the SCRF energy in a.u. (hartree)</li>
+<li>𝑝 is the pressure, numerical and analytical, in GPa</li>
+</ul>
+<pre><code><code><div>#     𝑓         𝑉𝑐(𝑓) Å³   𝑠(𝑓)        𝜀(𝑠)        𝑍(𝑠)        𝐺𝑒𝑟(𝑓) a.u.    𝑝(𝑓)-numeric. -analyt.GPa
+ 1    1.300      33.611    1.000000    2.016500     0.778100    -0.49886581     0.424     0.183
+ 2    1.250      29.880    0.961538    2.143426     1.107485    -0.49863442     0.666     0.386
+ 3    1.200      26.436    0.923077    2.292388     1.599162    -0.49818307     1.130     0.817
+ 4    1.150      23.267    0.884612    2.468414     2.345625    -0.49730137     2.042     1.739
+ 5    1.100      20.362    0.846148    2.677909     3.499600    -0.49557670     3.889     3.720
+ 6    1.050      17.710    0.807692    2.929169     5.318927    -0.49220341     7.752     7.980
+ 7    1.000      15.299    0.769238    3.233191     8.250696    -0.48563338    16.123    17.064
+ 8    0.975      14.180    0.750006    3.409420    10.362177    -0.48032872    23.624    24.828
+ 9    0.950      13.117    0.730776    3.604680    13.091101    -0.47302176    34.987    35.870
+10    0.925      12.108    0.711536    3.821736    16.644183    -0.46305764    52.403    51.245
+11    0.900      11.153    0.692314    4.063353    21.296322    -0.44969526    79.364    71.943
+
+𝑓 = 1.300    𝑝 =  0.183 GPa ----orbital energies in a.u.----
+ Alpha  occ. eigenvalues --   -0.32929
+ Alpha virt. eigenvalues --    0.72788
+  Beta virt. eigenvalues --    0.00949   0.99577
+
+𝑓 = 1.250    𝑝 =  0.386 GPa ----orbital energies in a.u.----
+ Alpha  occ. eigenvalues --   -0.32889
+ Alpha virt. eigenvalues --    0.72873
+  Beta virt. eigenvalues --    0.01009   0.99665
+
+  ...
+
+</div></code></code></pre>
+
+    </body>
+    </html>
