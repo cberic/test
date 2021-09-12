@@ -30,3 +30,7 @@ single-atom-or-molecule/*.dat
 single-atom-or-molecule/*.gz
 error
 out
+rewrite
+*.zip
+ipea-plotting.jl
+*.pdf
