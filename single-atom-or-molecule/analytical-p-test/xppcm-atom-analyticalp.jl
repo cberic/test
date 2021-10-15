@@ -4,14 +4,6 @@ using DelimitedFiles
 
 include("input.jl")
 
-# Check whether pressure is to be calculated analytically or numerically.
-# isnumerical = true if pressurecalc is defined and its value is "numerical"
-isnumerical = @isdefined(pressurecalc) && pressurecalc == "numerical"
-# When isnumerical = true, load the LsqFit package
-#isnumerical && using LsqFit
-# if false, load DelimitedFiles
-#!isnumerical && using DelimitedFiles
-
 #------------------------------------------------------------------------------
 # solvent
 #------------------------------------------------------------------------------
@@ -163,6 +155,12 @@ function atomicradii(type = radiustype)
             "Rn"=> 2.43,    "86"=> 2.43
         # add more if needed from https://chemistry-europe.onlinelibrary.wiley.com/doi/10.1002/chem.201700610
         )
+    elseif type == "rahm_ionic"
+        return Dict(
+            
+            "Cl" => 2.29,   "17" => 2.29
+            #"Na"=> 1.34,    "11" => 1.34,
+        )
     else
         error("radiustype not supported. Try bondi or rahm")
     end
@@ -210,7 +208,7 @@ function coordinatelines(geom = geometries)
     noa = numberofatoms(geom)
     coordlines = Array{String}(undef, noa)
     for i in 1:noa
-        # get the 2nd-last fields of each coordinate line & add a leading space
+        # get_ the 2nd-last fields of each coordinate line & add a leading space
         coordlines[i] = " " * split(lines[i], limit=2)[2]
     end
     return coordlines
@@ -222,11 +220,10 @@ end
 #------------------------------------------------------------------------------
 function writegjf(jobtype)
     if jobtype == "Vc"        # Cavitation volume jobs
-        #isnumerical ? gjfvc() : gjfvc2()
         gjfvc()
         gjfvc2()
     elseif jobtype == "Ger"   # Electronic energy SCRF jobs
-        isnumerical ? gjfgernumerical() : gjfgeranalytical()
+        gjfgeranalytical()
     end
 end
 
@@ -334,8 +331,8 @@ function gjfgernumerical(geom = geometries, 𝑓 = scalingfactors)
     coordlines = coordinatelines(geom)
     sp = solventparameters()
     𝑟ₐ = atomicradii()
-    𝜀 = calculate𝜀()    # data of 𝜀 and 𝑍 needed for the gjf files
-    𝑍 = calculate𝑍()
+    𝜀 = calc_𝜀()    # data of 𝜀 and 𝜌 needed for the gjf files
+    𝜌 = calc_𝜌()
     gen = custombasis()
 
     for j in 1:a
@@ -356,7 +353,7 @@ function gjfgernumerical(geom = geometries, 𝑓 = scalingfactors)
                 qrep pcmdoc geomview nodis nocav g03defaults tsare=$tesserae
                 nsfe=$noa
                 nvesolv=$(sp[4]) solvmw=$(sp[3]) rsolv=$(sp[5])
-                eps=$(𝜀[j]) rhos=$(𝑍[j])
+                eps=$(𝜀[j]) rhos=$(𝜌[j])
                 
                 """)
             
@@ -375,7 +372,7 @@ end
 
 
 # write gjf files for Ger calculations for analytical p
-function gjfgeranalytical(geom = geometries, 𝑓 = scalingfactors)
+function gjfgeranalytical(𝜌 = calc_𝜌(), geom = geometries, 𝑓 = scalingfactors)
     a = length(𝑓)
     g = tidygeometries(geom)
     noa = numberofatoms(geom)
@@ -383,9 +380,9 @@ function gjfgeranalytical(geom = geometries, 𝑓 = scalingfactors)
     coordlines = coordinatelines(geom)
     sp = solventparameters()
     𝑟ₐ = atomicradii()
-    𝜀 = calculate𝜀()    # data of 𝜀 and 𝑍 needed for the gjf files
-    𝑍 = calculate𝑍()
-    n = getnumberoftesserae()
+    𝜀 = calc_𝜀()    # data of 𝜀 and 𝜌 needed for the gjf files
+    #𝜌 = calc_𝜌()
+    𝑛𝑡𝑠 = get_numberoftesserae()
     gen = custombasis()
     
         # writing mode for the first and appending mode for other 𝑓
@@ -406,7 +403,7 @@ function gjfgeranalytical(geom = geometries, 𝑓 = scalingfactors)
                 qrep pcmdoc geomview nodis nocav g03defaults tsare=$tesserae
                 nsfe=$noa
                 nvesolv=$(sp[4]) solvmw=$(sp[3]) rsolv=$(sp[5])
-                eps=$(𝜀[j]) rhos=$(𝑍[j])
+                eps=$(𝜀[j]) rhos=$(𝜌[j])
                 
                 """)
             
@@ -414,7 +411,7 @@ function gjfgeranalytical(geom = geometries, 𝑓 = scalingfactors)
                 write(file, " $(coordlines[k])    $(𝑟ₐ[atoms[k]])    $(𝑓[j])\n")
             end
             write(file, "\n")
-            write(file, "$(n[j]), 1, $(round(Int, 𝑓[j]*1000)), $(round(Int, 𝑓[j]*1000+1))\n")
+            write(file, "$(𝑛𝑡𝑠[j]), 1, $(round(Int, 𝑓[j]*1000)), $(round(Int, 𝑓[j]*1000+1))\n")
             write(file, "\n")
             # do not write "--link1--" for the last scaling factor
             if j != a
@@ -425,8 +422,51 @@ function gjfgeranalytical(geom = geometries, 𝑓 = scalingfactors)
 end
 
 
+# input for the Ger job of the first scaling factore
+function gjfger_1st_scalingfactor(𝜌, geom = geometries, 𝑓 = scalingfactors)
+    g = tidygeometries(geom)
+    noa = numberofatoms(geom)
+    atoms = atomlist(geom)
+    coordlines = coordinatelines(geom)
+    sp = solventparameters()
+    𝑟ₐ = atomicradii()
+    𝜀 = calc_𝜀()    # data of 𝜀 and 𝜌 needed for the gjf files
+    #𝜌 = calc_𝜌()
+    𝑛𝑡𝑠 = get_numberoftesserae()
+    gen = custombasis()
+    
+    open("Ger.gjf", "w") do file
+        write(file, """
+            %chk=$(𝑓[1]).chk
+            %nproc=$nproc
+            %mem=$mem
+            #p $keywords
+            # scrf=(iefpcm,solvent=$solvent,read) iop(5/33=1) prop(efg,grid) nosym 6d 10f
+                
+            scaling factor = $(𝑓[1])
+                
+            $charge $multiplicity
+            $g
+            $(gen===nothing ? "" : "\n$gen\n")
+            qrep pcmdoc geomview nodis nocav g03defaults tsare=$tesserae
+            nsfe=$noa
+            nvesolv=$(sp[4]) solvmw=$(sp[3]) rsolv=$(sp[5])
+            eps=$(𝜀[1]) rhos=$𝜌
+                
+            """)
+            
+        for k in 1:noa
+            write(file, " $(coordlines[k])    $(𝑟ₐ[atoms[k]])    $(𝑓[1])\n")
+        end
+        write(file, "\n")
+        write(file, "$(𝑛𝑡𝑠[1]), 1, $(round(Int, 𝑓[1]*1000)), $(round(Int, 𝑓[1]*1000+1))\n")
+        write(file, "\n")
+    end
+end
+
+
 # extract volume 𝑉𝑐 data from gaussian output files
-function get𝑉𝑐(𝑓 = scalingfactors)
+function get_𝑉𝑐(𝑓 = scalingfactors)
     a = length(𝑓)
     𝑉𝑐 = Array{Float64}(undef, a)
     j = 1    # j ranges from 1:length(𝑓)
@@ -443,36 +483,36 @@ end
 
 
 # extract the total number of tesserae from tesserae-𝑓.off
-function getnumberoftesserae(𝑓 = scalingfactors)
+function get_numberoftesserae(𝑓 = scalingfactors)
     a = length(𝑓)
-    n = Array{Int64}(undef, a)
+    𝑛𝑡𝑠 = Array{Int64}(undef, a)
     for j in 1:a
         open("tesserae-$(𝑓[j]).off", "r") do file
             readline(file)
             secondline=readline(file)
             # the 2nd number on the 2nd line is the number of tesserae
-            n[j] = parse(Int64, split(secondline)[2])
+            𝑛𝑡𝑠[j] = parse(Int64, split(secondline)[2])
         end
     end
-    return n
+    return 𝑛𝑡𝑠
 end
 
 
 # extract and calculate the xyz coordinates of the centers of the tesserae
 # from tesserae-𝑓.off 
 function writetesseragrid(geom = geometries, 𝑓 = scalingfactors)
-    n = getnumberoftesserae()
+    𝑛𝑡𝑠 = get_numberoftesserae()
     atoms = atomlist(geom)
     a = length(𝑓)
     𝑟ₐ = atomicradii()
     for j in 1:a
-        tesseraecoordinates = Array{Float64}(undef, n[j],3)  # n*3 2D array
+        tesseraecoordinates = Array{Float64}(undef, 𝑛𝑡𝑠[j],3)  # n*3 2D array
         x1 = x2 = x3 = y1 = y2 = y3 = z1 = z2 = z3 = 0.0
         linecount = 1
         i = 1   # i ranges from 1:n
         open("tesserae-$(𝑓[j]).off", "r") do file
             for line in eachline(file)
-                if linecount >= 3 && linecount <= 3 * n[j] + 2
+                if linecount >= 3 && linecount <= 3 * 𝑛𝑡𝑠[j] + 2
                     if linecount % 3 == 0
                         # xyz coordinates of the 1st vertex of a tessera
                         (x1, y1, z1) = [parse(Float64, s) for s in split(line)[1:3]]
@@ -499,65 +539,65 @@ function writetesseragrid(geom = geometries, 𝑓 = scalingfactors)
 end
 
 
-# extract Electric Field Gradients from fort.1201 etc files
-function getEFG(𝑓 = scalingfactors)
-    n = getnumberoftesserae()
+# extract Electric Field Gradie𝑛𝑡𝑠 from fort.1201 etc files
+function get_𝑒𝑓𝑔╱𝑛𝑡𝑠(𝑓 = scalingfactors)
+    𝑛𝑡𝑠 = get_numberoftesserae()
     a = length(𝑓)
-    efgsum = zeros(a)
+    𝑒𝑓𝑔sum = zeros(a)
     for j in 1:a
         linecount = 1
         open("fort.$(round(Int, 𝑓[j]*1000+1))", "r") do file
             for line in eachline(file)
                 if linecount % 4 == 2
-                    # zz component of the EFG
-                    efgsum[j] += parse(Float64, split(line)[4])
+                    # zz component of the 𝑒𝑓𝑔
+                    𝑒𝑓𝑔sum[j] -= parse(Float64, split(line)[4])
                 elseif linecount % 4 == 3
-                    # yy and xx components of the EFG
-                    efgsum[j] += sum([parse(Float64, s) for s in split(line)[1:2]])
+                    # yy and xx compone𝑛𝑡𝑠 of the 𝑒𝑓𝑔
+                    𝑒𝑓𝑔sum[j] -= sum([parse(Float64, s) for s in split(line)[1:2]])
                 end
                 linecount += 1
             end
         end
     end
-    return @. efgsum / 4 / pi / n
+    return @. 𝑒𝑓𝑔sum / 4 / pi / 𝑛𝑡𝑠
 end
 
-# extract electronic energy 𝐺𝑒𝑟 data from gaussian output files
-function getPauli𝐸(𝑓 = scalingfactors)
+# extract electronic energy 𝐺ₑᵣ data from gaussian output files
+function get_𝐸ₚₐᵤₗᵢ(𝑓 = scalingfactors)
     a = length(𝑓)
-    Pauli𝐸 = Array{Float64}(undef, a)
+    𝐸ₚₐᵤₗᵢ = Array{Float64}(undef, a)
     j = 1    # j ranges from 1:length(𝑓)
     open("Ger.log", "r") do file
         for line in eachline(file)
             if occursin("QRepSI", line)
-                Pauli𝐸[j] = parse(Float64, split(line)[6]) / 627.503 # 1 hartree = 627.503 kcal/mol
+                𝐸ₚₐᵤₗᵢ[j] = parse(Float64, split(line)[6]) / 627.503 # 1 hartree = 627.503 kcal/mol
             elseif occursin("SCF Done", line)
                 j += 1    # j ranges from 1:length(𝑓)
             end
         end
     end
-    return Pauli𝐸
+    return 𝐸ₚₐᵤₗᵢ
 end
 
 
-# extract electronic energy 𝐺𝑒𝑟 data from gaussian output files
-function get𝐺𝑒𝑟(𝑓 = scalingfactors)
+# extract electronic energy 𝐺ₑᵣ data from gaussian output files
+function get_𝐺ₑᵣ(𝑓 = scalingfactors)
     a = length(𝑓)
-    𝐺𝑒𝑟 = Array{Float64}(undef, a)
+    𝐺ₑᵣ = Array{Float64}(undef, a)
     j = 1    # j ranges from 1:length(𝑓)
     open("Ger.log", "r") do file
         for line in eachline(file)
             if occursin("SCF Done", line)
-                𝐺𝑒𝑟[j] = parse(Float64, split(line)[5])
+                𝐺ₑᵣ[j] = parse(Float64, split(line)[5])
                 j += 1    # j ranges from 1:length(𝑓)
             end
         end
     end
-    return 𝐺𝑒𝑟
+    return 𝐺ₑᵣ
 end
 
 
-function getorbitalenergy(𝑓 = scalingfactors)
+function get_orbitalenergy(𝑓 = scalingfactors)
     a = length(𝑓)
     orbital = Array{String}(undef, a)
     j = 0
@@ -575,39 +615,20 @@ function getorbitalenergy(𝑓 = scalingfactors)
 end
 
 
-# extract edensity from .cube file
-function getedensity(𝑓 = scalingfactors)
-    a = length(𝑓)
-    edensity = zeros(a)
-    for j in 1:a
-        open("$(𝑓[j]).cube", "r") do file
-            for line in eachline(file)
-                # negative sign for a negative number of edensity
-                edensity[j] -= parse(Float64, split(line)[4])
-            end
-        end
-    end
-    n = getnumberoftesserae()
-    return @. edensity / n
-end
-
-
 # use the Printf package to write the properties.dat file
-function writeproperties(𝑉𝑐 = 𝑉𝑐, 𝐺𝑒𝑟 = 𝐺𝑒𝑟, 𝑓 = scalingfactors)
+function writeproperties(𝑉𝑐 = 𝑉𝑐, 𝐺ₑᵣ = 𝐺ₑᵣ, 𝑓 = scalingfactors)
     a = length(𝑓)
-    𝑠 = calculate𝑠()
-    𝜀 = calculate𝜀()
-    𝑍 = calculate𝑍()
-    # for numerical p, call calculatenumerical𝑝(); for analytical p, call calculateanalytical𝑝()
-    #𝑝 = isnumerical ? calculatenumerical𝑝() : calculateanalytical𝑝() 
-    𝑝n = calculatenumerical𝑝()
-    𝑝a = calculateanalytical𝑝()
-    Eorbital = getorbitalenergy()
+    𝑠 = calc_𝑠()
+    𝜀 = calc_𝜀()
+    𝜌 = calc_𝜌()
+    𝑝n = calc_numerical𝑝()
+    𝑝a = calc_analytical𝑝()
+    Eorbital = get_orbitalenergy()
     open("properties.dat", "w") do file
-        write(file, "#     𝑓         𝑉𝑐(𝑓) Å³   𝑠(𝑓)        𝜀(𝑠)        𝑍(𝑠)        𝐺𝑒𝑟(𝑓) a.u.    𝑝(𝑓)-numeric. -analyt.GPa\n")
+        write(file, "#     𝑓         𝑉𝑐(𝑓) Å³   𝑠(𝑓)        𝜀(𝑠)        𝜌(𝑠)        𝐺ₑᵣ(𝑓) a.u.    𝑝(𝑓)-numeric. -analyt.GPa\n")
         for j in 1:a
             @printf(file, "%2d    %.3f     %7.3f    %.6f    %.6f    %9.6f    %.8f    %6.3f    %6.3f\n", 
-                            j,   𝑓[j],   𝑉𝑐[j],   𝑠[j],    𝜀[j],   𝑍[j],   𝐺𝑒𝑟[j],  𝑝n[j],  𝑝a[j])
+                            j,   𝑓[j],   𝑉𝑐[j],   𝑠[j],    𝜀[j],   𝜌[j],   𝐺ₑᵣ[j],  𝑝n[j],  𝑝a[j])
         end
         write(file, "\n")
         for j in 1:a
@@ -619,27 +640,63 @@ function writeproperties(𝑉𝑐 = 𝑉𝑐, 𝐺𝑒𝑟 = 𝐺𝑒𝑟, 𝑓 
 end
 
 
-function debug(𝑉𝑐 = 𝑉𝑐, 𝐺𝑒𝑟 = 𝐺𝑒𝑟, 𝑓 = scalingfactors)
+function writeproperties2(𝑉𝑐 = 𝑉𝑐, 𝑓 = scalingfactors)
     a = length(𝑓)
-    𝑠 = calculate𝑠()
-    𝜀 = calculate𝜀()
-    𝑍 = calculate𝑍()
-    PauliE = getPauli𝐸()
-    edensity1 = getedensity()
-    edensity2 = getEFG()
-    alpha = calculateAlpha()
-    𝑝n = calculatenumerical𝑝()
-    𝑝a = calculateanalytical𝑝()
-    Eorbital = getorbitalenergy()
-    open("debug.dat", "w") do file
-        write(file, "#    𝑓       𝑉𝑐(𝑓) Å³   𝑠(𝑓)         𝜀(𝑠)        𝑍(𝑠)        𝐺𝑒𝑟(𝑓) a.u.     𝑝a(𝑓) GPa      PauliE(𝑓)     edensity     efg/nts     Alpha(𝑓)\n")
+    #𝑠 = calc_𝑠()
+    𝜀 = calc_𝜀()
+    #𝜌 = calc_𝜌()
+    Eorbital = get_orbitalenergy()
+    open("properties.dat", "w") do file
+        write(file, "#     𝑓         𝑉𝑐(𝑓) Å³   𝑠(𝑓)        𝜀(𝑠)        𝜌(𝑠)        𝑊ₗᵉ(𝑠)      𝐸ₚₐᵤₗᵢ(𝑠)    𝑊ₗ(𝑠)        𝑝(𝑠) GPa\n")
         for j in 1:a
-            @printf(file, "%2d    %.3f     %7.3f    %.6f    %.6f    %9.6f    %.8f    %6.3f    %9.6f    %9.6f    %9.6f    %9.6f\n", 
-                            j,   𝑓[j],   𝑉𝑐[j],   𝑠[j],    𝜀[j],   𝑍[j],   𝐺𝑒𝑟[j],  𝑝a[j],  PauliE[j], edensity1[j], edensity2[j], alpha[j])
+            @printf(file, "%2d    %.3f     %7.3f    %.6f    %.6f    %.4f    %.6f    %.6f    %.6f    %6.3f\n", 
+                            j,   𝑓[j],   𝑉𝑐[j],   𝑠[j],    𝜀[j],   𝜌[j],   𝑊ₗᵉ[j],  𝐸ₚₐᵤₗᵢ[j], 𝑊ₗᵉ[j]+𝐸ₚₐᵤₗᵢ[j], 𝑝[j])
+        end
+        write(file, "\n")
+        for j in 1:a
+            @printf(file, "𝑓 = %.3f    𝑝 = %6.3f GPa ----orbital energies in a.u.----\n", 𝑓[j], 𝑝[j])
+            write(file, Eorbital[j])
+            write(file, "\n")
         end
     end
 end
 
+
+function debug(𝑉𝑐 = 𝑉𝑐, 𝐺ₑᵣ = 𝐺ₑᵣ, 𝑓 = scalingfactors)
+    a = length(𝑓)
+    𝑠 = calc_𝑠()
+    𝜀 = calc_𝜀()
+    𝜌 = calc_𝜌()
+    𝐸ₚₐᵤₗᵢ = get_𝐸ₚₐᵤₗᵢ()
+    𝑒𝑓𝑔╱𝑛𝑡𝑠 = get_𝑒𝑓𝑔╱𝑛𝑡𝑠()
+    𝑍 = calc_𝑍()
+    #𝑝n = calc_numerical𝑝()
+    𝑝a = calc_analytical𝑝()
+    #Eorbital = get_orbitalenergy()
+    open("debug.dat", "w") do file
+        write(file, "#    𝑓       𝑉𝑐(𝑓) Å³   𝑠(𝑓)         𝜀(𝑠)        𝜌(𝑠)        𝐺ₑᵣ(𝑓) a.u.     𝑝a(𝑓) GPa      PauliE(𝑓)     𝑒𝑓𝑔/𝑛𝑡𝑠     𝑍(𝑓)\n")
+        for j in 1:a
+            @printf(file, "%2d    %.3f     %7.3f    %.6f    %.6f    %9.6f    %.8f    %6.3f    %9.6f    %9.6f    %9.6f\n", 
+                            j,   𝑓[j],   𝑉𝑐[j],   𝑠[j],    𝜀[j],   𝜌[j],   𝐺ₑᵣ[j],  𝑝a[j],  𝐸ₚₐᵤₗᵢ[j], 𝑒𝑓𝑔╱𝑛𝑡𝑠[j], 𝑍[j])
+        end
+    end
+end
+
+
+function debug2(𝑉𝑐 = 𝑉𝑐, 𝑓 = scalingfactors)
+    a = length(𝑓)
+    #𝑠 = calc_𝑠()
+    𝜀 = calc_𝜀()
+    #𝜌 = calc_𝜌()
+    Eorbital = get_orbitalenergy()
+    open("debug.dat", "w") do file
+        write(file, "#     𝑓         𝑉𝑐(𝑓) Å³   𝑠(𝑓)        𝜀(𝑠)        𝜌(𝑠)       𝑍(𝑠)      𝑒𝑓𝑔╱𝑛𝑡𝑠(𝑠)   𝑊ₗᵉ(𝑠)      𝐸ₚₐᵤₗᵢ(𝑠)    𝑊ₗ(𝑠)        𝑝(𝑠) GPa\n")
+        for j in 1:a
+            @printf(file, "%2d    %.3f     %7.3f    %.6f    %.6f    %.4f    %.4f    %.6f    %.6f    %.6f    %.6f    %6.3f\n", 
+                            j,   𝑓[j],   𝑉𝑐[j],   𝑠[j],    𝜀[j],   𝜌[j],   𝑍[j], 𝑒𝑓𝑔╱𝑛𝑡𝑠[j],𝑊ₗᵉ[j], 𝐸ₚₐᵤₗᵢ[j], 𝑊ₗᵉ[j]+𝐸ₚₐᵤₗᵢ[j], 𝑝[j])
+        end
+    end
+end
 
 #------------------------------------------------------------------------------
 # rungaussian
@@ -666,37 +723,36 @@ end
 # algebra
 #------------------------------------------------------------------------------
 # linear scaling factor 𝑠, as the cubic root of the volume scaling
-function calculate𝑠(𝑉𝑐 = 𝑉𝑐)  # 𝑉𝑐 is a global variable
+function calc_𝑠(𝑉𝑐 = 𝑉𝑐)  # 𝑉𝑐 is a global variable
     # @. is a macro for vectoried operation/broadcasting
     return @. cbrt(𝑉𝑐/𝑉𝑐[1])
 end
 
 
 # dielectric permitivity 𝜀 = 1 + (𝜀₀-1)/𝑠̄³
-function calculate𝜀()
+function calc_𝜀()
     𝜀₀ = solventparameters()[1]
-    𝑠 = calculate𝑠()
+    𝑠 = calc_𝑠()
     return @. 1 + (𝜀₀ - 1) / 𝑠^3    # 1D array of length a
 end
 
 
-# Pauli repulson barrier 𝑍 = 𝑍₀/𝑠̄⁽³⁺𝜂⁾, where 𝑍₀ = 𝜌₀
-function calculate𝑍(𝜂=𝜂)
+# Pauli repulson barrier 𝜌 = 𝜌₀/𝑠̄⁽³⁺𝜂⁾, where 𝜌₀ = 𝜌₀
+function calc_𝜌(𝜂=𝜂)
     𝜌₀ = solventparameters()[2]
-    𝑠 = calculate𝑠()
+    𝑠 = calc_𝑠()
     return @. 𝜌₀ / 𝑠^(3+𝜂)    # 1D array of length a
 end
 
 
-# Murnaghan equation of state fitting for pressure 𝑝 calculation
-# using LsqFit
-function eosfitting(𝑉𝑐 = 𝑉𝑐, 𝐺𝑒𝑟 = 𝐺𝑒𝑟)
+# Murnaghan equation of state fitting for pressure 𝑝 calculation using LsqFit
+function eosfitting(𝑉𝑐 = 𝑉𝑐, 𝐺ₑᵣ = 𝐺ₑᵣ)
     abc_parameters = Array{Float64}(undef, 3)
     # y = (a/b)*(1/x)**b+(a-c)*x; y is Ger, x is Vc
     # a=p[1], b=p[2], c=p[3], x is Vc
     @. model(x, p) = (p[1]/p[2])*x^(-p[2]) + (p[1]-p[3])*x
     xdata = 𝑉𝑐 ./ 𝑉𝑐[1]
-    ydata = 𝐺𝑒𝑟 .- 𝐺𝑒𝑟[1]
+    ydata = 𝐺ₑᵣ .- 𝐺ₑᵣ[1]
     p0 = [0.0, 5.0, 0.0]
     fit = curve_fit(model, xdata, ydata, p0)
     abc_parameters[1] = fit.param[1]/𝑉𝑐[1]
@@ -706,7 +762,7 @@ function eosfitting(𝑉𝑐 = 𝑉𝑐, 𝐺𝑒𝑟 = 𝐺𝑒𝑟)
 end
 
 
-function calculatenumerical𝑝(𝑉𝑐 = 𝑉𝑐)
+function calc_numerical𝑝(𝑉𝑐 = 𝑉𝑐)
     𝑎, 𝑏, 𝑐 = eosfitting()
     # 1 hartree/Å³ = 4359.74417 GPa
     return @. (𝑎 * ( (𝑉𝑐[1]/𝑉𝑐)^(𝑏+1) - 1 ) + 𝑐) * 4359.74417 
@@ -714,74 +770,135 @@ end
 
 
 # eq (9) in DOI:10.1002/jcc.25544
-# In this eq, 𝒵 is called Alpha in Gaussian
-function calculateAlpha()
+# In this eq, 𝑍 is called Alpha in Gaussian
+function calc_𝑍()
     sp = solventparameters()
-    # Alpha = fA*RhoS*NVES/SolvMW  ; fA=0.063d0
-    # Alpha0 = 0.063 * sp[2] * sp[4] / sp[3]
-    𝜌 = calculate𝑍()
-    # $alpha[$n_fact]=0.063*$rhos[$n_fact]*$nves/$mw;
+    # 𝑍 = fA*RhoS*NVES/SolvMW  ; fA=0.063d0
+    # 𝑍0 = 0.063 * sp[2] * sp[4] / sp[3]
+    𝜌 = calc_𝜌()
     return @. 0.063 * 𝜌 * sp[4] / sp[3]
 end
 
+function calc_𝑍_new(𝑍, 𝑓)
+    #sp = solventparameters()
+    #𝜌 = calc_𝜌(𝜂)
+    𝐸ₚₐᵤₗᵢ = get_𝐸ₚₐᵤₗᵢ(𝑓)[1]
+    𝑛𝑡𝑠 = get_numberoftesserae(𝑓)[1]
+    𝑒𝑓𝑔╱𝑛𝑡𝑠 = get_𝑒𝑓𝑔╱𝑛𝑡𝑠(𝑓)[1]
+    𝑒𝑓𝑔 = 𝑛𝑡𝑠 * 𝑒𝑓𝑔╱𝑛𝑡𝑠
+    𝐼₁ = 𝐸ₚₐᵤₗᵢ / 𝑍
+    𝐼₂ = -4pi * 𝑅𝑟𝑒𝑓^3 * 𝑒𝑓𝑔╱𝑛𝑡𝑠 #- 𝑅𝑟𝑒𝑓 * (4pi * 𝑅𝑟𝑒𝑓^2 / 𝑛𝑡𝑠) * 𝑒𝑓𝑔 # 4pi * 𝑅𝑟𝑒𝑓^3 * get_𝑒𝑓𝑔╱𝑛𝑡𝑠()
+    temp = -(3 + 𝜂) * 𝐼₁ + 𝐼₂
+    𝑍_new = - 𝛼ᵣ / 𝑟₀ / temp
+
+    open("tmp.dat", "a") do file
+        println(file, #"𝜌_sol ", 𝜌, 
+            " 𝑍 ", 𝑍, 
+            " 𝐸ₚₐᵤₗᵢ ", 𝐸ₚₐᵤₗᵢ, 
+            " 𝑛𝑡𝑠 ", 𝑛𝑡𝑠, 
+            " 𝑒𝑓𝑔/𝑛𝑡𝑠", 𝑒𝑓𝑔╱𝑛𝑡𝑠,
+            " 𝑒𝑓𝑔 ", 𝑒𝑓𝑔, 
+            " 𝐼₁ ", 𝐼₁, 
+            " 𝐼₂ ", 𝐼₂, 
+            " temp ", temp,
+            " 𝑍_new ", 𝑍_new)
+    end
+
+    return 𝑍_new
+end
 
 # eq (24) in DOI:10.1002/jcc.25544
-function calculateanalytical𝑝(𝜂 = 𝜂, 𝑉𝑐 = 𝑉𝑐)
-    Pauli𝐸 = getPauli𝐸()
-    # $p0[$n_fact]=(3.0+$eta)/($three*($volume[$n_fact]*1.88973**3))*$qrep[$n_fact]; 
-    #@. firstterm = (3 + 𝜂) / (3 * 𝑉𝑐 * 1.88973^3) * Pauli𝐸  # 1 angstrom = 1.88973 bohr; all in atomic units
-    # $alpha[$n_fact]*$edensity[$n_fact]/$nts;  
-    alpha = calculateAlpha()
-    efg = true
-    # if efg == true, use getEFG() to calculate electron density, otherwise use getedensity()
-    @isdefined(efg) && efg == true ? edensity = getEFG() : edensity = getedensity()
-    #@. secondterm = alpha * edensity * 1.88973^3
-    return @. ((3 + 𝜂)/(3 * 𝑉𝑐 * 1.88973^3) * Pauli𝐸 - alpha * edensity) * 1.88973^3 * 4359.74417 # 1 hartree/Å³ = 4359.74417 GPa, 
+function calc_analytical𝑝(𝜂 = 𝜂, 𝑉𝑐 = 𝑉𝑐)
+    𝐸ₚₐᵤₗᵢ = get_𝐸ₚₐᵤₗᵢ()
+    𝑍 = calc_𝑍()
+    𝑒𝑓𝑔╱𝑛𝑡𝑠 = get_𝑒𝑓𝑔╱𝑛𝑡𝑠()
+    # 1 angstrom = 1.88973 bohr; 1 hartree/Å³ = 4359.74417 GPa
+    return @. ((3 + 𝜂)/(3 * 𝑉𝑐 * 1.88973^3) * 𝐸ₚₐᵤₗᵢ + 𝑍 * 𝑒𝑓𝑔╱𝑛𝑡𝑠) * 1.88973^3 * 4359.74417
 end
 
 #------------------------------------------------------------------------------
 # main
 #------------------------------------------------------------------------------
-function main(𝑓 = scalingfactors)    
+#function main(𝑓 = scalingfactors)    
     # Step 1: cavity volume 𝑉𝑐(𝑓) Gaussian jobs and solvent property calculations
     writegjf("Vc")
-#    if isnumerical
-#        rungaussian("Vc") 
-#    else 
-        for j in 𝑓
-            rungaussian("Vc-$j")
-            open("Vc.log", "$(j == first(𝑓) ? "w" : "a")") do file
-                write(file, read(`cat Vc-$j.log`, String))
-            end
-            run(`cp tesserae.off tesserae-$j.off`)
+    𝑓 = scalingfactors
+    for j in 𝑓
+        rungaussian("Vc-$j")
+        open("Vc.log", "$(j == first(𝑓) ? "w" : "a")") do file
+            write(file, read("Vc-$j.log", String))
         end
-#    end
-    global 𝑉𝑐 = get𝑉𝑐()
+        run(`cp tesserae.off tesserae-$j.off`)
+    end
+
+    global 𝑉𝑐 = get_𝑉𝑐()
 
     # Step 2: electronic structure Gaussian jobs
     writetesseragrid()
-    writegjf("Ger")
-    rungaussian("Ger")
-    global 𝐺𝑒𝑟 = get𝐺𝑒𝑟()
 
-    # Step 3: analytical pressure calculation
-    # formchk K_xp-060.chk 42.fchk 
-    # cubegen 0 density=scf 42.fchk 42.cube -5 < fort.42
-#    if !isnumerical
-#        for j in 𝑓
-#            run(`formchk $j.chk $j.fchk`)
-            #write("1.sh", "cubegen 0 density=scf $j.fchk $j.cube -5 < $j.tsrcoord")
-#            write("1.sh", "cubegen 0 density=scf $j.fchk $j.cube -5 < fort.$(round(Int, j*1000))")            
-#            run(`bash 1.sh`)
-#        end
-#        run(`rm -rf 1.sh`)
-#        debug()
-#    end
-    # print results to properties.dat file
-    writeproperties()
-    write("1.sh", "rm -rf fort.* tesserae-*.off Vc-*.gjf Vc-*.log")
-    run(`bash 1.sh`)
-    run(`rm -rf 1.sh`)
-end
+    if radiustype !== "rahm_ionic"
+        writegjf("Ger")
+        rungaussian("Ger")
+        global 𝐺ₑᵣ = get_𝐺ₑᵣ()
+        writeproperties()
+        #debug()
+    end
+    
+    if radiustype == "rahm_ionic"
+        # self-consistent calculation of 𝑍
+        sp = solventparameters()
+        𝜌_guess = 40.0
+        𝑍_guess = 0.063 * 𝜌_guess * sp[4] / sp[3]
+        #𝜌_guess = calc_𝜌()[1]
+        #𝑍_guess = calc_𝑍()[1]
+        gjfger_1st_scalingfactor(𝜌_guess)
+        rungaussian("Ger")
+        𝑟ₐ = atomicradii()
+        atoms = atomlist()
+        𝑅𝑟𝑒𝑓 = 𝑓[1] * 𝑟ₐ[atoms[1]] * 1.88973 # reference radius of Cl- in bohr
+        f1 = [𝑓[1]]
+        𝑍_new = calc_𝑍_new(𝑍_guess, f1)
 
-main()
+        while 𝑍_new/𝑍_guess >= 1.01
+            𝜌_new = 𝜌_guess * 𝑍_new / 𝑍_guess
+            𝜌_guess = 𝜌_new
+            gjfger_1st_scalingfactor(𝜌_guess)
+            rungaussian("Ger")
+            𝑍_guess = 𝑍_new
+            𝑍_new = calc_𝑍_new(𝑍_guess, f1)
+        end
+        # lattice electrostatic energy calculation
+        𝑛𝑡𝑠 = get_numberoftesserae()
+        𝑠 = calc_𝑠()
+        𝑅 = 𝑅𝑟𝑒𝑓 * 𝑠
+        #a_i = @. 4pi * 𝑅^2/𝑛𝑡𝑠#𝛼ᵢ
+        𝑊ₗᵉ = -𝛼ᵣ / 𝑟₀ ./ 𝑠
+        𝑑𝑊ₗᵉ╱𝑑𝑠 = -𝑊ₗᵉ ./ 𝑠
+        # lattice xp-pcm Pauli energy
+        𝑍 = @. 𝑍_new / 𝑠^(3 + 𝜂)
+        𝜌 = 𝑍 * sp[3] / sp[4] / 0.063
+        gjfgeranalytical(𝜌)
+        rungaussian("Ger")
+        𝐸ₚₐᵤₗᵢ = get_𝐸ₚₐᵤₗᵢ()
+        𝑒𝑓𝑔╱𝑛𝑡𝑠 = get_𝑒𝑓𝑔╱𝑛𝑡𝑠()
+        𝐼₂ = @. -4pi * 𝑅𝑟𝑒𝑓^3 * 𝑒𝑓𝑔╱𝑛𝑡𝑠 * 𝑠^4
+        #𝐼₂ = @. -4pi * 𝑅^3 * 𝑒𝑓𝑔╱𝑛𝑡𝑠# * 𝑠^2
+        𝑑𝐸ₚₐᵤₗᵢ╱𝑑𝑠 = @. -(3 + 𝜂) * 𝐸ₚₐᵤₗᵢ / 𝑠 + 𝑍 * 𝐼₂
+        # total lattice energy
+        𝑑𝑊ₗ╱𝑑𝑠 = 𝑑𝑊ₗᵉ╱𝑑𝑠 + 𝑑𝐸ₚₐᵤₗᵢ╱𝑑𝑠
+        # volume
+        𝑎_cell = 2𝑟₀/√3
+        𝑉_cell = @. (𝑎_cell * 𝑠 * 0.529177)^3 # 1 bohr = 0.529177 anstrom
+        𝑑𝑉_cell╱𝑑𝑠 = @. 3𝑉_cell/𝑠
+        # pressure
+        𝑝 = @. -𝑑𝑊ₗ╱𝑑𝑠/𝑑𝑉_cell╱𝑑𝑠 * 4359.7 # 1 hartree/bohr = 4359.7 GPa
+        𝑉_cell╱𝑉₀ = 𝑉_cell / 𝑉_cell[1]
+        writeproperties2()
+        debug2()
+    end
+    # write("1.sh", "rm -rf fort.* tesserae-*.off Vc-*.gjf Vc-*.log")
+    # run(`bash 1.sh`)
+    # run(`rm -rf 1.sh`)
+#end
+
+#main()
