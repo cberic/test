@@ -791,7 +791,7 @@ function calc_𝑍_new(𝑍, 𝑓)
     temp = -(3 + 𝜂) * 𝐼₁ + 𝐼₂
     𝑍_new = - 𝛼ᵣ / 𝑟₀ / temp
 
-    open("tmp.dat", "a") do file
+    open("iterativeZ.dat", "a") do file
         println(file, #"𝜌_sol ", 𝜌, 
             " 𝑍 ", 𝑍, 
             " 𝐸ₚₐᵤₗᵢ ", 𝐸ₚₐᵤₗᵢ, 
@@ -896,9 +896,9 @@ end
         writeproperties2()
         debug2()
     end
-    # write("1.sh", "rm -rf fort.* tesserae-*.off Vc-*.gjf Vc-*.log")
-    # run(`bash 1.sh`)
-    # run(`rm -rf 1.sh`)
+    write("1.sh", "rm -rf fort.* tesserae-*.off Vc-*.gjf Vc-*.log")
+    run(`bash 1.sh`)
+    run(`rm -rf 1.sh`)
 #end
 
 #main()
