@@ -53,3 +53,7 @@ single-atom-or-molecule/analytical-p-test/*.gjf
 single-atom-or-molecule/analytical-p-test/*.log
 single-atom-or-molecule/analytical-p-test/*.dat
 single-atom-or-molecule/analytical-p-test/fort.*
+rewrite
+*.zip
+ipea-plotting.jl
+*.pdf
