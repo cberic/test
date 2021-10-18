@@ -847,8 +847,8 @@ end
     if radiustype == "rahm_ionic"
         # self-consistent calculation of 𝑍
         sp = solventparameters()
-        𝜌_guess = 40.0
-        𝑍_guess = 0.063 * 𝜌_guess * sp[4] / sp[3]
+        global 𝜌_guess = 40.0
+        global 𝑍_guess = 0.063 * 𝜌_guess * sp[4] / sp[3]
         #𝜌_guess = calc_𝜌()[1]
         #𝑍_guess = calc_𝑍()[1]
         gjfger_1st_scalingfactor(𝜌_guess)
@@ -857,15 +857,15 @@ end
         atoms = atomlist()
         𝑅𝑟𝑒𝑓 = 𝑓[1] * 𝑟ₐ[atoms[1]] * 1.88973 # reference radius of Cl- in bohr
         f1 = [𝑓[1]]
-        𝑍_new = calc_𝑍_new(𝑍_guess, f1)
+        global 𝑍_new = calc_𝑍_new(𝑍_guess, f1)
 
         while 𝑍_new/𝑍_guess >= 1.01
-            𝜌_new = 𝜌_guess * 𝑍_new / 𝑍_guess
-            𝜌_guess = 𝜌_new
+            global 𝜌_new = 𝜌_guess * 𝑍_new / 𝑍_guess
+            global 𝜌_guess = 𝜌_new
             gjfger_1st_scalingfactor(𝜌_guess)
             rungaussian("Ger")
-            𝑍_guess = 𝑍_new
-            𝑍_new = calc_𝑍_new(𝑍_guess, f1)
+            global 𝑍_guess = 𝑍_new
+            global 𝑍_new = calc_𝑍_new(𝑍_guess, f1)
         end
         # lattice electrostatic energy calculation
         𝑛𝑡𝑠 = get_numberoftesserae()
