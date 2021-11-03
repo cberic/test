@@ -155,8 +155,11 @@ function atomicradii(type = radiustype)
         # add more if needed from https://chemistry-europe.onlinelibrary.wiley.com/doi/10.1002/chem.201700610
     elseif type == "rahm_ionic"
         return Dict(
+            "F"  => 1.92,   "9" => 1.92,
             "Cl" => 2.29,   "17" => 2.29,
-            "Na"=> 1.34,    "11" => 1.34)
+            "Br" => 2.41,   "35" => 2.41,
+            "Na" => 1.34,   "11" => 1.34,
+            "Cs" => 2.12,   "55" => 2.12)
     else
         error("radiustype not supported. Try bondi or rahm")
     end
@@ -593,6 +596,22 @@ function get_𝐺ₑᵣ(𝑓 = scalingfactors)
 end
 
 
+function get_𝑊ₚₒₗ′(𝑓 = scalingfactors)
+    a = length(𝑓)
+    𝑊ₚₒₗ′ = Array{Float64}(undef, a)
+    j = 1    # j ranges from 1:length(𝑓)
+    open("Ger.log", "r") do file
+        for line in eachline(file)
+            if occursin("Polarized solute", line)
+                𝑊ₚₒₗ′[j] = parse(Float64, split(line)[5]) / 627.503 # 1 hartree = 627.503 kcal/mol
+                j += 1    # j ranges from 1:length(𝑓)
+            end
+        end
+    end
+    return 𝑊ₚₒₗ′
+end
+
+
 function get_orbitalenergy(𝑓 = scalingfactors)
     a = length(𝑓)
     orbital = Array{String}(undef, a)
@@ -641,13 +660,13 @@ function writeproperties2(𝑉𝑐 = 𝑉𝑐, 𝑓 = scalingfactors)
     #𝑠 = calc_𝑠()
     𝜀 = calc_𝜀()
     #𝜌 = calc_𝜌()
-    #𝐸ᵣ = get_𝐺ₑᵣ()
+    #𝐺ₑᵣ = get_𝐺ₑᵣ()
     Eorbital = get_orbitalenergy()
-    open("properties.dat", "w") do file# ₛₒₗ
-        write(file, "#     𝑓        𝑉𝑐(𝑓) Å³   𝑠(𝑓)     𝜀(𝑠)        𝜌ₛₒₗ(𝑠)      𝒵(𝑠)       𝑊ₑ(𝑠)       𝐸ₚₐᵤₗᵢ(𝑠)    𝐸ᵣ(𝑠)          𝑊ₗ(𝑠)          𝑝(𝑠) GPa  𝑉_cell(𝑠) Å³\n")
+    open("properties.dat", "w") do file
+        write(file, "#     𝑓        𝑉𝑐(𝑓) Å³   𝑠(𝑓)     𝜀(𝑠)        𝜌ₛₒₗ(𝑠)      𝒵(𝑠)       𝑊ₑ(𝑠)       𝑊ₚₒₗ(𝑠)    𝐸ₚₐᵤₗᵢ(𝑠)    𝐺ₑᵣ(𝑠)          𝑊ₗ(𝑠)          𝑝(𝑠) GPa  𝑉_cell(𝑠) Å³\n")
         for j in 1:a
-            @printf(file, "%-2d    %.3f    %7.3f    %.3f    %.6f    %.4f    %7.4f    %.6f    %.6f    %.6f    %.6f    %7.3f    %6.3f\n", 
-                            j,     𝑓[j],   𝑉𝑐[j],   𝑠[j],  𝜀[j],   𝜌[j],   𝒵[j],  𝑊ₑ[j],  𝐸ₚₐᵤₗᵢ[j], 𝐸ᵣ[j],  𝑊ₗ[j],  𝑝[j],  𝑉_cell[j])
+            @printf(file, "%-2d    %.3f    %7.3f    %.3f    %.6f    %.4f    %7.4f    %.6f    %.6f    %.6f    %.6f    %.6f    %7.3f    %6.3f\n", 
+                            j,     𝑓[j],   𝑉𝑐[j],   𝑠[j],  𝜀[j],   𝜌[j],   𝒵[j],  𝑊ₑ[j],  𝑊ₚₒₗ[j], 𝐸ₚₐᵤₗᵢ[j], 𝐺ₑᵣ[j],  𝑊ₗ[j],  𝑝[j],  𝑉_cell[j])
         end
         write(file, "\n")
         for j in 1:a
@@ -685,12 +704,11 @@ function debug2(𝑉𝑐 = 𝑉𝑐, 𝑓 = scalingfactors)
     #𝑠 = calc_𝑠()
     𝜀 = calc_𝜀()
     #𝜌 = calc_𝜌()
-    Eorbital = get_orbitalenergy()
     open("debug.dat", "w") do file
-        write(file, "#     𝑓         𝑉𝑐(𝑓) Å³   𝑠(𝑓)        𝜀(𝑠)        𝜌ₛₒₗ(𝑠)    𝒵(𝑠)      𝑒𝑓𝑔╱𝑛𝑡𝑠(𝑠)   𝑊ₑ(𝑠)      𝐸ₚₐᵤₗᵢ(𝑠)    𝑊ₗ(𝑠)        𝑝(𝑠) GPa\n")
+        write(file, "#     𝑓         𝑉𝑐(𝑓) Å³   𝑠(𝑓)        𝜀(𝑠)        𝜌ₛₒₗ(𝑠)    𝒵(𝑠)      𝑒𝑓𝑔╱𝑛𝑡𝑠(𝑠)   𝑊ₑ(𝑠)      𝑊ₚₒₗ(𝑠)      𝑊ₚₒₗ′(𝑠)      𝐸ₚₐᵤₗᵢ(𝑠)    𝑊ₗ(𝑠)        𝑝(𝑠) GPa\n")
         for j in 1:a
-            @printf(file, "%-2d    %.3f     %7.3f    %.6f    %.6f    %.4f    %.4f    %.6f    %.6f    %.6f    %.6f    %6.3f\n", 
-                            j,   𝑓[j],   𝑉𝑐[j],   𝑠[j],    𝜀[j],   𝜌[j],   𝒵[j], 𝑒𝑓𝑔╱𝑛𝑡𝑠[j],𝑊ₑ[j], 𝐸ₚₐᵤₗᵢ[j], 𝑊ₑ[j]+𝐸ₚₐᵤₗᵢ[j], 𝑝[j])
+            @printf(file, "%-2d    %.3f     %7.3f    %.6f    %.6f    %.4f    %.4f    %.6f    %.6f    %.6f    %.6f    %.6f    %.6f    %6.3f\n", 
+                            j,   𝑓[j],   𝑉𝑐[j],   𝑠[j],    𝜀[j],   𝜌[j],   𝒵[j], 𝑒𝑓𝑔╱𝑛𝑡𝑠[j],𝑊ₑ[j], 𝑊ₚₒₗ[j],𝑊ₚₒₗ′[j], 𝐸ₚₐᵤₗᵢ[j], 𝑊ₗ[j], 𝑝[j])
         end
     end
 end
@@ -786,7 +804,8 @@ function calc_𝒵_new(𝒵, 𝑅𝑟𝑒𝑓, 𝑓=[scalingfactors[1]])
     𝐼₁ = 𝐸ₚₐᵤₗᵢ / 𝒵
     𝐼₂ = 4π * 𝑅𝑟𝑒𝑓^3 * 𝑒𝑓𝑔╱𝑛𝑡𝑠 #-𝑅𝑟𝑒𝑓 * (4π * 𝑅𝑟𝑒𝑓^2 / 𝑛𝑡𝑠) * 𝑒𝑓𝑔
     denominator = (3 + 𝜂) * 𝐼₁ + 𝐼₂
-    𝒵_new =  𝛼ᵣ / 𝑟₀ / denominator
+    numerator = 𝛼ᵣ / 𝑟₀ + 0.5(1 - 1/dielectric) / 𝑅𝑟𝑒𝑓 * (1 + 3/dielectric)
+    𝒵_new =  numerator / denominator
 
     open("iterativeZ.dat", "a") do file
         println(file, #"𝜌_sol ", 𝜌, 
@@ -797,6 +816,7 @@ function calc_𝒵_new(𝒵, 𝑅𝑟𝑒𝑓, 𝑓=[scalingfactors[1]])
             " 𝑒𝑓𝑔 ", 𝑒𝑓𝑔, 
             " 𝐼₁ ", 𝐼₁, 
             " 𝐼₂ ", 𝐼₂, 
+            " numerator ", numerator,
             " denominator ", denominator,
             " 𝒵_new ", 𝒵_new)
     end
@@ -844,7 +864,7 @@ end
     if radiustype == "rahm_ionic"
         # self-consistent calculation of 𝒵
         sp = solventparameters()
-        𝜌_guess = 40.0
+        𝜌_guess = 5.0
         𝒵_guess = 0.063 * 𝜌_guess * sp[4] / sp[3]
         gjfger_1st_scalingfactor(𝜌_guess)
         rungaussian("Ger")
@@ -861,17 +881,24 @@ end
             global 𝒵_new = calc_𝒵_new(𝒵_guess, 𝑅𝑟𝑒𝑓)
         end
 
-        # lattice electrostatic energy
+        # lattice Coulomb energy
         𝑠 = calc_𝑠()
         𝑊ₑ = abs(charge) * -𝛼ᵣ / 𝑟₀ ./ 𝑠
         𝑑𝑊ₑ╱𝑑𝑠 = -𝑊ₑ ./ 𝑠
 
-        # xp-pcm energy (𝐸ᵣ) of the atom without polarization contribution
+        # lattice polarization energy
+        𝜀 = calc_𝜀()
+        𝛼ₚₒₗ = 0.5(1 .- 1 ./ 𝜀)
+        𝑊ₚₒₗ = @. -𝛼ₚₒₗ / 𝑠 / 𝑅𝑟𝑒𝑓
+        𝑑𝑊ₚₒₗ╱𝑑𝑠 = @. -𝑊ₚₒₗ / 𝑠 * (1 + 3/𝜀)
+
+        # xp-pcm energy, 𝐺ₑᵣ with polarization contribution and 𝐸ᵣ without
         𝒵 = @. 𝒵_new / 𝑠^(3 + 𝜂)
         𝜌 = 𝒵 * sp[3] / sp[4] / 0.063
         gjfgeranalytical(𝜌)
         rungaussian("Ger")
-        𝐸ᵣ = get_𝐺ₑᵣ()
+        𝐺ₑᵣ = get_𝐺ₑᵣ()
+        𝑊ₚₒₗ′ = get_𝑊ₚₒₗ′()
         𝐸ₚₐᵤₗᵢ = get_𝐸ₚₐᵤₗᵢ()
         𝑒𝑓𝑔╱𝑛𝑡𝑠 = get_𝑒𝑓𝑔╱𝑛𝑡𝑠()
         𝑅 = 𝑅𝑟𝑒𝑓 * 𝑠
@@ -879,21 +906,28 @@ end
         𝑑𝐸ᵣ╱𝑑𝑠 = @. -(3 + 𝜂) * 𝐸ₚₐᵤₗᵢ / 𝑠 + 𝒵 * 𝐼₂
 
         # total lattice energy
-        𝑊ₗ = 𝑊ₑ + 𝐸ᵣ
-        𝑑𝑊ₗ╱𝑑𝑠 = 𝑑𝑊ₑ╱𝑑𝑠 + 𝑑𝐸ᵣ╱𝑑𝑠
+        𝑊ₗ = 𝑊ₑ + 𝐺ₑᵣ
+        𝑑𝑊ₗ╱𝑑𝑠 = 𝑑𝑊ₑ╱𝑑𝑠 + 𝑑𝑊ₚₒₗ╱𝑑𝑠 + 𝑑𝐸ᵣ╱𝑑𝑠
 
-        # volume (BCC lattice)
-        𝑎_cell = 2𝑟₀ / √3
-        𝑉_cell = @. (𝑎_cell * 𝑠 * 0.529177)^3 # 1 bohr = 0.529177 Å
-        𝑑𝑉_cell╱𝑑𝑠 = @. 3𝑉_cell / 𝑠
+        # unit cell volume per formula unit
+        if lattice == "NaCl"
+            𝑎_cell = 2𝑟₀
+            𝑉_cell = @. (𝑎_cell * 𝑠 * 0.529177)^3 / 4 # 1 bohr = 0.529177 Å; devided by 4 because there are 4 formula units of NaCl
+            𝑑𝑉_cell╱𝑑𝑠 = @. 3𝑉_cell / 𝑠
+        end
+        if lattice == "CsCl"
+            𝑎_cell = 2𝑟₀ / √3
+            𝑉_cell = @. (𝑎_cell * 𝑠 * 0.529177)^3 # 1 bohr = 0.529177 Å
+            𝑑𝑉_cell╱𝑑𝑠 = @. 3𝑉_cell / 𝑠
+        end
 
         # analytical pressure
         𝑝 = @. -𝑑𝑊ₗ╱𝑑𝑠 / 𝑑𝑉_cell╱𝑑𝑠 * 4359.7 # 1 hartree/bohr = 4359.7 GPa
-        𝑉_cell╱𝑉₀ = 𝑉_cell / 𝑉_cell[1]
+        #𝑉_cell╱𝑉₀ = 𝑉_cell / 𝑉_cell[1]
 
         # print output
         writeproperties2()
-        #debug2()
+        debug2()
     end
     write("1.sh", "rm -rf fort.* *.off Vc-*.gjf Vc-*.log")
     run(`bash 1.sh`)
