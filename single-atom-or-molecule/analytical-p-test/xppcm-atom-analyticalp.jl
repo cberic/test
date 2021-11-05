@@ -889,7 +889,7 @@ end
         # lattice polarization energy
         𝜀 = calc_𝜀()
         𝛼ₚₒₗ = 0.5(1 .- 1 ./ 𝜀)
-        𝑊ₚₒₗ = @. -𝛼ₚₒₗ / 𝑠 / 𝑅𝑟𝑒𝑓
+        𝑊ₚₒₗ = @. abs(charge) * -𝛼ₚₒₗ / 𝑠 / 𝑅𝑟𝑒𝑓
         𝑑𝑊ₚₒₗ╱𝑑𝑠 = @. -𝑊ₚₒₗ / 𝑠 * (1 + 3/𝜀)
 
         # xp-pcm energy, 𝐺ₑᵣ with polarization contribution and 𝐸ᵣ without
@@ -927,7 +927,7 @@ end
 
         # print output
         writeproperties2()
-        debug2()
+        #debug2()
     end
     write("1.sh", "rm -rf fort.* *.off Vc-*.gjf Vc-*.log")
     run(`bash 1.sh`)
