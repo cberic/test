@@ -5,7 +5,7 @@ solvent = "cyclohexane"
 
 #### User defined dielectric permittivity of the solvent or the crystal
 #### Comment it out to use the default value
-dielectric = 1.64^2 #square of the reflective index
+dielectric = 1.64^2 #square of the refractive index
 
 #### Choose "Bondi" or "Rahm" vdW radii for atoms, or "Rahm_ionic" for ions
 #### with the suggested scaling factors for the corresponding radius type
