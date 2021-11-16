@@ -920,7 +920,12 @@ end
             𝑉_cell = @. (𝑎_cell * 𝑠 * 0.529177)^3 # 1 bohr = 0.529177 Å
             𝑑𝑉_cell╱𝑑𝑠 = @. 3𝑉_cell / 𝑠
         end
-
+        ##!!RC121121
+        if lattice == "noLattice"
+            𝑉_cell =  𝑉𝑐
+            𝑑𝑉_cell╱𝑑𝑠 = @. 3𝑉_cell / 𝑠
+        end
+        ##!!RC121121
         # analytical pressure
         𝑝 = @. -𝑑𝑊ₗ╱𝑑𝑠 / 𝑑𝑉_cell╱𝑑𝑠 * 4359.7 # 1 hartree/bohr = 4359.7 GPa
         #𝑉_cell╱𝑉₀ = 𝑉_cell / 𝑉_cell[1]

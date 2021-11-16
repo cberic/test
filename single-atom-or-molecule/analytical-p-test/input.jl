@@ -20,8 +20,11 @@ scalingfactors = [1.0, 0.975, 0.95, 0.925, 0.9, 0.8, 0.75, 0.725]
 #lattice = "NaCl"
 #𝛼ᵣ = 1.747565  # Madelung constant, https://en.wikipedia.org/wiki/Madelung_constant
 #𝑟₀ = 2.820 * 1.88973  # https://en.wikipedia.org/wiki/Born–Mayer_equation
-lattice = "CsCl"
-𝛼ᵣ = 1.762675  # Madelung constant, https://en.wikipedia.org/wiki/Madelung_constant
+#lattice = "CsCl"
+#𝛼ᵣ = 1.762675  # Madelung constant, https://en.wikipedia.org/wiki/Madelung_constant
+#𝑟₀ = 3.571 * 1.88973 # closest distance between two ions of opposite charge in bohr
+lattice = "noLattice"
+𝛼ᵣ = 0.0
 𝑟₀ = 3.571 * 1.88973 # closest distance between two ions of opposite charge in bohr
 
 #### The mean area in Å² of the tesserae by which the surface of the cavity
