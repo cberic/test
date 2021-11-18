@@ -58,3 +58,6 @@ rewrite
 *.zip
 ipea-plotting.jl
 *.pdf
+single-atom-or-molecule/analytical-p-test/gen
+
+
