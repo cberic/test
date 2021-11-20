@@ -213,7 +213,7 @@ function get_atomcoor(n::Int64, m::Int64, geom::Vector{SubString{String}} = geom
 end
 # @time get_atomcoor.(1:18,103)
 
-function print_line(io::IO, type::String, n::Int64, m::Int64, 𝑓::Float64)
+function print_line(io::IO, type::String, n::Int64, m::Int64, 𝑓::Float64, sphere::String = sphere)
     atomlable = get_atomlabel(n, m)
     atomcoor = get_atomcoor(n, m)
     radius = get_atom_radius(atomlable)
@@ -223,6 +223,9 @@ function print_line(io::IO, type::String, n::Int64, m::Int64, 𝑓::Float64)
     elseif type == "Vc" || type == "Ger"
         println(io, atomcoor[1], " ", atomcoor[2], " ", atomcoor[3], "    ", radius, "    ", 𝑓)
     elseif type == "Gcav"
+        if sphere == "hard"
+            𝑓 = scalingfactors[1]
+        end
         println(io, n, "    ", radius * 𝑓, "    1.0")
     end
 end
@@ -269,11 +272,11 @@ function print_mol_spec(io::IO, i::Int64, j::Int64, chrg::Int64 = charge, mulplc
     print_structure(io, "structure", i, 𝑓[j])
 end
 
-function print_pcm_spec(io::IO, jobtype::String, i::Int64, j::Int64, tsare::Float64 = tesserae, noa::Vector{Int64} = numatoms)
+function print_pcm_spec(io::IO, jobtype::String, i::Int64, j::Int64, tsare::Float64 = tesserae, noa::Vector{Int64} = numatoms, cavity::String = cavity)
     sp = get_sol_params()
     if jobtype == "Vc"
         println(io, "norep nodis nocav pcmdoc g03defaults tsare=",tsare)
-        println(io, "nsfe=",noa[i]," rsolv=",sp.𝑟)
+        println(io, "nsfe=",noa[i], cavity == "vdw" ? " noaddsph" : " rsolv=$(sp.𝑟)")
     elseif jobtype == "Ger"
         #𝜀 = calc_𝜀()    # data of 𝜀 and 𝜌 needed for the Ger gjf files
         #𝜌 = calc_𝜌()
@@ -284,7 +287,7 @@ function print_pcm_spec(io::IO, jobtype::String, i::Int64, j::Int64, tsare::Floa
     elseif jobtype == "Gcav"
         #𝑉ₘ = calc_𝑉ₘ()    # molar volume 𝑉ₘ of the solvent
         println(io, "norep nodis cav g03defaults tsare=",tsare)
-        println(io, "nsfe=",noa[i])
+        println(io, "nsfe=",noa[i], cavity == "vdw" ? " noaddsph" : "")
         println(io, "Vmol=",𝑉ₘ[j]," rsolv=",sp.𝑟)
     end
 end
@@ -380,7 +383,7 @@ function restart_Ger_jobs()
     end
 end
 
-# extract data from Gaussian .log output files
+# extract data from Gaussian .log write_properties files
 function get_data(jobtype::String, searchstring::String, fieldnum::Int64)
     nos = calc_num_structs()
     nosf = calc_num_scalingfactors()
@@ -406,9 +409,23 @@ end
 
 
 #------------------------------------------------------------------------------
-# Output.jl
+# write_properties.jl
 #------------------------------------------------------------------------------
-function output(𝑓, 𝑉𝑐, 𝑠, 𝑠̄, 𝜀, 𝜌, 𝑉ₘ, 𝐺𝑒𝑟, 𝑝, 𝑝̄, 𝐸𝑐𝑎𝑣, 𝐺𝑐𝑎𝑣, 𝐺𝑡𝑜𝑡, Δ𝐺𝑡𝑜𝑡)
+function write_properties(𝑓::NTuple{7, Float64}, 
+                        𝑉𝑐::Matrix{Float64}, 
+                        𝑠::Matrix{Float64}, 
+                        𝑠̄::Matrix{Float64}, 
+                        𝜀::Matrix{Float64}, 
+                        𝜌::Matrix{Float64}, 
+                        𝑉ₘ::Matrix{Float64}, 
+                        𝐺𝑒𝑟::Matrix{Float64}, 
+                        𝑝::Matrix{Float64}, 
+                        𝑝̄::Matrix{Float64}, 
+                        𝑉𝑐𝑎𝑣::Matrix{Float64}, 
+                        𝐸𝑐𝑎𝑣::Matrix{Float64}, 
+                        𝐺𝑐𝑎𝑣::Matrix{Float64}, 
+                        𝐺𝑡𝑜𝑡::Matrix{Float64}, 
+                        Δ𝐺𝑡𝑜𝑡::Matrix{Float64})
     nos = calc_num_structs()
     nosf = calc_num_scalingfactors()
     #𝑠 = calc_𝑠()
@@ -424,10 +441,12 @@ function output(𝑓, 𝑉𝑐, 𝑠, 𝑠̄, 𝜀, 𝜌, 𝑉ₘ, 𝐺𝑒𝑟,
     open("properties.dat", "w") do file
         for i in 1:nos
             println(file, "structure $i")
-            println(file, "#    𝑓       𝑉𝑐(𝑓)      𝑠(𝑓)         𝑠̄(𝑓,𝑛ₛ)      𝜀(𝑠̄)        𝜌(𝑠̄)        𝑉ₘ(𝑠̄)      𝐺𝑒𝑟(𝑓)          𝑝(𝑓)     𝑝̄(𝑠̄)      𝐸𝑐𝑎𝑣(𝑓)      𝐺𝑐𝑎𝑣(𝑓)      𝐺𝑡𝑜𝑡(𝑓)          Δ𝐺𝑡𝑜𝑡")
+            println(file, "#    𝑓        𝑉𝑐(𝑓)      𝑠(𝑓)        𝑠̄(𝑓)        𝜀(𝑠̄)        𝜌(𝑠̄)        𝑉ₘ(𝑠̄)       𝐺𝑒𝑟             𝑝        𝑝̄        𝑉𝑐𝑎𝑣       𝑝̄𝑉𝑐𝑎𝑣         𝐸𝑐𝑎𝑣          𝐺𝑐𝑎𝑣         𝐺𝑡𝑜𝑡             Δ𝐺𝑡𝑜𝑡")
+            println(file, "              Å³                                                                     Eₕ              GPa      GPa      Å³          Eₕ            Eₕ            Eₕ           Eₕ            kcal/mol")
             for j in 1:nosf
-                @printf(file, "%d    %.2f    %7.3f    %.6f    %.6f    %.6f    %.6f    %7.3f    %.8f    %.3f    %.3f    %.8f    %.8f    %.8f    %5.2f\n", 
-                            j,    𝑓[j],   𝑉𝑐[i,j], 𝑠[i,j],  𝑠̄[j],   𝜀[j],   𝜌[j],  𝑉ₘ[j], 𝐺𝑒𝑟[i,j], 𝑝[i,j], 𝑝̄[j], 𝐸𝑐𝑎𝑣[i,j], 𝐺𝑐𝑎𝑣[i,j], 𝐺𝑡𝑜𝑡[i,j], Δ𝐺𝑡𝑜𝑡[i,j])
+                pv = 𝑝̄[j] * 𝑉𝑐𝑎𝑣[i,j] * 2.293712569e-4
+                @printf(file, "%d    %.2f    %7.3f    %.6f    %.6f    %.6f    %.6f    %7.3f    %.8f    %6.3f    %6.3f    %7.3f    %.8f    %.8f    %.8f    %.8f    %7.2f\n", 
+                            j,    𝑓[j],   𝑉𝑐[i,j], 𝑠[i,j],  𝑠̄[j],   𝜀[j],   𝜌[j],  𝑉ₘ[j], 𝐺𝑒𝑟[i,j], 𝑝[i,j], 𝑝̄[j], 𝑉𝑐𝑎𝑣[i,j],  pv,  𝐸𝑐𝑎𝑣[i,j], 𝐺𝑐𝑎𝑣[i,j], 𝐺𝑡𝑜𝑡[i,j], Δ𝐺𝑡𝑜𝑡[i,j])
             end
             println(file)
         end
@@ -485,7 +504,7 @@ function calc_𝑝(𝑉𝑐, 𝐺𝑒𝑟)
     return @. (𝑎 * ( (𝑉𝑐[:,1]/𝑉𝑐)^(𝑏+1) - 1 ) + 𝑐) * 4359.74417
 end
 
-function calc_Δ𝐺𝑡𝑜𝑡(mol = molecularity, 𝐺𝑡𝑜𝑡 = 𝐺𝑡𝑜𝑡)
+function calc_Δ𝐺𝑡𝑜𝑡(𝐺𝑡𝑜𝑡, mol = molecularity)
     Δ𝐺𝑡𝑜𝑡 = Array{Float64}(undef, size(𝐺𝑡𝑜𝑡))  # nos * nosf 2D array
     if mol == "uni"
         for i in 1:length(𝐺𝑡𝑜𝑡[1,:])
@@ -513,7 +532,7 @@ end
 #------------------------------------------------------------------------------
 # main.jl
 #------------------------------------------------------------------------------
-function main()
+#function main()
     # Step 1: cavity volume 𝑉𝑐(𝑓) and solvent property calculations
     if !restart  # new job
         mkpath("tmp")    # creat a tmp folder in current directory
@@ -555,11 +574,11 @@ function main()
     #𝐸𝑐𝑎𝑣 and 𝑉𝑐𝑎𝑣 are nos * nosf 2D arrays; 1 GPa*Å³ = 2.293712569e-4 Hartree
     𝐺𝑐𝑎𝑣 = @. 𝐸𝑐𝑎𝑣 + 𝑝̄ * 𝑉𝑐𝑎𝑣 * 2.293712569e-4    # nos * nosf 2D array
     𝐺𝑡𝑜𝑡 = 𝐺𝑒𝑟 .+ 𝐺𝑐𝑎𝑣    # nos * nosf 2D array
-    Δ𝐺𝑡𝑜𝑡 = calc_Δ𝐺𝑡𝑜𝑡()
+    Δ𝐺𝑡𝑜𝑡 = calc_Δ𝐺𝑡𝑜𝑡(𝐺𝑡𝑜𝑡)
 
     # print results to properties.dat file
     𝑓 = scalingfactors
-    output(𝑓, 𝑉𝑐, 𝑠, 𝑠̄, 𝜀, 𝜌, 𝑉ₘ, 𝐺𝑒𝑟, 𝑝, 𝑝̄, 𝐸𝑐𝑎𝑣, 𝐺𝑐𝑎𝑣, 𝐺𝑡𝑜𝑡, Δ𝐺𝑡𝑜𝑡)
-end
+    write_properties(𝑓, 𝑉𝑐, 𝑠, 𝑠̄, 𝜀, 𝜌, 𝑉ₘ, 𝐺𝑒𝑟, 𝑝, 𝑝̄, 𝑉𝑐𝑎𝑣, 𝐸𝑐𝑎𝑣, 𝐺𝑐𝑎𝑣, 𝐺𝑡𝑜𝑡, Δ𝐺𝑡𝑜𝑡)
+#end
 
-main()
+#main()
