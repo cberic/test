@@ -804,7 +804,7 @@ function calc_𝒵_new(𝒵, 𝑅𝑟𝑒𝑓, 𝑓=[scalingfactors[1]])
     𝐼₁ = 𝐸ₚₐᵤₗᵢ / 𝒵
     𝐼₂ = 4π * 𝑅𝑟𝑒𝑓^3 * 𝑒𝑓𝑔╱𝑛𝑡𝑠 #-𝑅𝑟𝑒𝑓 * (4π * 𝑅𝑟𝑒𝑓^2 / 𝑛𝑡𝑠) * 𝑒𝑓𝑔
     denominator = (3 + 𝜂) * 𝐼₁ + 𝐼₂
-    numerator = 𝛼ᵣ / 𝑟₀ + 0.5(1 - 1/dielectric) / 𝑅𝑟𝑒𝑓 * (1 + 3/dielectric)
+    numerator =  𝛼ᵣ * abs(charge)^2 / 𝑟₀ + 0.5(1 - 1/dielectric) * abs(charge)^2 / 𝑅𝑟𝑒𝑓 * (1 + 3/dielectric)
     𝒵_new =  numerator / denominator
 
     open("iterativeZ.dat", "a") do file
@@ -883,13 +883,13 @@ end
 
         # lattice Coulomb energy
         𝑠 = calc_𝑠()
-        𝑊ₑ = abs(charge) * -𝛼ᵣ / 𝑟₀ ./ 𝑠
+        𝑊ₑ = -𝛼ᵣ * abs(charge)^2 / 𝑟₀ ./ 𝑠
         𝑑𝑊ₑ╱𝑑𝑠 = -𝑊ₑ ./ 𝑠
 
         # lattice polarization energy
         𝜀 = calc_𝜀()
         𝛼ₚₒₗ = 0.5(1 .- 1 ./ 𝜀)
-        𝑊ₚₒₗ = @. abs(charge) * -𝛼ₚₒₗ / 𝑠 / 𝑅𝑟𝑒𝑓
+        𝑊ₚₒₗ = @. -𝛼ₚₒₗ * abs(charge)^2 / 𝑠 / 𝑅𝑟𝑒𝑓
         𝑑𝑊ₚₒₗ╱𝑑𝑠 = @. -𝑊ₚₒₗ / 𝑠 * (1 + 3/𝜀)
 
         # xp-pcm energy, 𝐺ₑᵣ with polarization contribution and 𝐸ᵣ without
