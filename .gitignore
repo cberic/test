@@ -33,12 +33,7 @@ out
 1.tar.gz
 properties.dat
 single-atom-or-molecule/analytical-p-test/1.gjf
-.gitignore
 single-atom-or-molecule/analytical-p-test/1.log
-.gitignore
-.gitignore
-.gitignore
-.gitignore
 single-atom-or-molecule/charge.off
 single-atom-or-molecule/*.chk
 single-atom-or-molecule/*tesserae*
@@ -59,5 +54,10 @@ rewrite
 ipea-plotting.jl
 *.pdf
 single-atom-or-molecule/analytical-p-test/gen
+ethylene
+2s+*
+H4
+analytical-p
+ionic-radius
 
 
