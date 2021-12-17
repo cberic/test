@@ -235,7 +235,8 @@ end
 
 function custombasis(filename = "gen")
     if occursin(" gen", lowercase(keywords)) || occursin("/gen", lowercase(keywords))
-        return read(filename, String)
+        a = read(filename, String)
+        return replace!(a, r"\s*\n+\s*\n+\s*" => "")
     end
 end
 
