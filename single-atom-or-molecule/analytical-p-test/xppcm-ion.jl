@@ -2,7 +2,8 @@ using Printf
 using LsqFit
 using DelimitedFiles
 
-include("input.jl")
+include(ARGS[1])
+filename_without_extension = replace(ARGS[1], ".jl" => "")  # remove the ".jl" extension
 
 #------------------------------------------------------------------------------
 # solvent
@@ -233,10 +234,10 @@ function writegjf(jobtype)
 end
 
 
-function custombasis(filename = "gen")
+function custombasis(file = "gen")
     if occursin(" gen", lowercase(keywords)) || occursin("/gen", lowercase(keywords))
-        a = read(filename, String)
-        return replace!(a, r"\s*\n+\s*\n+\s*" => "")
+        a = read(file, String)
+        return replace(a, r"\s*\n+\s*\n+\s*" => "")
     end
 end
 
@@ -646,7 +647,7 @@ function writeproperties(𝑉𝑐 = 𝑉𝑐, 𝐺ₑᵣ = 𝐺ₑᵣ, 𝑓 = sc
     𝑝n = calc_numerical𝑝()
     𝑝a = calc_analytical𝑝()
     Eorbital = get_orbitalenergy()
-    open("properties.dat", "w") do file
+    open("$filename_without_extension-properties.dat", "w") do file
         write(file, "#     𝑓         𝑉𝑐(𝑓) Å³   𝑠(𝑓)        𝜀(𝑠)        𝜌(𝑠)        𝐺ₑᵣ(𝑓) a.u.    𝑝(𝑓)-numeric. -analyt.GPa\n")
         for j in 1:a
             @printf(file, "%-2d    %.3f     %7.3f    %.6f    %.6f    %9.6f    %.8f    %6.3f    %6.3f\n", 
@@ -669,7 +670,7 @@ function writeproperties2(𝑉𝑐 = 𝑉𝑐, 𝑓 = scalingfactors)
     #𝜌 = calc_𝜌()
     #𝐺ₑᵣ = get_𝐺ₑᵣ()
     Eorbital = get_orbitalenergy()
-    open("properties.dat", "w") do file
+    open("$filename_without_extension-properties.dat", "w") do file
         write(file, "#     𝑓         𝑉𝑐      𝑠       𝜀     𝜌ₛₒₗ        𝒵         𝑊ₑ       𝑊ₚₒₗ    𝐸ₚₐᵤₗᵢ           𝐺ₑᵣ     𝑊ₗ=𝑊ₑ+𝐺ₑᵣ        𝑝  𝑉_cell\n")
         write(file, "#               Å³                    g/ml   mol/ml         Eₕ         Eₕ        Eₕ            Eₕ            Eₕ      GPa      Å³\n")
         for j in 1:a
@@ -697,7 +698,7 @@ function debug(𝑉𝑐 = 𝑉𝑐, 𝐺ₑᵣ = 𝐺ₑᵣ, 𝑓 = scalingfacto
     #𝑝n = calc_numerical𝑝()
     𝑝a = calc_analytical𝑝()
     #Eorbital = get_orbitalenergy()
-    open("debug.dat", "w") do file
+    open("$filename_without_extension-debug.dat", "w") do file
         write(file, "#    𝑓       𝑉𝑐(𝑓) Å³   𝑠(𝑓)         𝜀(𝑠)        𝜌ₛₒₗ(𝑠)     𝐺ₑᵣ(𝑓) a.u.     𝑝a(𝑓) GPa      PauliE(𝑓)     𝑒𝑓𝑔/𝑛𝑡𝑠     𝒵(𝑓)\n")
         for j in 1:a
             @printf(file, "%-2d    %.3f     %7.3f    %.6f    %.6f    %9.6f    %.8f    %6.3f    %9.6f    %9.6f    %9.6f\n", 
@@ -712,7 +713,7 @@ function debug2(𝑉𝑐 = 𝑉𝑐, 𝑓 = scalingfactors)
     #𝑠 = calc_𝑠()
     𝜀 = calc_𝜀()
     #𝜌 = calc_𝜌()
-    open("debug.dat", "w") do file
+    open("$filename_without_extension-debug.dat", "w") do file
         write(file, "#     𝑓         𝑉𝑐(𝑓) Å³   𝑠(𝑓)        𝜀(𝑠)        𝜌ₛₒₗ(𝑠)    𝒵(𝑠)      𝑒𝑓𝑔╱𝑛𝑡𝑠(𝑠)   𝑊ₑ(𝑠)      𝑊ₚₒₗ(𝑠)      𝑊ₚₒₗ′(𝑠)      𝐸ₚₐᵤₗᵢ(𝑠)    𝑊ₗ(𝑠)        𝑝(𝑠) GPa\n")
         for j in 1:a
             @printf(file, "%-2d    %.3f     %7.3f    %.6f    %.6f    %.4f    %.4f    %.6f    %.6f    %.6f    %.6f    %.6f    %.6f    %6.3f\n", 
