@@ -160,13 +160,45 @@ function atomicradii(type = radiustype)
             "At"=> 2.47,    "85"=> 2.47,
             "Rn"=> 2.43,    "86"=> 2.43)
         # add more if needed from https://chemistry-europe.onlinelibrary.wiley.com/doi/10.1002/chem.201700610
-    elseif type == "rahm_ionic"
+    elseif type == "ionic"
         return Dict(
-            "F"  => 1.92,   "9" => 1.92,
-            "Cl" => 2.29,   "17" => 2.29,
-            "Br" => 2.41,   "35" => 2.41,
-            "Na" => 1.34,   "11" => 1.34,
-            "Cs" => 2.12,   "55" => 2.12)
+		    #1s
+
+            #2s
+
+            #2p
+			"F" => 1.92,    "9" => 1.92, # From RA16
+            #3s
+            #"Na"=> 0.95,    "11"=> 0.95, # From collin2005, hard ionic radii from Pauling
+			#"Na"=> 1.20,    "11"=> 1.20, # From Alvaro
+			"Na"=> 1.33,    "11"=> 1.33, # From RA16
+            #3p
+			"Cl"=> 2.29,    "17"=> 2.29, # From RA16
+			#"Cl"=> 2.001,    "17"=> 2.001, # From Alvaro
+            #4s
+            #"K" => 2.34,    "19"=> 2.34,
+            #"Ca"=> 2.70,    "20"=> 2.70,
+            #3d
+
+            #4p
+			"Br"=> 2.41,    "35"=> 2.41, #RA16
+            #5s
+
+			#6s
+
+            #4d
+
+            #5p
+			"I" => 2.59,    "53"=> 2.59, #From RA16
+            #6p
+            #"Tl"=> 2.42,    "81"=> 2.42, Keeping these as examples for now
+            #"Pb"=> 2.49,    "82"=> 2.49,
+            #"Bi"=> 2.50,    "83"=> 2.50,
+            #"Po"=> 2.50,    "84"=> 2.50,
+            #"At"=> 2.47,    "85"=> 2.47,
+            #"Rn"=> 2.43,    "86"=> 2.43
+        # add more if needed from https://chemistry-europe.onlinelibrary.wiley.com/doi/10.1002/chem.201700610
+        )
     else
         error("radiustype not supported. Try bondi or rahm")
     end
