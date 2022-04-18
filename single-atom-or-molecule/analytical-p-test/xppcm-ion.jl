@@ -418,55 +418,6 @@ function gjfvc2(geom = geometries, 𝑓 = scalingfactors)
 end
 
 
-# write gjf files for Ger calculations for numerical p
-# function gjfgernumerical(geom = geometries, 𝑓 = scalingfactors)
-#     a = length(𝑓)
-#     g = tidygeometries(geom)
-#     noa = numberofatoms(geom)
-#     atoms = atomlist(geom)
-#     coordlines = coordinatelines(geom)
-#     sp = solventparameters()
-#     𝑟ₐ = atomicradii()
-#     𝜀 = calc_𝜀()    # data of 𝜀 and 𝜌 needed for the gjf files
-#     𝜌 = calc_𝜌()
-#     gen = custombasis(gen_filename)
-
-#     for j in 1:a
-#         # writing mode for the first and appending mode for other 𝑓
-#         open("Ger.gjf", "$(j == 1 ? "w" : "a")") do file
-#             write(file, """
-#                 %chk=Ger.chk
-#                 %nproc=$nproc
-#                 %mem=$mem
-#                 #p $keywords $(j == 1 ? "" : "guess=read")
-#                 # scrf=(iefpcm,solvent=$solvent,read) nosym 6d 10f
-                
-#                 scaling factor = $(𝑓[j])
-                
-#                 $charge $multiplicity
-#                 $g
-#                 $(gen===nothing ? "" : "\n$gen\n")
-#                 qrep pcmdoc geomview nodis nocav g03defaults tsare=$tesserae
-#                 nsfe=$noa
-#                 nvesolv=$(sp[4]) solvmw=$(sp[3]) rsolv=$(sp[5])
-#                 eps=$(𝜀[j]) rhos=$(𝜌[j])
-                
-#                 """)
-            
-#             for k in 1:noa
-#                 write(file, " $(coordlines[k])    $(𝑟ₐ[atoms[k]])    $(𝑓[j])\n")
-#             end
-            
-#             write(file, "\n")
-#             # do not write "--link1--" for the last scaling factor
-#             if j != a
-#                 write(file, "--link1--\n")
-#             end
-#         end
-#     end
-# end
-
-
 # write gjf files for Ger calculations for analytical p
 function gjfgeranalytical(𝜌 = calc_𝜌(), geom = geometries, 𝑓 = scalingfactors)
     a = length(𝑓)
@@ -570,23 +521,21 @@ function gjfger_1st_scalingfactor(𝜌, geom = geometries, 𝑓 = scalingfactors
     end
 end
 
-
-# extract volume 𝑉𝑐 data from gaussian output files
-function get_𝑉𝑐(𝑓 = scalingfactors)
+# extract data from Gaussian .log write_properties files
+function get_data(filename::String, searchstring::String, fieldnum::Int64, 𝑓 = scalingfactors)
     a = length(𝑓)
-    𝑉𝑐 = Array{Float64}(undef, a)
+    data = Array{Float64}(undef, a)
     j = 1    # j ranges from 1:length(𝑓)
-    open("Vc.log", "r") do file
+    open(filename, "r") do file
         for line in eachline(file)
-            if occursin("GePol: Cavity volume", line)
-                𝑉𝑐[j] = parse(Float64, split(line)[5])
-                j += 1    # j ranges from 1:length(𝑓)
-            end 
+            if occursin(searchstring, line)
+                data[j] = parse(Float64, split(line)[fieldnum])
+                j += 1
+            end
         end
     end
-    return 𝑉𝑐
+    data
 end
-
 
 # extract the total number of tesserae from tesserae-𝑓.off
 function get_numberoftesserae(𝑓 = scalingfactors)
@@ -686,23 +635,6 @@ function get_𝐸ₚₐᵤₗᵢ(𝑓 = scalingfactors)
 end
 
 
-# extract electronic energy 𝐺ₑᵣ data from gaussian output files
-function get_𝐺ₑᵣ(𝑓 = scalingfactors)
-    a = length(𝑓)
-    𝐺ₑᵣ = Array{Float64}(undef, a)
-    j = 1    # j ranges from 1:length(𝑓)
-    open("Ger.log", "r") do file
-        for line in eachline(file)
-            if occursin("SCF Done", line)
-                𝐺ₑᵣ[j] = parse(Float64, split(line)[5])
-                j += 1    # j ranges from 1:length(𝑓)
-            end
-        end
-    end
-    return 𝐺ₑᵣ
-end
-
-
 function get_𝑊ₚₒₗ′(𝑓 = scalingfactors)
     a = length(𝑓)
     𝑊ₚₒₗ′ = Array{Float64}(undef, a)
@@ -721,40 +653,6 @@ function get_𝑊ₚₒₗ′(𝑓 = scalingfactors)
         end
     end
     return 𝑊ₚₒₗ′
-end
-
-
-# sum of all pairwise Coulomb electrostatic potential energies involving one nuclear charge and one external charge.
-function get_𝐸_nuclei_charges(𝑓 = scalingfactors)
-    a = length(𝑓)
-    𝐸_nuclei_charges = Array{Float64}(undef, a)
-    j = 1    # j ranges from 1:length(𝑓)
-    open("Ger.log", "r") do file
-        for line in eachline(file)
-            if occursin("Nuclei-charges interaction", line)
-                𝐸_nuclei_charges[j] = parse(Float64, split(line)[4]) # in a.u.
-                j += 1    # j ranges from 1:length(𝑓)
-            end
-        end
-    end
-    return 𝐸_nuclei_charges
-end
-
-
-# self energy of the external point charges
-function get_𝐸_self(𝑓 = scalingfactors)
-    a = length(𝑓)
-    𝐸_self = Array{Float64}(undef, a)
-    j = 1    # j ranges from 1:length(𝑓)
-    open("Ger.log", "r") do file
-        for line in eachline(file)
-            if occursin("Self energy", line)
-                𝐸_self[j] = parse(Float64, split(line)[7]) # in a.u.
-                j += 1    # j ranges from 1:length(𝑓)
-            end
-        end
-    end
-    return 𝐸_self
 end
 
 
@@ -806,7 +704,7 @@ function writeproperties2(𝑉𝑐 = 𝑉𝑐, 𝑓 = scalingfactors)
     #𝑠 = calc_𝑠()
     𝜀 = calc_𝜀()
     #𝜌 = calc_𝜌()
-    #𝐺ₑᵣ = get_𝐺ₑᵣ()
+    #𝐺ₑᵣ = get_data("Ger.log", "SCF Done", 5)
     Eorbital = get_orbitalenergy()
     open("$filename_without_extension-properties.dat", "w") do file
         write(file, "#     𝑓         𝑉𝑐      𝑠       𝜀     𝜌ₛₒₗ        𝒵         𝑊ₑ       𝑊ₚₒₗ    𝐸ₚₐᵤₗᵢ           𝐺ₑᵣ     𝑊ₗ=𝑊ₑ+𝐺ₑᵣ        𝑝  𝑉_cell\n")
@@ -830,14 +728,14 @@ function writeproperties3(𝑉𝑐 = 𝑉𝑐, 𝑓 = scalingfactors)
     #𝑠 = calc_𝑠()
     #𝜀 = calc_𝜀()
     #𝜌 = calc_𝜌()
-    #𝐺ₑᵣ = get_𝐺ₑᵣ()
+    #𝐺ₑᵣ = get_data("Ger.log", "SCF Done", 5)
     Eorbital = get_orbitalenergy()
     open("$filename_without_extension-properties.dat", "w") do file
-        write(file, "#     𝑓         𝑉𝑐      𝑠       𝜀     𝜌ₛₒₗ        𝒵       𝐸_nc     𝐸_self          𝑊ₚₒₗ     𝐸ₚₐᵤₗᵢ           𝐺ₑᵣ 𝐸ₜₒₜ=𝐸_nc+𝐸_self+𝐺ₑᵣ       𝑝ₐ       𝑝ₙ\n")
-        write(file, "#               Å³                    g/ml   mol/ml         Eₕ         Eₕ            Eₕ         Eₕ            Eₕ                   Eₕ      GPa      GPa\n")
+        write(file, "#     𝑓         𝑉𝑐      𝑠       𝜀     𝜌ₛₒₗ        𝒵   𝐸(nu-ch)   𝐸(ch-ch)        𝐸ₚₒₗₐᵣ     𝐸ₚₐᵤₗᵢ           𝐺ₑᵣ        𝑝ₐ       𝑝ₙ\n")
+        write(file, "#               Å³                    g/ml   mol/ml         Eₕ         Eₕ            Eₕ         Eₕ            Eₕ       GPa      GPa\n")
         for j in 1:a
-            @printf(file, "%-2d  %5.3f  %7.3f  %5.3f  %6.4f  %7.4f  %7.4f  %9.6f  %9.6f  %8.6f  %8.6f  %12.6f  %19.6f  %7.3f  %7.3f\n", 
-                            j, 𝑓[j], 𝑉𝑐[j], 𝑠[j], 𝜀[j], 𝜌[j], 𝒵[j], 𝐸_nuclei_charges[j], 𝐸_self[j], 𝑊ₚₒₗ′[j], 𝐸ₚₐᵤₗᵢ[j], 𝐺ₑᵣ[j], 𝐸ₜₒₜ[j], 𝑝ₐ[j], 𝑝ₙ[j])
+            @printf(file, "%-2d  %5.3f  %7.3f  %5.3f  %6.4f  %7.4f  %7.4f  %9.6f  %9.6f  %8.6f  %8.6f  %12.6f  %7.3f  %7.3f\n", 
+                            j, 𝑓[j], 𝑉𝑐[j], 𝑠[j], 𝜀[j], 𝜌[j], 𝒵[j], 𝐸_nuclei_charges[j], 𝐸_self[j], 𝑊ₚₒₗ′[j], 𝐸ₚₐᵤₗᵢ[j], 𝐺ₑᵣ[j], 𝑝ₐ[j], 𝑝ₙ[j])
         end
         write(file, "\n")
         for j in 1:a
@@ -998,8 +896,8 @@ end
 function calc_𝒵_new_pointcharges(𝒵, 𝑅𝑟𝑒𝑓, 𝑓=[scalingfactors[1]])
     #sp = solventparameters()
     #𝜌 = calc_𝜌(𝜂)
-    𝐸_nuclei_charges = get_𝐸_nuclei_charges(𝑓)[1]
-    𝐸_self = get_𝐸_self(𝑓)[1]
+    𝐸_nuclei_charges = get_data("Ger.log", "Nuclei-charges interaction", 4, 𝑓)[1]
+    𝐸_self = get_data("Ger.log", "Self energy", 7, 𝑓)[1]
     𝐸ₚₐᵤₗᵢ = get_𝐸ₚₐᵤₗᵢ(𝑓)[1]
     𝑛𝑡𝑠 = get_numberoftesserae(𝑓)[1]
     𝑒𝑓𝑔╱𝑛𝑡𝑠 = get_𝑒𝑓𝑔╱𝑛𝑡𝑠(𝑓)[1]
@@ -1056,101 +954,101 @@ end
         run(`cp tesserae.off tesserae-$j.off`)
     end
 
-    global 𝑉𝑐 = get_𝑉𝑐()
+    global 𝑉𝑐 = get_data("Vc.log", "GePol: Cavity volume", 5)
 
     # Step 2: electronic structure Gaussian jobs
     writetesseragrid()
 
-    if radiustype !== "ionic"
-        writegjf("Ger")
-        rungaussian("Ger")
-        global 𝐺ₑᵣ = get_𝐺ₑᵣ()
-        writeproperties()
-        #debug()
-    end
+    # if radiustype !== "ionic"
+    #     writegjf("Ger")
+    #     rungaussian("Ger")
+    #     global 𝐺ₑᵣ = get_data("Ger.log", "SCF Done", 5)
+    #     writeproperties()
+    #     #debug()
+    # end
 
-    if radiustype == "ionic"
-        if model == "Born"
-            if impose_equilibrium == true # at the 1st scalingfactor so that p(f0)=0
-            end
-            if impose_equilibrium == false
-            end
-            # self-consistent calculation of 𝒵
-            sp = solventparameters()
-            ##RC-101221!
-            𝜌_guess = 5.0
-            𝒵_guess = 0.063 * 𝜌_guess * sp[4] / sp[3]
-            gjfger_1st_scalingfactor(𝜌_guess)
-            rungaussian("Ger")
-            open("iterativeZ.dat", "w") do file end
-            𝑟ₐ = atomicradii()
-            atoms = atomlist()
-            𝑅𝑟𝑒𝑓 = 𝑓[1] * 𝑟ₐ[atoms[1]] * 1.88973 # reference radius of Cl- in bohr
-            𝒵_new = calc_𝒵_new(𝒵_guess, 𝑅𝑟𝑒𝑓)
-            while !(0.999 < 𝒵_new/𝒵_guess < 1.001)
-                global 𝜌_guess = 𝜌_guess * 𝒵_new / 𝒵_guess
-                gjfger_1st_scalingfactor(𝜌_guess)
-                rungaussian("Ger")
-                global 𝒵_guess = 𝒵_new
-                global 𝒵_new = calc_𝒵_new(𝒵_guess, 𝑅𝑟𝑒𝑓)
-            ##RC-101221!
-            end
-            # lattice Coulomb energy
-            𝑠 = calc_𝑠()
-            𝑊ₑ = -𝛼ᵣ * abs(charge)^2 / 𝑟₀ ./ 𝑠
-            𝑑𝑊ₑ╱𝑑𝑠 = -𝑊ₑ ./ 𝑠
+    # if radiustype == "ionic"
+    #     if model == "Born"
+    #         if impose_equilibrium == true # at the 1st scalingfactor so that p(f0)=0
+    #         end
+    #         if impose_equilibrium == false
+    #         end
+    #         # self-consistent calculation of 𝒵
+    #         sp = solventparameters()
+    #         ##RC-101221!
+    #         𝜌_guess = 5.0
+    #         𝒵_guess = 0.063 * 𝜌_guess * sp[4] / sp[3]
+    #         gjfger_1st_scalingfactor(𝜌_guess)
+    #         rungaussian("Ger")
+    #         open("iterativeZ.dat", "w") do file end
+    #         𝑟ₐ = atomicradii()
+    #         atoms = atomlist()
+    #         𝑅𝑟𝑒𝑓 = 𝑓[1] * 𝑟ₐ[atoms[1]] * 1.88973 # reference radius of Cl- in bohr
+    #         𝒵_new = calc_𝒵_new(𝒵_guess, 𝑅𝑟𝑒𝑓)
+    #         while !(0.999 < 𝒵_new/𝒵_guess < 1.001)
+    #             global 𝜌_guess = 𝜌_guess * 𝒵_new / 𝒵_guess
+    #             gjfger_1st_scalingfactor(𝜌_guess)
+    #             rungaussian("Ger")
+    #             global 𝒵_guess = 𝒵_new
+    #             global 𝒵_new = calc_𝒵_new(𝒵_guess, 𝑅𝑟𝑒𝑓)
+    #         ##RC-101221!
+    #         end
+    #         # lattice Coulomb energy
+    #         𝑠 = calc_𝑠()
+    #         𝑊ₑ = -𝛼ᵣ * abs(charge)^2 / 𝑟₀ ./ 𝑠
+    #         𝑑𝑊ₑ╱𝑑𝑠 = -𝑊ₑ ./ 𝑠
 
-            # lattice polarization energy
-            𝜀 = calc_𝜀()
-            𝛼ₚₒₗ = 0.5(1 .- 1 ./ 𝜀)
-            𝑊ₚₒₗ = @. -𝛼ₚₒₗ * abs(charge)^2 / 𝑠 / 𝑅𝑟𝑒𝑓
-            𝑑𝑊ₚₒₗ╱𝑑𝑠 = @. -𝑊ₚₒₗ / 𝑠 * (1 + 3/𝜀)
+    #         # lattice polarization energy
+    #         𝜀 = calc_𝜀()
+    #         𝛼ₚₒₗ = 0.5(1 .- 1 ./ 𝜀)
+    #         𝑊ₚₒₗ = @. -𝛼ₚₒₗ * abs(charge)^2 / 𝑠 / 𝑅𝑟𝑒𝑓
+    #         𝑑𝑊ₚₒₗ╱𝑑𝑠 = @. -𝑊ₚₒₗ / 𝑠 * (1 + 3/𝜀)
 
-            # xp-pcm energy, 𝐺ₑᵣ with polarization contribution and 𝐸ᵣ without
-            ##RC-101221!
-            𝒵 = @. 𝒵_new / 𝑠^(3 + 𝜂)
-            𝜌 = 𝒵 * sp[3] / sp[4] / 0.063
-            gjfgeranalytical(𝜌)
-            𝜌 = @. sp[2] / 𝑠^(3 + 𝜂)
-            𝒵 = 𝜌*0.063* sp[4] / sp[3]
-            writegjf("Ger")
-            ##RC-101221!
-            rungaussian("Ger")
-            𝐺ₑᵣ = get_𝐺ₑᵣ()
-            𝑊ₚₒₗ′ = get_𝑊ₚₒₗ′()
-            𝐸ₚₐᵤₗᵢ = get_𝐸ₚₐᵤₗᵢ()
-            𝑒𝑓𝑔╱𝑛𝑡𝑠 = get_𝑒𝑓𝑔╱𝑛𝑡𝑠()
-            𝑅 = 𝑅𝑟𝑒𝑓 * 𝑠
-            𝐼₂ = @. -4π * 𝑅𝑟𝑒𝑓 * 𝑅^2 * 𝑒𝑓𝑔╱𝑛𝑡𝑠
-            𝑑𝐸ᵣ╱𝑑𝑠 = @. -(3 + 𝜂) * 𝐸ₚₐᵤₗᵢ / 𝑠 + 𝒵 * 𝐼₂
-            # total lattice energy
-            𝑊ₗ = 𝑊ₑ + 𝐺ₑᵣ
-            𝑑𝑊ₗ╱𝑑𝑠 = 𝑑𝑊ₑ╱𝑑𝑠 + 𝑑𝑊ₚₒₗ╱𝑑𝑠 + 𝑑𝐸ᵣ╱𝑑𝑠
+    #         # xp-pcm energy, 𝐺ₑᵣ with polarization contribution and 𝐸ᵣ without
+    #         ##RC-101221!
+    #         𝒵 = @. 𝒵_new / 𝑠^(3 + 𝜂)
+    #         𝜌 = 𝒵 * sp[3] / sp[4] / 0.063
+    #         gjfgeranalytical(𝜌)
+    #         𝜌 = @. sp[2] / 𝑠^(3 + 𝜂)
+    #         𝒵 = 𝜌*0.063* sp[4] / sp[3]
+    #         writegjf("Ger")
+    #         ##RC-101221!
+    #         rungaussian("Ger")
+    #         𝐺ₑᵣ = get_data("Ger.log", "SCF Done", 5)
+    #         𝑊ₚₒₗ′ = get_𝑊ₚₒₗ′()
+    #         𝐸ₚₐᵤₗᵢ = get_𝐸ₚₐᵤₗᵢ()
+    #         𝑒𝑓𝑔╱𝑛𝑡𝑠 = get_𝑒𝑓𝑔╱𝑛𝑡𝑠()
+    #         𝑅 = 𝑅𝑟𝑒𝑓 * 𝑠
+    #         𝐼₂ = @. -4π * 𝑅𝑟𝑒𝑓 * 𝑅^2 * 𝑒𝑓𝑔╱𝑛𝑡𝑠
+    #         𝑑𝐸ᵣ╱𝑑𝑠 = @. -(3 + 𝜂) * 𝐸ₚₐᵤₗᵢ / 𝑠 + 𝒵 * 𝐼₂
+    #         # total lattice energy
+    #         𝑊ₗ = 𝑊ₑ + 𝐺ₑᵣ
+    #         𝑑𝑊ₗ╱𝑑𝑠 = 𝑑𝑊ₑ╱𝑑𝑠 + 𝑑𝑊ₚₒₗ╱𝑑𝑠 + 𝑑𝐸ᵣ╱𝑑𝑠
 
-            # unit cell volume per formula unit
-            if lattice == "NaCl"
-                𝑎_cell = 2𝑟₀
-                𝑉_cell = @. (𝑎_cell * 𝑠 * 0.529177)^3 / 4 # 1 bohr = 0.529177 Å; devided by 4 because there are 4 formula units of NaCl
-                𝑑𝑉_cell╱𝑑𝑠 = @. 3𝑉_cell / 𝑠
-            end
-            if lattice == "CsCl"
-                𝑎_cell = 2𝑟₀ / √3
-                𝑉_cell = @. (𝑎_cell * 𝑠 * 0.529177)^3 # 1 bohr = 0.529177 Å
-                𝑑𝑉_cell╱𝑑𝑠 = @. 3𝑉_cell / 𝑠
-            end
-            ##!!RC121121
-            if lattice == "noLattice"
-                𝑉_cell =  𝑉𝑐
-                𝑑𝑉_cell╱𝑑𝑠 = @. 3𝑉_cell / 𝑠
-            end
-            ##!!RC121121
-            # analytical pressure
-            𝑝 = @. -𝑑𝑊ₗ╱𝑑𝑠 / 𝑑𝑉_cell╱𝑑𝑠 * 4359.7 # 1 hartree/bohr = 4359.7 GPa
-            #𝑉_cell╱𝑉₀ = 𝑉_cell / 𝑉_cell[1]
-        end
+    #         # unit cell volume per formula unit
+    #         if lattice == "NaCl"
+    #             𝑎_cell = 2𝑟₀
+    #             𝑉_cell = @. (𝑎_cell * 𝑠 * 0.529177)^3 / 4 # 1 bohr = 0.529177 Å; devided by 4 because there are 4 formula units of NaCl
+    #             𝑑𝑉_cell╱𝑑𝑠 = @. 3𝑉_cell / 𝑠
+    #         end
+    #         if lattice == "CsCl"
+    #             𝑎_cell = 2𝑟₀ / √3
+    #             𝑉_cell = @. (𝑎_cell * 𝑠 * 0.529177)^3 # 1 bohr = 0.529177 Å
+    #             𝑑𝑉_cell╱𝑑𝑠 = @. 3𝑉_cell / 𝑠
+    #         end
+    #         ##!!RC121121
+    #         if lattice == "noLattice"
+    #             𝑉_cell =  𝑉𝑐
+    #             𝑑𝑉_cell╱𝑑𝑠 = @. 3𝑉_cell / 𝑠
+    #         end
+    #         ##!!RC121121
+    #         # analytical pressure
+    #         𝑝 = @. -𝑑𝑊ₗ╱𝑑𝑠 / 𝑑𝑉_cell╱𝑑𝑠 * 4359.7 # 1 hartree/bohr = 4359.7 GPa
+    #         #𝑉_cell╱𝑉₀ = 𝑉_cell / 𝑉_cell[1]
+    #     end
 
-        if model == "pointcharges"
-            if impose_equilibrium == true # at the 1st scalingfactor so that p(f0)=0
+    #     if model == "pointcharges"
+    #         if impose_equilibrium == true # at the 1st scalingfactor so that p(f0)=0
                 # self-consistent calculation of 𝒵
                 sp = solventparameters()
                 𝜌_guess = 5.0
@@ -1169,7 +1067,7 @@ end
                     global 𝒵_guess = 𝒵_new
                     global 𝒵_new = calc_𝒵_new_pointcharges(𝒵_guess, 𝑅𝑟𝑒𝑓)
                 end
-            end
+            #end
 
             # ion-medium polarization energy
             𝑠 = calc_𝑠()
@@ -1183,7 +1081,7 @@ end
             𝜌 = 𝒵 * sp[3] / sp[4] / 0.063
             gjfgeranalytical(𝜌)
             rungaussian("Ger")
-            𝐺ₑᵣ = get_𝐺ₑᵣ()
+            𝐺ₑᵣ = get_data("Ger.log", "SCF Done", 5)
             𝑊ₚₒₗ′ = get_𝑊ₚₒₗ′()
             𝐸ₚₐᵤₗᵢ = get_𝐸ₚₐᵤₗᵢ()
             𝑒𝑓𝑔╱𝑛𝑡𝑠 = get_𝑒𝑓𝑔╱𝑛𝑡𝑠()
@@ -1192,8 +1090,8 @@ end
             𝑑𝐸ᵣ╱𝑑𝑠 = @. -(3 + 𝜂) * 𝐸ₚₐᵤₗᵢ / 𝑠 + 𝒵 * 𝐼₂
 
             # nuclei-charges and charges-charges Coulomb energies
-            𝐸_nuclei_charges = get_𝐸_nuclei_charges()
-            𝐸_self = get_𝐸_self()
+            𝐸_nuclei_charges = get_data("Ger.log", "Nuclei-charges interaction", 4)
+            𝐸_self = get_data("Ger.log", "Self energy", 7)
             𝐸_coulomb = 𝐸_nuclei_charges + 𝐸_self
             𝑑𝐸_coulomb╱𝑑𝑠 = -𝐸_coulomb ./ 𝑠
 

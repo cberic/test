@@ -61,3 +61,8 @@ analytical-p
 ionic-radius
 
 
+single-atom-or-molecule/analytical-p-test/charges/*.chk
+single-atom-or-molecule/analytical-p-test/charges/*.chk
+single-atom-or-molecule/analytical-p-test/charges/fort.*
+single-atom-or-molecule/analytical-p-test/charges/Gau-*
+single-atom-or-molecule/analytical-p-test/charges/tesserae-*

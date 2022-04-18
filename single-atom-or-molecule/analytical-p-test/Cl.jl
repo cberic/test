@@ -39,7 +39,7 @@ mem = "4gb"
 keywords = "pbe1pbe gen scf=(Damp,fermi,conver=6) int=finegrid"
 charge = -1
 multiplicity = 1
-gen_filename = "ano-rcc-Cl"
+gen_filename = "svp"
 
 #### Keep the coordinates (in Å) within the triple """ block.
 #### Do not include comments or other text in the """ block.
