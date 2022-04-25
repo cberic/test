@@ -61,9 +61,15 @@ H4
 analytical-p
 ionic-radius
 
-
 single-atom-or-molecule/analytical-p-test/charges/*.chk
 single-atom-or-molecule/analytical-p-test/charges/*.chk
 single-atom-or-molecule/analytical-p-test/charges/fort.*
 single-atom-or-molecule/analytical-p-test/charges/Gau-*
 single-atom-or-molecule/analytical-p-test/charges/tesserae-*
+opt/*.chk
+opt/*.gjf
+opt/*.log
+opt/Gau-*
+opt/fort.*
+opt/tesserae*
+opt/charge.off
