@@ -411,7 +411,7 @@ end
 #------------------------------------------------------------------------------
 # write_properties.jl
 #------------------------------------------------------------------------------
-function write_properties(𝑓::NTuple{7, Float64}, 
+function write_properties(𝑓, 
                         𝑉𝑐::Matrix{Float64}, 
                         𝑠::Matrix{Float64}, 
                         𝑠̄::Matrix{Float64}, 
