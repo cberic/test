@@ -963,14 +963,16 @@ function calc_𝒵_new_pointcharges(𝒵, 𝑅𝑟𝑒𝑓, 𝑓=[scalingfactors
     𝐼₁ = 𝐸ₚₐᵤₗᵢ / 𝒵
     𝐼₂ = 4π * 𝑅𝑟𝑒𝑓^3 * 𝑒𝑓𝑔╱𝑛𝑡𝑠 #-𝑅𝑟𝑒𝑓 * (4π * 𝑅𝑟𝑒𝑓^2 / 𝑛𝑡𝑠) * 𝑒𝑓𝑔
     denominator = (3 + 𝜂) * 𝐼₁ + 𝐼₂
-    numerator =  0.5(1 - 1/dielectric) * abs(charge)^2 / 𝑅𝑟𝑒𝑓 * (1 + 3/dielectric) -𝐸_nuclei_charges - 𝐸_charges_charges + 𝑅𝑟𝑒𝑓 * 𝑒𝑓 * -charge
+    numerator =  0.5(1 - 1/dielectric) * abs(charge)^2 / 𝑅𝑟𝑒𝑓 * (1 + 3/dielectric) -𝐸_nuclei_charges - 𝐸_charges_charges + 𝑅𝑟𝑒𝑓 * get_EFM()[1][1]
     𝒵_new =  numerator / denominator
 
     open("iterativeZ.dat", "a") do file
-        println(file, #"𝜌_sol ", 𝜌, 
+        println(file, 
+            "𝜌_sol ", 𝒵 * sp[3] / sp[4] / 0.063, 
             " 𝒵 ", 𝒵, 
             " 𝐸_nuclei_charges ", 𝐸_nuclei_charges, 
             " 𝐸_charges_charges ", 𝐸_charges_charges, 
+            " 𝐸_electrons_charges ", get_EFM()[2][1],
             " 𝐸ₚₐᵤₗᵢ ", 𝐸ₚₐᵤₗᵢ, 
             " 𝑛𝑡𝑠 ", 𝑛𝑡𝑠, 
             " 𝑒𝑓𝑔/𝑛𝑡𝑠 ", 𝑒𝑓𝑔╱𝑛𝑡𝑠,
@@ -1106,46 +1108,44 @@ end
     #     end
 
     #     if model == "pointcharges"
-    #         if impose_equilibrium == true # at the 1st scalingfactor so that p(f0)=0
-                # self-consistent calculation of 𝒵
-                sp = solventparameters()
-                # 𝜌_guess = 5.0
-                # 𝒵_guess = 0.063 * 𝜌_guess * sp[4] / sp[3]
-                # gjfger_1st_scalingfactor(𝜌_guess)
-                # rungaussian("Ger")
-                # open("iterativeZ.dat", "w") do file end
-                𝑟ₐ = atomicradii()
-                atoms = atomlist()
-                𝑅𝑟𝑒𝑓 = 𝑓[1] * 𝑟ₐ[atoms[1]] * 1.88973 # reference radius of Cl- in bohr
-                # 𝒵_new = calc_𝒵_new_pointcharges(𝒵_guess, 𝑅𝑟𝑒𝑓)
-                # while !(0.999 < 𝒵_new/𝒵_guess < 1.001)
-                #     global 𝜌_guess = 𝜌_guess * 𝒵_new / 𝒵_guess
-                #     gjfger_1st_scalingfactor(𝜌_guess)
-                #     rungaussian("Ger")
-                #     global 𝒵_guess = 𝒵_new
-                #     global 𝒵_new = calc_𝒵_new_pointcharges(𝒵_guess, 𝑅𝑟𝑒𝑓)
-                # end
-            #end
 
-            # ion-medium polarization energy
             𝑠 = calc_𝑠()
-            𝜀 = calc_𝜀()
-            𝛼ₚₒₗ = 0.5(1 .- 1 ./ 𝜀)
-            𝑊ₚₒₗ = @. -𝛼ₚₒₗ * abs(charge)^2 / 𝑠 / 𝑅𝑟𝑒𝑓
-            𝑑𝑊ₚₒₗ╱𝑑𝑠 = @. -𝑊ₚₒₗ / 𝑠 * (1 + 3/𝜀)
+            sp = solventparameters()
+            𝑟ₐ = atomicradii()
+            atoms = atomlist()
+            𝑅𝑟𝑒𝑓 = 𝑓[1] * 𝑟ₐ[atoms[1]] * 1.88973 # reference radius of Cl- in bohr
 
-            # xp-pcm energy, 𝐺ₑᵣ with polarization contribution and 𝐸ᵣ without
-            # 𝒵 = @. 𝒵_new / 𝑠^(3 + 𝜂)
-            # 𝜌 = 𝒵 * sp[3] / sp[4] / 0.063
-            # gjfgeranalytical(𝜌)
-
-            𝜌 = @. sp[2] / 𝑠^(3 + 𝜂)
-            𝒵 = 𝜌 * 0.063 * sp[4] / sp[3]
-            writegjf("Ger")
+            if impose_equilibrium # at 1st scalingfactor so that p(f0)=0
+                open("iterativeZ.dat", "w") do file end # erase the file content if exists
+                𝜌_old = sp[2]  # initial solvent density
+                𝒵_old = 0.063 * 𝜌_old * sp[4] / sp[3]
+                𝒵_new = 𝒵_old * 1.1  # a guess of 𝒵_new
+                while !(0.999 < 𝒵_new/𝒵_old < 1.001) # self-consistent calculation of 𝒵
+                    global 𝜌_old = 𝜌_old * 𝒵_new / 𝒵_old
+                    gjfger_1st_scalingfactor(𝜌_old)
+                    rungaussian("Ger")
+                    global 𝒵_old = 𝒵_new
+                    global 𝒵_new = calc_𝒵_new_pointcharges(𝒵_old, 𝑅𝑟𝑒𝑓)
+                end
+                𝒵 = @. 𝒵_new / 𝑠^(3 + 𝜂)
+                𝜌 = 𝒵 * sp[3] / sp[4] / 0.063
+                gjfgeranalytical(𝜌)  # using self-consistently determined 𝜌 and 𝒵 for Ger calculation
+            else  # not impose_equilibrium
+                𝜌 = @. sp[2] / 𝑠^(3 + 𝜂)
+                𝒵 = 𝜌 * 0.063 * sp[4] / sp[3]
+                writegjf("Ger")  # using initial 𝜌 and 𝒵 for Ger calculation
+            end
 
             rungaussian("Ger")
-            𝐺ₑᵣ = get_data("Ger.log", "SCF Done", 5)
+
+            # ion-medium polarization energy
             𝑊ₚₒₗ′ = get_𝑊ₚₒₗ′()
+            𝜀 = calc_𝜀()
+            𝛼ₚₒₗ = 0.5(1 .- 1 ./ 𝜀)
+            𝑊ₚₒₗ = @. -𝛼ₚₒₗ * abs(charge)^2 / 𝑠 / 𝑅𝑟𝑒𝑓  # 𝑊ₚₒₗ is approximated the same as 𝑊ₚₒₗ′
+            𝑑𝑊ₚₒₗ╱𝑑𝑠 = @. -𝑊ₚₒₗ / 𝑠 * (1 + 3/𝜀)
+
+            # Pauli repulsion energy
             𝐸ₚₐᵤₗᵢ = get_𝐸ₚₐᵤₗᵢ()
             𝑒𝑓𝑔╱𝑛𝑡𝑠 = get_𝑒𝑓𝑔╱𝑛𝑡𝑠()
             𝑅 = 𝑅𝑟𝑒𝑓 * 𝑠
@@ -1155,8 +1155,6 @@ end
             # nuclei-charges and charges-charges Coulomb energies
             𝐸_nuclei_charges = get_data("Ger.log", "Nuclei-charges interaction", 4)
             𝐸_charges_charges = get_data("Ger.log", "Self energy", 7)
-            #𝐸_coulomb = 𝐸_nuclei_charges + 𝐸_charges_charges
-            #𝑑𝐸_coulomb╱𝑑𝑠 = -𝐸_coulomb ./ 𝑠
             𝑑𝐸_nuclei_charges╱𝑑𝑠 = -𝐸_nuclei_charges ./ 𝑠
             𝑑𝐸_charges_charges╱𝑑𝑠 = -𝐸_charges_charges ./ 𝑠
 
@@ -1165,6 +1163,7 @@ end
             𝑑𝐸_electrons_charges╱𝑑𝑠 = 𝑅𝑟𝑒𝑓 * get_EFM()[1]
 
             # total energy
+            𝐺ₑᵣ = get_data("Ger.log", "SCF Done", 5)
             𝐸ₜₒₜ = 𝐺ₑᵣ
             𝑑𝐸ₜₒₜ╱𝑑𝑠 = 𝑑𝑊ₚₒₗ╱𝑑𝑠 + 𝑑𝐸ᵣ╱𝑑𝑠 + 𝑑𝐸_nuclei_charges╱𝑑𝑠 + 𝑑𝐸_charges_charges╱𝑑𝑠 + 𝑑𝐸_electrons_charges╱𝑑𝑠
 
