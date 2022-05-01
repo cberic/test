@@ -1,4 +1,4 @@
-# example input for XP-PCM calculations
+# example input for XP-PCM optimizations
 
 # path to the directory of modified Gaussian links
 exedir = "/scratch/bochen/Gaussian16/xppcm-links/exe-dir"
@@ -27,22 +27,27 @@ tesserae = 0.075             # the mean area in Å² of the tesserae by
 scalingfactors = (1.2, 1.15)
 
 # Gaussian 09/16 parameters
-nproc = 2     # change to total cpus if ismultithreading = false
-mem = "2gb"   # memory per core; change to total memory if ismultithreading = false
+nproc = 4     # change to total cpus if ismultithreading = false
+mem = "4gb"   # memory per core; change to total memory if ismultithreading = false
 keywords = "pbepbe/cc-pvdz"    # Gaussian keywords; add more if needed
 charge = 0
 multiplicity = 1
 
-# Keep the coordinates within the triple """ block.
-# Separate each geometry by one or more blank lines.
-# Do not include comments or other text in the """ block.
-# Leading or trailing spaces on each line are ok.
-# Atoms may be specified by element symbols or atomic numbers.
-geometries = """
- C       0.000000      0.000000      0.000000
- H       0.000000      0.000000      1.105570
- H       1.042341      0.000000     -0.368523
- H      -0.521171     -0.902694     -0.368523
- H      -0.521171      0.902694     -0.368523
+# Provide the geometry in z-matrix; optimization will be done in z-matrix coordinates.
+# The atom list also needs to be provided in addition to the z-matrix specification.
+atomlist = "C H H  H H  "
+zmatrix = """
+C
+H  1 r1
+H  1 r1  2 a
+H  1 r1  2 a  3  d1
+H  1 r1  2 a  3  d2
+Variables:
+r1=1.1055698
+Constant:
+a=109.471220
+d1=120.0
+d2=-120.0
+
 
 """
