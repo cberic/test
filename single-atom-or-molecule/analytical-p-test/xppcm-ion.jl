@@ -270,7 +270,8 @@ function charge_sphere(t = t_new, r = r_new)
     #Specified values
     num_pts = 1000
     indices = 0.5:999.5 #Temporary solution until I understand exactly how to handle these arrays in Julia
-    q = (-1)*charge
+    if model =="basic"; q = 0; end
+    if model =="pointcharges"; q= (-1)*charge; end
     point_charge = q/num_pts
     point_charges = fill(point_charge, num_pts)
     point_charges = string.(point_charges)
@@ -316,7 +317,8 @@ end
 
 function get_EFM(𝑓 = scalingfactors)
     #some initial parameters that is needed in the script
-    totalcharge = -1 * charge # total charge of the point charges (-1 for cations)
+    if model =="basic"; totalcharge = 0; end
+    if model =="pointcharges"; totalcharge= (-1)*charge; end
     N = 1000
     pq = totalcharge/N
     L = length(𝑓)
@@ -490,7 +492,7 @@ function gjfgeranalytical(𝜌 = calc_𝜌(), geom = geometries, 𝑓 = scalingf
         # writing mode for the first and appending mode for other 𝑓
     open("Ger.gjf", "w") do file
         for j in 1:a
-            if model == "pointcharges"
+            if model == "pointcharges" || model == "basic"
                 t_new = 𝑓[j]
                 charge_sp = charge_sphere(t_new, r_new)
             end
@@ -517,8 +519,8 @@ function gjfgeranalytical(𝜌 = calc_𝜌(), geom = geometries, 𝑓 = scalingf
                 write(file, " $(coordlines[k])    $(𝑟ₐ[atoms[k]])    $(𝑓[j])\n")
             end
             write(file, "\n")
-            write(file, model == "pointcharges" ? "$charge_sp\n" : "")
-            write(file, "$(𝑛𝑡𝑠[j]), 1, $(round(Int, 𝑓[j]*1000)), $(round(Int, 𝑓[j]*1000+1))\n")
+            write(file, "$charge_sp\n")
+            write(file, "$(𝑛𝑡𝑠[j]), 1, $(round(Int, 𝑓[j]*10000)), $(round(Int, 𝑓[j]*10000+1))\n")
             write(file, "\n")
             # do not write "--link1--" for the last scaling factor
             if j != a
@@ -544,7 +546,7 @@ function gjfger_1st_scalingfactor(𝜌, geom = geometries, 𝑓 = scalingfactors
     r_new = 𝑟ₐ[atoms[1]] #Jonatan: Note that this is a temporary solution which will only work if you only use single ions.  
 
     open("Ger.gjf", "w") do file
-        if model == "pointcharges"
+        if model == "pointcharges"|| model == "basic"
             t_new = 𝑓[1]
             charge_sp = charge_sphere(t_new, r_new)
         end
@@ -571,8 +573,8 @@ function gjfger_1st_scalingfactor(𝜌, geom = geometries, 𝑓 = scalingfactors
             write(file, " $(coordlines[k])    $(𝑟ₐ[atoms[k]])    $(𝑓[1])\n")
         end
         write(file, "\n")
-        write(file, model == "pointcharges" ? "$charge_sp\n" : "")
-        write(file, "$(𝑛𝑡𝑠[1]), 1, $(round(Int, 𝑓[1]*1000)), $(round(Int, 𝑓[1]*1000+1))\n")
+        write(file, "$charge_sp\n")
+        write(file, "$(𝑛𝑡𝑠[1]), 1, $(round(Int, 𝑓[1]*10000)), $(round(Int, 𝑓[1]*10000+1))\n")
         write(file, "\n")
     end
 end
@@ -580,7 +582,8 @@ end
 # extract data from Gaussian .log write_properties files
 function get_data(filename::String, searchstring::String, fieldnum::Int64, 𝑓 = scalingfactors)
     a = length(𝑓)
-    data = Array{Float64}(undef, a)
+    #data = Array{Float64}(undef, a)
+    data = zeros(a)
     j = 1    # j ranges from 1:length(𝑓)
     open(filename, "r") do file
         for line in eachline(file)
@@ -645,7 +648,7 @@ function writetesseragrid(geom = geometries, 𝑓 = scalingfactors)
             end
         end
         #writedlm("$(𝑓[j]).tsrcoord", tesseraecoordinates * 𝑟ₐ[atoms[1]] * 𝑓[j])
-        writedlm("fort.$(round(Int, 𝑓[j]*1000))", tesseraecoordinates * 𝑟ₐ[atoms[1]] * 𝑓[j])
+        writedlm("fort.$(round(Int, 𝑓[j]*10000))", tesseraecoordinates * 𝑟ₐ[atoms[1]] * 𝑓[j])
     end
 end
 
@@ -657,7 +660,7 @@ function get_𝑒𝑓𝑔╱𝑛𝑡𝑠(𝑓 = scalingfactors)
     𝑒𝑓𝑔sum = zeros(a)
     for j in 1:a
         linecount = 1
-        open("fort.$(round(Int, 𝑓[j]*1000+1))", "r") do file
+        open("fort.$(round(Int, 𝑓[j]*10000+1))", "r") do file
             for line in eachline(file)
                 if linecount % 4 == 2
                     # zz component of the 𝑒𝑓𝑔
@@ -787,11 +790,24 @@ function writeproperties3(𝑉𝑐 = 𝑉𝑐, 𝑓 = scalingfactors)
     #𝐺ₑᵣ = get_data("Ger.log", "SCF Done", 5)
     Eorbital = get_orbitalenergy()
     open("$filename_without_extension-properties.dat", "w") do file
-        write(file, "#     𝑓         𝑉𝑐      𝑠       𝜀     𝜌ₛₒₗ        𝒵   𝐸(nu-ch)   𝑑𝐸(nu-ch)╱𝑑𝑠   𝐸(ch-ch)   𝑑𝐸(ch-ch)╱𝑑𝑠   𝐸(el-ch)   𝑑𝐸(el-ch)╱𝑑𝑠     𝐸ₚₒₗₐᵣ   𝑑𝐸ₚₒₗₐᵣ╱𝑑𝑠     𝐸ₚₐᵤₗᵢ   𝑑𝐸ₚₐᵤₗᵢ╱𝑑𝑠           𝐺ₑᵣ       𝑝ₐ       𝑝ₙ\n")
-        write(file, "#               Å³                    g/ml                  Eₕ             Eₕ         Eₕ             Eₕ         Eₕ             Eₕ         Eₕ           Eₕ         Eₕ           Eₕ            Eₕ      GPa      GPa\n")
+        write(file, "# atom=$(atomlist()[1]), charge=$charge, multiplicity=$multiplicity, radius=$(atomicradii()[atomlist()[1]]) Å\n")
+        write(file, "# solvent=$solvent, dielectric=$dielectric, 𝜂=$𝜂, tesserae=$tesserae, xppcm-model=$model\n")
+        write(file, "# $keywords; basis-set=$gen_filename\n\n")
+        write(file, "#      𝑓         𝑉𝑐      𝑠       𝜀     𝜌ₛₒₗ        𝒵   𝐸(nu-ch)   𝑑𝐸(nu-ch)╱𝑑𝑠   𝐸(ch-ch)   𝑑𝐸(ch-ch)╱𝑑𝑠   𝐸(el-ch)   𝑑𝐸(el-ch)╱𝑑𝑠     𝐸ₚₒₗₐᵣ   𝑑𝐸ₚₒₗₐᵣ╱𝑑𝑠     𝐸ₚₐᵤₗᵢ   𝑑𝐸ₚₐᵤₗᵢ╱𝑑𝑠           𝐺ₑᵣ       𝑝ₐ       𝑝ₙ      𝑝ₙ′     𝑉/𝑉₀\n")
+        write(file, "#                Å³                    g/ml                  Eₕ             Eₕ         Eₕ             Eₕ         Eₕ             Eₕ         Eₕ           Eₕ         Eₕ           Eₕ            Eₕ      GPa      GPa      GPa         \n")
         for j in 1:a
-            @printf(file, "%-2d  %5.3f  %7.3f  %5.3f  %6.4f  %7.4f  %7.4f  %9.6f  %13.6f  %9.6f  %13.6f  %9.6f  %13.6f  %9.6f  %11.6f  %9.6f  %11.6f  %12.6f  %7.3f  %7.3f\n", 
-                            j, 𝑓[j], 𝑉𝑐[j], 𝑠[j], 𝜀[j], 𝜌[j], 𝒵[j], 𝐸_nuclei_charges[j], 𝑑𝐸_nuclei_charges╱𝑑𝑠[j], 𝐸_charges_charges[j], 𝑑𝐸_charges_charges╱𝑑𝑠[j], 𝐸_electrons_charges[j], 𝑑𝐸_electrons_charges╱𝑑𝑠[j], 𝑊ₚₒₗ′[j], 𝑑𝑊ₚₒₗ╱𝑑𝑠[j], 𝐸ₚₐᵤₗᵢ[j], 𝑑𝐸ᵣ╱𝑑𝑠[j], 𝐺ₑᵣ[j], 𝑝ₐ[j], 𝑝ₙ[j])
+            @printf(file, "%-3d  %5.3f  %7.3f  %5.3f  %6.4f  %7.4f  %7.4f  %9.6f  %13.6f  %9.6f  %13.6f  %9.6f  %13.6f  %9.6f  %11.6f  %9.6f  %11.6f  %12.6f  %7.3f  %7.3f  %7.3f  %7.3f\n", 
+                            j, 𝑓[j], 𝑉𝑐[j], 𝑠[j], 𝜀[j], 𝜌[j], 𝒵[j], 𝐸_nuclei_charges[j], 𝑑𝐸_nuclei_charges╱𝑑𝑠[j], 𝐸_charges_charges[j], 𝑑𝐸_charges_charges╱𝑑𝑠[j], 𝐸_electrons_charges[j], 𝑑𝐸_electrons_charges╱𝑑𝑠[j], 𝑊ₚₒₗ′[j], 𝑑𝑊ₚₒₗ′╱𝑑𝑠[j], 𝐸ₚₐᵤₗᵢ[j], 𝑑𝐸ᵣ╱𝑑𝑠[j], 𝐺ₑᵣ[j], 𝑝ₐ[j], 𝑝ₙ[j], 𝑝ₙ′[j], 𝑉𝑐[j]/𝑉𝑐[1])
+        end
+        write(file, "\n")
+        write(file, "#      𝑓        𝑠       𝐸(nu-ch)      --- 𝑑𝐸(nu-ch)╱𝑑𝑠 ---       𝐸(ch-ch)      --- 𝑑𝐸(ch-ch)╱𝑑𝑠 ---       𝐸(el-ch)      --- 𝑑𝐸(el-ch)╱𝑑𝑠 ---      ------ 𝐸ₚₒₗₐᵣ ------      ---- 𝑑𝐸ₚₒₗₐᵣ╱𝑑𝑠 ----        𝐸ₚₐᵤₗᵢ      ---- 𝑑𝐸ₚₐᵤₗᵢ╱𝑑𝑠 ----               𝐺ₑᵣ       ----------- 𝑑𝐺ₑᵣ╱𝑑𝑠 ----------\n")
+        write(file, "#                                         numer     analyt                         numer     analyt                         numer     analyt       Gaussian       Born          numer     analyt                        numer     analyt                            numer                      \n")
+        write(file, "#                              A              B          C              D              E          F              G              H          I              J          K              L          M             N              O          P                 Q              R      CFILO      CFILP\n")
+        for j in 1:a
+            @printf(file, "%-3d  %5.3f  %5.3f      %9.6f      %9.6f  %9.6f      %9.6f      %9.6f  %9.6f      %9.6f      %9.6f  %9.6f      %9.6f  %9.6f      %9.6f  %9.6f     %9.6f      %9.6f  %9.6f      %12.6f      %9.6f  %9.6f  %9.6f\n", 
+                            j, 𝑓[j], 𝑠[j], 𝐸_nuclei_charges[j], 𝑑𝐸_nuclei_charges╱𝑑𝑠ₙ[j], 𝑑𝐸_nuclei_charges╱𝑑𝑠[j], 𝐸_charges_charges[j], 𝑑𝐸_charges_charges╱𝑑𝑠ₙ[j], 𝑑𝐸_charges_charges╱𝑑𝑠[j], 𝐸_electrons_charges[j], 𝑑𝐸_electrons_charges╱𝑑𝑠ₙ[j], 𝑑𝐸_electrons_charges╱𝑑𝑠[j], 𝑊ₚₒₗ′[j], 𝑊ₚₒₗ[j], 𝑑𝑊ₚₒₗ′╱𝑑𝑠[j], 𝑑𝑊ₚₒₗ╱𝑑𝑠[j], 𝐸ₚₐᵤₗᵢ[j], 𝑑𝐸ₚₐᵤₗᵢ╱𝑑𝑠ₙ[j], 𝑑𝐸ᵣ╱𝑑𝑠[j], 𝐺ₑᵣ[j], 𝑑𝐺ₑᵣ╱𝑑𝑠ₙ[j], 
+                            𝑑𝐸_nuclei_charges╱𝑑𝑠[j]+𝑑𝐸_charges_charges╱𝑑𝑠[j]+𝑑𝐸_electrons_charges╱𝑑𝑠[j]+𝑑𝑊ₚₒₗ′╱𝑑𝑠[j]+𝑑𝐸ₚₐᵤₗᵢ╱𝑑𝑠ₙ[j],
+                            𝑑𝐸_nuclei_charges╱𝑑𝑠[j]+𝑑𝐸_charges_charges╱𝑑𝑠[j]+𝑑𝐸_electrons_charges╱𝑑𝑠[j]+𝑑𝑊ₚₒₗ′╱𝑑𝑠[j]+𝑑𝐸ᵣ╱𝑑𝑠[j])
         end
         write(file, "\n")
         for j in 1:a
@@ -1138,15 +1154,27 @@ end
 
             rungaussian("Ger")
 
+            function finitedifference(energy::Vector{Float64}, 𝑠=𝑠)
+                derivative = zeros(length(energy))
+                derivative[1] = (energy[2] - energy[1]) / (𝑠[2] - 𝑠[1])
+                for j in 2:length(𝑓)-1
+                    derivative[j] = (energy[j+1] - energy[j-1]) / (𝑠[j+1] - 𝑠[j-1])
+                end
+                derivative[end] = (energy[end] - energy[end-1]) / (𝑠[end] - 𝑠[end-1])
+                derivative
+            end
+
             # ion-medium polarization energy
             𝑊ₚₒₗ′ = get_𝑊ₚₒₗ′()
+            𝑑𝑊ₚₒₗ′╱𝑑𝑠 = finitedifference(𝑊ₚₒₗ′)
             𝜀 = calc_𝜀()
             𝛼ₚₒₗ = 0.5(1 .- 1 ./ 𝜀)
-            𝑊ₚₒₗ = @. -𝛼ₚₒₗ * abs(charge)^2 / 𝑠 / 𝑅𝑟𝑒𝑓  # 𝑊ₚₒₗ is approximated the same as 𝑊ₚₒₗ′
-            𝑑𝑊ₚₒₗ╱𝑑𝑠 = @. -𝑊ₚₒₗ / 𝑠 * (1 + 3/𝜀)
+            𝑊ₚₒₗ = @. -𝛼ₚₒₗ * abs(charge)^2 / 𝑠 / 𝑅𝑟𝑒𝑓  # 𝑊ₚₒₗ is an approximate to 𝑊ₚₒₗ′
+            𝑑𝑊ₚₒₗ╱𝑑𝑠 = @. -𝑊ₚₒₗ′ / 𝑠 * (1 + 3/𝜀)
 
             # Pauli repulsion energy
             𝐸ₚₐᵤₗᵢ = get_𝐸ₚₐᵤₗᵢ()
+            𝑑𝐸ₚₐᵤₗᵢ╱𝑑𝑠ₙ = finitedifference(𝐸ₚₐᵤₗᵢ)
             𝑒𝑓𝑔╱𝑛𝑡𝑠 = get_𝑒𝑓𝑔╱𝑛𝑡𝑠()
             𝑅 = 𝑅𝑟𝑒𝑓 * 𝑠
             𝐼₂ = @. -4π * 𝑅𝑟𝑒𝑓 * 𝑅^2 * 𝑒𝑓𝑔╱𝑛𝑡𝑠
@@ -1157,13 +1185,17 @@ end
             𝐸_charges_charges = get_data("Ger.log", "Self energy", 7)
             𝑑𝐸_nuclei_charges╱𝑑𝑠 = -𝐸_nuclei_charges ./ 𝑠
             𝑑𝐸_charges_charges╱𝑑𝑠 = -𝐸_charges_charges ./ 𝑠
+            𝑑𝐸_nuclei_charges╱𝑑𝑠ₙ = finitedifference(𝐸_nuclei_charges)
+            𝑑𝐸_charges_charges╱𝑑𝑠ₙ = finitedifference(𝐸_charges_charges)
 
             # electrons-charges Coulomb energy
             𝐸_electrons_charges = get_EFM()[2]
             𝑑𝐸_electrons_charges╱𝑑𝑠 = 𝑅𝑟𝑒𝑓 * get_EFM()[1]
+            𝑑𝐸_electrons_charges╱𝑑𝑠ₙ = finitedifference(𝐸_electrons_charges)
 
             # total energy
             𝐺ₑᵣ = get_data("Ger.log", "SCF Done", 5)
+            𝑑𝐺ₑᵣ╱𝑑𝑠ₙ = finitedifference(𝐺ₑᵣ)
             𝐸ₜₒₜ = 𝐺ₑᵣ
             𝑑𝐸ₜₒₜ╱𝑑𝑠 = 𝑑𝑊ₚₒₗ╱𝑑𝑠 + 𝑑𝐸ᵣ╱𝑑𝑠 + 𝑑𝐸_nuclei_charges╱𝑑𝑠 + 𝑑𝐸_charges_charges╱𝑑𝑠 + 𝑑𝐸_electrons_charges╱𝑑𝑠
 
@@ -1172,16 +1204,17 @@ end
             𝑝ₐ = @. -𝑑𝐸ₜₒₜ╱𝑑𝑠 / 𝑑𝑉𝑐╱𝑑𝑠 * 4359.7 # 1 hartree/bohr = 4359.7 GPa
 
             # numerical pressure
-            𝑝ₙ = calc_numerical𝑝(𝑉𝑐, 𝐸ₜₒₜ)
+            𝑝ₙ = calc_numerical𝑝(𝑉𝑐, 𝐸ₜₒₜ)  # by Murnaghan ESO fitting
+            𝑝ₙ′ = -finitedifference(𝐸ₜₒₜ) ./ 𝑑𝑉𝑐╱𝑑𝑠 * 4359.7 # by finite difference
 
         #end
         # print output
         writeproperties3()
         #debug2()
     #end
-    #write("1.sh", "rm -rf fort.* *.off Vc-*.gjf Vc-*.log")
-    #run(`bash 1.sh`)
-    #run(`rm -rf 1.sh`)
+    write("1.sh", "rm -rf fort.* *.off Vc-*.gjf Vc-*.log")
+    run(`bash 1.sh`)
+    run(`rm -rf 1.sh`)
 #end
 
 #main()
