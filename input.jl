@@ -6,7 +6,7 @@
 # be running at the same time. Off means all cpu cores work on one job at 
 # a time. Tests show that multithreading is much faster. Vc and Gcav jobs 
 # are set to be always multithreaded.
-ismultithreading = false
+ismultithreading = true
 
 # restart
 # Run a new calculation or restart from previously interupted Ger jobs.
@@ -35,13 +35,13 @@ tesserae = 0.075             # the mean area in Å² of the tesserae by
 
 # scalingfactors
 # Scaling factors of the vdW atomic radii for constructing the cavity.
-# Include the values inside the () and separate them by ,
+# Include the values inside () or [] and separate them by ,
 scalingfactors = (1.2, 1.15, 1.1, 1.05, 1.0, 0.975, 0.95)
 
 # Gaussian 09/16 parameters
-nproc = 4     # change to total cpus if ismultithreading = false
-mem = "4gb"   # memory per core; change to total memory if ismultithreading = false
-keywords = "uwb97xd def2svp guess=mix"    # Gaussian keywords; add more if needed
+nproc = 1     # change to total cpus if ismultithreading = false
+mem = "2gb"   # memory per core; change to total memory if ismultithreading = false
+keywords = "pbepbe def2svp"    # Gaussian keywords; add more if needed
 charge = 0
 multiplicity = 1
 
@@ -51,17 +51,10 @@ multiplicity = 1
 # Leading or trailing spaces on each line are ok.
 # Atoms may be specified by element symbols or atomic numbers.
 geometries = """
-6                     1.1       0.71888   0. 
-6                     1.1      -0.71888   0. 
-6                    -1.1       0.71888   0. 
-6                    -1.1      -0.71888   0. 
-1                     1.30832   1.26099   0.92589 
-1                     1.30832   1.26099  -0.92589 
-1                     1.30832  -1.26099   0.92589 
-1                     1.30832  -1.26099  -0.92589 
-1                    -1.30832   1.26099   0.92589 
-1                    -1.30832   1.26099  -0.92589 
-1                    -1.30832  -1.26099   0.92589 
-1                    -1.30832  -1.26099  -0.92589 
+H    -0.37 0.0 0.0
+H    0.37 0.0 0.0
+
+H    -0.36 0.0 0.0
+H    0.36 0.0 0.0
 
 """

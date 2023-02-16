@@ -73,3 +73,5 @@ opt/Gau-*
 opt/fort.*
 opt/tesserae*
 opt/charge.off
+single-atom-or-molecule/analytical-p-test/slurm-*.out
+.vscode/settings.json

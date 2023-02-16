@@ -223,10 +223,13 @@ function print_line(io::IO, type::String, n::Int64, m::Int64, 𝑓::Float64, sph
     elseif type == "Vc" || type == "Ger"
         println(io, atomcoor[1], " ", atomcoor[2], " ", atomcoor[3], "    ", radius, "    ", 𝑓)
     elseif type == "Gcav"
-        if sphere == "hard"
+        if sphere == "hard" # alwasys use the first scaling factor, otherwise (sphere=="soft"), use appropriate scaling factors
             𝑓 = scalingfactors[1]
         end
         println(io, n, "    ", radius * 𝑓, "    1.0")
+        # In Gcav calculation, the following line separating the radius and scaling factor does not work.
+        # The scaling factor seems to be ignored.
+        #println(io, n, "    ", radius, "    ", 𝑓)
     end
 end
 # @time print_line(stdout, "structure", 1, 1, 1.2)
@@ -327,7 +330,9 @@ end
 
 # check if g16 or g09 is installed and loaded
 function get_gau_ver()
-    if typeof(Sys.which("g16")) === String
+    if gethostname() == "atlas-fdr-login-01" || gethostname() == "atlas-fdr-login-02"
+        return "g16"
+    elseif typeof(Sys.which("g16")) === String
         return "g16"
     elseif typeof(Sys.which("g09")) === String
         return "g09"
@@ -358,14 +363,15 @@ function run_gaussian(jobtype::String, nums::Union{Vector{Int64},UnitRange{Int64
     cd("..")
 end
 
-function find_unfinished_Ger_jobs()
+function find_unfinished_jobs(jobtype::String)
     nos = calc_num_structs()
     nosf = calc_num_scalingfactors()
+    searchstringdict = Dict("Vc" => "Cavity volume", "Ger" => "SCF Done", "Gcav" => "PCM non-electrostatic energy")
     unfinished = Int64[]   # empty array to collect the unfinished job numbers
     Threads.@threads for i in 1:nos
         try # try open file
-            file = read("tmp/structure-$i-Ger.log", String)
-            n = count("SCF Done", file)
+            file = read("tmp/structure-$i-$jobtype.log", String)
+            n = count(searchstringdict[jobtype], file)
             if n != nosf
                 push!(unfinished,i)  # collect i if the number of energies found is != nosf
             end
@@ -376,10 +382,10 @@ function find_unfinished_Ger_jobs()
     unfinished
 end
 
-function restart_Ger_jobs()
-    unfinished = find_unfinished_Ger_jobs()
+function restart_jobs(jobtype::String)
+    unfinished = find_unfinished_jobs(jobtype)
     if !isempty(unfinished)
-        run_gaussian("Ger", unfinished)
+        run_gaussian(jobtype, unfinished)
     end
 end
 
@@ -537,11 +543,14 @@ end
 #------------------------------------------------------------------------------
 #function main()
     # Step 1: cavity volume 𝑉𝑐(𝑓) and solvent property calculations
-    if !restart  # new job
+    if restart  # restart "Vc" jobs
+        restart_jobs("Vc")
+    else  #new jobs
         mkpath("tmp")    # creat a tmp folder in current directory
         write_gjf("Vc")
         run_gaussian("Vc")
     end
+
     𝑉𝑐 = get_data("Vc", "Cavity volume", 5)
     # linear scaling factor 𝑠, as the cubic root of the volume scaling
     𝑠 = @. ∛(𝑉𝑐/𝑉𝑐[:,1])  # nos * nosf 2D array
@@ -559,7 +568,7 @@ end
 
     # Step 2: electronic structure Gaussian jobs and pressure calculations
     if restart  # restart Ger jobs
-        restart_Ger_jobs()
+        restart_jobs("Ger")
     else
         write_gjf("Ger")
         run_gaussian("Ger")
@@ -570,8 +579,12 @@ end
     𝑝̄ = mean(𝑝, dims=1)   # 1 * nosf 2D array
 
     # Step 3: cavitation energy Gaussian jobs
-    write_gjf("Gcav")
-    run_gaussian("Gcav")
+    if restart  # restart Gcav jobs
+        restart_jobs("Gcav")
+    else
+        write_gjf("Gcav")
+        run_gaussian("Gcav")
+    end
     𝑉𝑐𝑎𝑣 = get_data("Gcav", "Cavity volume", 5) # 𝑉𝑐𝑎𝑣 could be different from 𝑉𝑐 in Gcav calculation using hard sphere
     𝐸𝑐𝑎𝑣 = get_data("Gcav", "PCM non-electrostatic energy", 5)
     #𝐸𝑐𝑎𝑣 and 𝑉𝑐𝑎𝑣 are nos * nosf 2D arrays; 1 GPa*Å³ = 2.293712569e-4 Hartree
