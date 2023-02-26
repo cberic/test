@@ -1,9 +1,32 @@
+# =============================================================================
+#                                  xppcm.jl
+# -----------------------------------------------------------------------------
+#                                Roberto Cammi
+#                   Department of Chemical Science (SCVSA)
+#                           University of Parma, ITALY
+
+#                                   Bo Chen
+#                  Donostia International Physics Center, SPAIN
+# -----------------------------------------------------------------------------
+#
+# xppcm.jl is a Julia script to conduct XP-PCM calculations for
+# studying chemical reactions under pressure [1,2].
+# References:
+#         [1] R. Cammi, J. Comp. Chem., 36, 2246-2259 (2015)
+#         [2] B. Chen. R. Hoffmann and R. Cammi,
+#            Angew. Chem. Int. Ed. 56, 11126-11142 (2017) and related
+#                       Supporting Information (SI)
+#         [3] R. Cammi, B. Chen, M. Rahm, J. Comp. Chem. 39, 2243 (2018)
+#         [4] R. Cammi, J. Chem. Phys.,150,164122 (2019)
+#         [5] M. Rahm, R. Cammi, N.W. Ashcroft. R. Hoffman, JACS,   (2020)
+#
+# Note: The presents script is under development and its use is confidential.
+# =============================================================================
+
 using Statistics
 using Printf
 using LsqFit
-
 include("input.jl")
-
 
 #------------------------------------------------------------------------------
 # Solvents.jl
