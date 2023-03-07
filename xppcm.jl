@@ -307,14 +307,14 @@ function print_pcm_spec(io::IO, jobtype::String, i::Int64, j::Int64, tsare::Floa
         #𝜀 = calc_𝜀()    # data of 𝜀 and 𝜌 needed for the Ger gjf files
         #𝜌 = calc_𝜌()
         println(io, "qrep pcmdoc geomview nodis nocav g03defaults tsare=",tsare)
-        println(io, "nsfe=",noa[i], cavity == "vdw" ? " noaddsph" : "")
-        println(io, "nvesolv=",sp.𝑛," solvmw=",sp.𝑀," rsolv=",sp.𝑟)
+        println(io, "nsfe=",noa[i], cavity == "vdw" ? " noaddsph" : " rsolv=$(sp.𝑟)")
+        println(io, "nvesolv=",sp.𝑛," solvmw=",sp.𝑀)
         println(io, "eps=",𝜀[j]," rhos=",𝜌[j])
     elseif jobtype == "Gcav"
         #𝑉ₘ = calc_𝑉ₘ()    # molar volume 𝑉ₘ of the solvent
         println(io, "norep nodis cav g03defaults tsare=",tsare)
-        println(io, "nsfe=",noa[i], cavity == "vdw" ? " noaddsph" : "")
-        println(io, "Vmol=",𝑉ₘ[j]," rsolv=",sp.𝑟)
+        println(io, "nsfe=",noa[i], cavity == "vdw" ? " noaddsph" : " rsolv=$(sp.𝑟)")
+        println(io, "Vmol=",𝑉ₘ[j])
     end
 end
 
