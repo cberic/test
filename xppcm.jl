@@ -389,7 +389,7 @@ end
 function find_unfinished_jobs(jobtype::String)
     nos = calc_num_structs()
     nosf = calc_num_scalingfactors()
-    searchstringdict = Dict("Vc" => "Cavity volume", "Ger" => "SCF Done", "Gcav" => "PCM non-electrostatic energy")
+    searchstringdict = Dict("Vc" => "Cavity volume", "Ger" => "After PCM corrections", "Gcav" => "PCM non-electrostatic energy")
     unfinished = Int64[]   # empty array to collect the unfinished job numbers
     Threads.@threads for i in 1:nos
         try # try open file
@@ -432,7 +432,7 @@ function get_data(jobtype::String, searchstring::String, fieldnum::Int64)
 end
 
 #𝑉𝑐 = get_data("Vc", "Cavity volume", 5)
-#𝐺𝑒𝑟 = get_data("Ger", "SCF Done", 5)
+#𝐺𝑒𝑟 = get_data("Ger", "After PCM corrections", 7)
 #𝑉𝑐𝑎𝑣 = get_data("Gcav", "Cavity volume", 5) # 𝑉𝑐𝑎𝑣 could be different from 𝑉𝑐 in Gcav calculation using hard sphere
 #𝐸𝑐𝑎𝑣 = get_data("Gcav", "PCM non-electrostatic energy", 5)
 
@@ -596,7 +596,7 @@ end
         write_gjf("Ger")
         run_gaussian("Ger")
     end
-    𝐺𝑒𝑟 = get_data("Ger", "SCF Done", 5)
+    𝐺𝑒𝑟 = get_data("Ger", "After PCM corrections", 7)
     𝑝 = calc_𝑝(𝑉𝑐, 𝐺𝑒𝑟)
     # average of 𝑝 over all structures at the same scalingfactor 𝑓
     𝑝̄ = mean(𝑝, dims=1)   # 1 * nosf 2D array
