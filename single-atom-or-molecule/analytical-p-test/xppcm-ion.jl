@@ -16,7 +16,7 @@ function solventparameters(s = solvent)
     if s == "cyclohexane"
         # if dielectric is defined in input.jl, use it, otherwise use default
         𝜀 = @isdefined(dielectric) ? dielectric : 2.0165
-        return (𝜀, 0.7781, 84.1595, 36, 2.815)
+        return (𝜀, 0.7781, 84.1595, 36, 2.815) 
     elseif s == "benzene"
         𝜀 = @isdefined(dielectric) ? dielectric : 2.2706
         return (𝜀, 0.8756, 78.1118, 30, 2.63)
@@ -167,31 +167,45 @@ function atomicradii(type = radiustype)
 		    #1s
 
             #2s
-
+            "Li"=> 0.80,    "3" => 0.80 , # From 5E-3 cutoff
+            #"Li"=> 0.86,    "3" => 0.86 , # From 3E-3 cutoff
             #2p
 			"F" => 1.92,    "9" => 1.92, # From RA16
             #3s
             #"Na"=> 0.95,    "11"=> 0.95, # From collin2005, hard ionic radii from Pauling
+			"Na"=> 1.11,    "11"=> 1.11, # From 5E-3 cutoff
+			#"Na"=> 1.18,    "11"=> 1.18, # From 3E-3 cutoff
 			#"Na"=> 1.20,    "11"=> 1.20, # From Alvaro
-			"Na"=> 1.33,    "11"=> 1.33, # From RA16
+			#"Na"=> 1.33,    "11"=> 1.33, # From RA16
             #3p
-			"Cl"=> 2.29,    "17"=> 2.29, # From RA16
+			"Cl"=> 1.78,    "17"=> 1.78, # From 5E-3 cutoff
+			#"Cl"=> 1.93,    "17"=> 1.93, # From 3E-3 cutoff
+			#"Cl"=> 2.29,    "17"=> 2.29, # From RA16
 			#"Cl"=> 2.001,    "17"=> 2.001, # From Alvaro
             #4s
             #"K" => 2.34,    "19"=> 2.34,
             #"Ca"=> 2.70,    "20"=> 2.70,
             #3d
-
+            "Cu"=> 1.38,    "29"=> 1.38, # From 5E-3 cutoff
             #4p
-			"Br"=> 2.41,    "35"=> 2.41, #RA16
+            "Br"=> 1.88,    "35"=> 1.88, # From 5E-3 cutoff
+            #"Br"=> 2.04,    "35"=> 2.04, # From 3E-3 cutoff
+            #"Br"=> 2.41,    "35"=> 2.41, # RA16
             #5s
+			
+            #4d
+            "Ag"=> 1.54,    "47"=> 1.54, # From 5E-3 cutoff
 
 			#6s
 
-            #4d
 
             #5p
-			"I" => 2.59,    "53"=> 2.59, #From RA16
+			#"I" => 2.59,    "53"=> 2.59, #From RA16
+			"I" => 2.02,    "53"=> 2.02, # From 5E-3 cutoff
+
+            #5d
+            "Au"=> 1.53,    "79"=> 1.53, # From 5E-3 cutoff	
+			
             #6p
             #"Tl"=> 2.42,    "81"=> 2.42, Keeping these as examples for now
             #"Pb"=> 2.49,    "82"=> 2.49,
@@ -199,6 +213,7 @@ function atomicradii(type = radiustype)
             #"Po"=> 2.50,    "84"=> 2.50,
             #"At"=> 2.47,    "85"=> 2.47,
             #"Rn"=> 2.43,    "86"=> 2.43
+			
             )
         # add more if needed from https://chemistry-europe.onlinelibrary.wiley.com/doi/10.1002/chem.201700610
     else
@@ -301,13 +316,17 @@ function charge_sphere(t = t_new, r = r_new)
     z_string = string.(z)
 
     sphere = ""
-    old_string = ""
+    prop_sphere = ""
+    old_sphere = ""
+    old_prop = ""
     
     for m in 1:length(x_string)
-        sphere = old_string * " " * x_string[m] * " " * y_string[m] * " " * z_string[m] * " " * point_charges[m] * "\n"
-        old_string = sphere
+        sphere = old_sphere * " " * x_string[m] * " " * y_string[m] * " " * z_string[m] * " " * point_charges[m] * "\n"
+		prop_sphere = old_prop * " " * x_string[m] * " " * y_string[m] * " " * z_string[m] * "\n"
+        old_sphere = sphere
+		old_prop = prop_sphere
     end
-    return sphere
+    return sphere, prop_sphere
 end
 
 
@@ -396,6 +415,7 @@ function gjfvc(geom = geometries, 𝑓 = scalingfactors)
     sp = solventparameters()
     𝑟ₐ = atomicradii()
     gen = custombasis(gen_filename)
+    num_tess = round((4π*(1.3*𝑟ₐ[atoms[1]])^2)/tesserae)
     
     for i in 1:a
         # writing mode for the first and appending mode for other 𝑓
@@ -412,7 +432,7 @@ function gjfvc(geom = geometries, 𝑓 = scalingfactors)
                 $charge $multiplicity
                 $g
                 $(gen===nothing ? "" : "\n$gen\n")
-                qrep pcmdoc geomview nodis nocav g03defaults tsare=$tesserae
+                qrep pcmdoc geomview nodis nocav g03defaults tsnum=$num_tess
                 nsfe=$noa
                 nvesolv=$(sp[4]) solvmw=$(sp[3]) rsolv=$(sp[5])
                 eps=$(sp[1]) rhos=$(sp[2])
@@ -443,6 +463,7 @@ function gjfvc2(geom = geometries, 𝑓 = scalingfactors)
     sp = solventparameters()
     𝑟ₐ = atomicradii()
     gen = custombasis(gen_filename)
+    num_tess = round((4π*(1.3*𝑟ₐ[atoms[1]])^2)/tesserae)
     
     for i in 1:a
         open("Vc-$(𝑓[i]).gjf", "w") do file
@@ -458,7 +479,7 @@ function gjfvc2(geom = geometries, 𝑓 = scalingfactors)
                 $charge $multiplicity
                 $g
                 $(gen===nothing ? "" : "\n$gen\n")
-                qrep pcmdoc geomview nodis nocav g03defaults tsare=$tesserae
+                qrep pcmdoc geomview nodis nocav g03defaults tsnum=$num_tess
                 nsfe=$noa
                 nvesolv=$(sp[4]) solvmw=$(sp[3]) rsolv=$(sp[5])
                 eps=$(sp[1]) rhos=$(sp[2])
@@ -487,14 +508,15 @@ function gjfgeranalytical(𝜌 = calc_𝜌(), geom = geometries, 𝑓 = scalingf
     #𝜌 = calc_𝜌()
     𝑛𝑡𝑠 = get_numberoftesserae()
     gen = custombasis(gen_filename)
-    r_new = 𝑟ₐ[atoms[1]] #Jonatan: Note that this is a temporary solution which will only work if you only use single ions.  
+    r_new = 𝑟ₐ[atoms[1]] #Jonatan: Note that this is a temporary solution which will only work if you only use single ions.
+    num_tess = round((4π*(1.3*𝑟ₐ[atoms[1]])^2)/tesserae)	
 
         # writing mode for the first and appending mode for other 𝑓
     open("Ger.gjf", "w") do file
         for j in 1:a
             if model == "pointcharges" || model == "basic"
                 t_new = 𝑓[j]
-                charge_sp = charge_sphere(t_new, r_new)
+                charge_sp, prop_sp = charge_sphere(t_new, r_new)
             end
             write(file, """
                 $(j == 1 ? "" : "%oldchk=$(𝑓[j-1]).chk\n")%chk=$(𝑓[j]).chk
@@ -508,7 +530,7 @@ function gjfgeranalytical(𝜌 = calc_𝜌(), geom = geometries, 𝑓 = scalingf
                 $charge $multiplicity
                 $g
                 $(model == "pointcharges" ? "\n$charge_sp" : "")$(gen===nothing ? "" : "\n$gen\n")
-                qrep pcmdoc geomview nodis nocav g03defaults tsare=$tesserae
+                qrep pcmdoc geomview nodis nocav g03defaults tsnum=$num_tess
                 nsfe=$noa
                 nvesolv=$(sp[4]) solvmw=$(sp[3]) rsolv=$(sp[5])
                 eps=$(𝜀[j]) rhos=$(𝜌[j])
@@ -519,7 +541,7 @@ function gjfgeranalytical(𝜌 = calc_𝜌(), geom = geometries, 𝑓 = scalingf
                 write(file, " $(coordlines[k])    $(𝑟ₐ[atoms[k]])    $(𝑓[j])\n")
             end
             write(file, "\n")
-            write(file, "$charge_sp\n")
+            write(file, "$prop_sp\n")
             write(file, "$(𝑛𝑡𝑠[j]), 1, $(round(Int, 𝑓[j]*10000)), $(round(Int, 𝑓[j]*10000+1))\n")
             write(file, "\n")
             # do not write "--link1--" for the last scaling factor
@@ -544,11 +566,12 @@ function gjfger_1st_scalingfactor(𝜌, geom = geometries, 𝑓 = scalingfactors
     𝑛𝑡𝑠 = get_numberoftesserae()
     gen = custombasis(gen_filename)
     r_new = 𝑟ₐ[atoms[1]] #Jonatan: Note that this is a temporary solution which will only work if you only use single ions.  
+    num_tess = round((4π*(1.3*𝑟ₐ[atoms[1]])^2)/tesserae)
 
     open("Ger.gjf", "w") do file
         if model == "pointcharges"|| model == "basic"
             t_new = 𝑓[1]
-            charge_sp = charge_sphere(t_new, r_new)
+            charge_sp, prop_sp = charge_sphere(t_new, r_new)
         end
         write(file, """
             %chk=$(𝑓[1]).chk
@@ -562,7 +585,7 @@ function gjfger_1st_scalingfactor(𝜌, geom = geometries, 𝑓 = scalingfactors
             $charge $multiplicity
             $g
             $(model == "pointcharges" ? "\n$charge_sp" : "")$(gen===nothing ? "" : "\n$gen\n")
-            qrep pcmdoc geomview nodis nocav g03defaults tsare=$tesserae
+            qrep pcmdoc geomview nodis nocav g03defaults tsnum=$num_tess
             nsfe=$noa
             nvesolv=$(sp[4]) solvmw=$(sp[3]) rsolv=$(sp[5])
             eps=$(𝜀[1]) rhos=$𝜌
@@ -573,7 +596,7 @@ function gjfger_1st_scalingfactor(𝜌, geom = geometries, 𝑓 = scalingfactors
             write(file, " $(coordlines[k])    $(𝑟ₐ[atoms[k]])    $(𝑓[1])\n")
         end
         write(file, "\n")
-        write(file, "$charge_sp\n")
+        write(file, "$prop_sp\n")
         write(file, "$(𝑛𝑡𝑠[1]), 1, $(round(Int, 𝑓[1]*10000)), $(round(Int, 𝑓[1]*10000+1))\n")
         write(file, "\n")
     end
@@ -968,8 +991,8 @@ function calc_𝒵_new(𝒵, 𝑅𝑟𝑒𝑓, 𝑓=[scalingfactors[1]])
 end
 
 function calc_𝒵_new_pointcharges(𝒵, 𝑅𝑟𝑒𝑓, 𝑓=[scalingfactors[1]])
-    #sp = solventparameters()
-    #𝜌 = calc_𝜌(𝜂)
+    sp = solventparameters()
+    𝜌 = calc_𝜌(𝜂)
     𝐸_nuclei_charges = get_data("Ger.log", "Nuclei-charges interaction", 4, 𝑓)[1]
     𝐸_charges_charges = get_data("Ger.log", "Self energy", 7, 𝑓)[1]
     𝐸ₚₐᵤₗᵢ = get_𝐸ₚₐᵤₗᵢ(𝑓)[1]
@@ -979,7 +1002,8 @@ function calc_𝒵_new_pointcharges(𝒵, 𝑅𝑟𝑒𝑓, 𝑓=[scalingfactors
     𝐼₁ = 𝐸ₚₐᵤₗᵢ / 𝒵
     𝐼₂ = 4π * 𝑅𝑟𝑒𝑓^3 * 𝑒𝑓𝑔╱𝑛𝑡𝑠 #-𝑅𝑟𝑒𝑓 * (4π * 𝑅𝑟𝑒𝑓^2 / 𝑛𝑡𝑠) * 𝑒𝑓𝑔
     denominator = (3 + 𝜂) * 𝐼₁ + 𝐼₂
-    numerator =  0.5(1 - 1/dielectric) * abs(charge)^2 / 𝑅𝑟𝑒𝑓 * (1 + 3/dielectric) -𝐸_nuclei_charges - 𝐸_charges_charges + 𝑅𝑟𝑒𝑓 * get_EFM()[1][1]
+    numerator =  0.5*(1 - 1/1.0025) * abs(charge)^2 / 𝑅𝑟𝑒𝑓 * (1 + 3/1.0025) -𝐸_nuclei_charges - 𝐸_charges_charges + 𝑅𝑟𝑒𝑓 * get_EFM()[1][1]
+    #numerator = (-𝐸_nuclei_charges - 𝐸_charges_charges + 𝑅𝑟𝑒𝑓 * get_EFM()[1][1])
     𝒵_new =  numerator / denominator
 
     open("iterativeZ.dat", "a") do file
@@ -1123,7 +1147,7 @@ end
     #         #𝑉_cell╱𝑉₀ = 𝑉_cell / 𝑉_cell[1]
     #     end
 
-    #     if model == "pointcharges"
+         if model == "pointcharges"
 
             𝑠 = calc_𝑠()
             sp = solventparameters()
@@ -1131,12 +1155,12 @@ end
             atoms = atomlist()
             𝑅𝑟𝑒𝑓 = 𝑓[1] * 𝑟ₐ[atoms[1]] * 1.88973 # reference radius of Cl- in bohr
 
-            if impose_equilibrium # at 1st scalingfactor so that p(f0)=0
+            if impose_equilibrium == true # at 1st scalingfactor so that p(f0)=0
                 open("iterativeZ.dat", "w") do file end # erase the file content if exists
                 𝜌_old = sp[2]  # initial solvent density
                 𝒵_old = 0.063 * 𝜌_old * sp[4] / sp[3]
                 𝒵_new = 𝒵_old * 1.1  # a guess of 𝒵_new
-                while !(0.999 < 𝒵_new/𝒵_old < 1.001) # self-consistent calculation of 𝒵
+                while !(0.9999 < 𝒵_new/𝒵_old < 1.0001) # self-consistent calculation of 𝒵
                     global 𝜌_old = 𝜌_old * 𝒵_new / 𝒵_old
                     gjfger_1st_scalingfactor(𝜌_old)
                     rungaussian("Ger")
@@ -1207,7 +1231,7 @@ end
             𝑝ₙ = calc_numerical𝑝(𝑉𝑐, 𝐸ₜₒₜ)  # by Murnaghan ESO fitting
             𝑝ₙ′ = -finitedifference(𝐸ₜₒₜ) ./ 𝑑𝑉𝑐╱𝑑𝑠 * 4359.7 # by finite difference
 
-        #end
+        end
         # print output
         writeproperties3()
         #debug2()
