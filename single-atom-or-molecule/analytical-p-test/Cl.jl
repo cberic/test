@@ -4,11 +4,11 @@
 solvent = "cyclohexane"
 
 #### User defined dielectric permittivity of the solvent or the crystal
-dielectric = 1.5442^2 #1.0025 
+dielectric = 40 #1.5442^2 #1.0025 
 
 #### Choose "Bondi" or "Rahm" vdW radii for atoms, or "ionic" for ions
 radiustype = "ionic"
-scalingfactors = 1.0:-0.002:0.8  # from 1.0 to 0.8 with stepsize -0.002
+scalingfactors = 1.3:-0.05:1.0  # from 1.0 to 0.8 with stepsize -0.002
 
 #model = "basic"        # Basic XP-PCM model, considering only polarization 
                         # and Pauli interactions.
@@ -24,7 +24,7 @@ model = "pointcharges"  # Evoking compensating, spherically-distributed point ch
 #𝛼ᵣ = 1.762675  # Madelung constant, https://en.wikipedia.org/wiki/Madelung_constant
 #𝑟₀ = 3.571 * 1.88973 # closest distance between two ions of opposite charge in bohr
 
-impose_equilibrium = false  # imposing p=0 at the 1st scaling factor
+impose_equilibrium = true # imposing p=0 at the 1st scaling factor
 
 #### The mean area in Å² of the tesserae by which the surface of the cavity
 #### is partitioned. Suggested value = 0.075.

@@ -2,10 +2,10 @@ using Printf
 using LsqFit
 using DelimitedFiles
 
-#include("Cl.jl")
-#filename_without_extension = "Cl"
-include(ARGS[1])
-filename_without_extension = replace(ARGS[1], ".jl" => "")  # remove the ".jl" extension
+include("Na.jl")
+filename_without_extension = "Na"
+#include(ARGS[1])
+#filename_without_extension = replace(ARGS[1], ".jl" => "")  # remove the ".jl" extension
 
 #------------------------------------------------------------------------------
 # solvent
@@ -707,7 +707,12 @@ function get_𝐸ₚₐᵤₗᵢ(𝑓 = scalingfactors)
     open("Ger.log", "r") do file
         for line in eachline(file)
             if occursin("QRepSI", line)
-                𝐸ₚₐᵤₗᵢ[j] = parse(Float64, split(line)[6]) / 627.503 # 1 hartree = 627.503 kcal/mol
+                array = split(line)
+                if length(array) == 7
+                    𝐸ₚₐᵤₗᵢ[j] = parse(Float64, split(line)[6]) / 627.503 # 1 hartree = 627.503 kcal/mol
+                elseif length(array) == 6  # remove the equal sign in front of the number, e.g. array[4] == "=-1798336.01"
+                    𝐸ₚₐᵤₗᵢ[j] = parse(Float64, chop(array[5], head = 1)) / 627.503
+                end
             elseif occursin("SCF Done", line)
                 j += 1    # j ranges from 1:length(𝑓)
             end
@@ -816,10 +821,10 @@ function writeproperties3(𝑉𝑐 = 𝑉𝑐, 𝑓 = scalingfactors)
         write(file, "# atom=$(atomlist()[1]), charge=$charge, multiplicity=$multiplicity, radius=$(atomicradii()[atomlist()[1]]) Å\n")
         write(file, "# solvent=$solvent, dielectric=$dielectric, 𝜂=$𝜂, tesserae=$tesserae, xppcm-model=$model\n")
         write(file, "# $keywords; basis-set=$gen_filename\n\n")
-        write(file, "#      𝑓         𝑉𝑐      𝑠       𝜀     𝜌ₛₒₗ        𝒵   𝐸(nu-ch)   𝑑𝐸(nu-ch)╱𝑑𝑠   𝐸(ch-ch)   𝑑𝐸(ch-ch)╱𝑑𝑠   𝐸(el-ch)   𝑑𝐸(el-ch)╱𝑑𝑠     𝐸ₚₒₗₐᵣ   𝑑𝐸ₚₒₗₐᵣ╱𝑑𝑠     𝐸ₚₐᵤₗᵢ   𝑑𝐸ₚₐᵤₗᵢ╱𝑑𝑠           𝐺ₑᵣ       𝑝ₐ       𝑝ₙ      𝑝ₙ′     𝑉/𝑉₀\n")
-        write(file, "#                Å³                    g/ml                  Eₕ             Eₕ         Eₕ             Eₕ         Eₕ             Eₕ         Eₕ           Eₕ         Eₕ           Eₕ            Eₕ      GPa      GPa      GPa         \n")
+        write(file, "#      𝑓         𝑉𝑐      𝑠       𝜀      𝜌ₛₒₗ        𝒵   𝐸(nu-ch)   𝑑𝐸(nu-ch)╱𝑑𝑠   𝐸(ch-ch)   𝑑𝐸(ch-ch)╱𝑑𝑠   𝐸(el-ch)   𝑑𝐸(el-ch)╱𝑑𝑠     𝐸ₚₒₗₐᵣ   𝑑𝐸ₚₒₗₐᵣ╱𝑑𝑠     𝐸ₚₐᵤₗᵢ   𝑑𝐸ₚₐᵤₗᵢ╱𝑑𝑠           𝐺ₑᵣ       𝑝ₐ       𝑝ₙ      𝑝ₙ′     𝑉/𝑉₀\n")
+        write(file, "#                Å³                     g/ml                  Eₕ             Eₕ         Eₕ             Eₕ         Eₕ             Eₕ         Eₕ           Eₕ         Eₕ           Eₕ            Eₕ      GPa      GPa      GPa         \n")
         for j in 1:a
-            @printf(file, "%-3d  %5.3f  %7.3f  %5.3f  %6.4f  %7.4f  %7.4f  %9.6f  %13.6f  %9.6f  %13.6f  %9.6f  %13.6f  %9.6f  %11.6f  %9.6f  %11.6f  %12.6f  %7.3f  %7.3f  %7.3f  %7.3f\n", 
+            @printf(file, "%-3d  %5.3f  %7.3f  %5.3f  %7.3f  %7.3f  %7.4f  %9.6f  %13.6f  %9.6f  %13.6f  %9.6f  %13.6f  %9.6f  %11.6f  %9.6f  %11.6f  %12.6f  %7.3f  %7.3f  %7.3f  %7.3f\n", 
                             j, 𝑓[j], 𝑉𝑐[j], 𝑠[j], 𝜀[j], 𝜌[j], 𝒵[j], 𝐸_nuclei_charges[j], 𝑑𝐸_nuclei_charges╱𝑑𝑠[j], 𝐸_charges_charges[j], 𝑑𝐸_charges_charges╱𝑑𝑠[j], 𝐸_electrons_charges[j], 𝑑𝐸_electrons_charges╱𝑑𝑠[j], 𝑊ₚₒₗ′[j], 𝑑𝑊ₚₒₗ′╱𝑑𝑠[j], 𝐸ₚₐᵤₗᵢ[j], 𝑑𝐸ᵣ╱𝑑𝑠[j], 𝐺ₑᵣ[j], 𝑝ₐ[j], 𝑝ₙ[j], 𝑝ₙ′[j], 𝑉𝑐[j]/𝑉𝑐[1])
         end
         write(file, "\n")
@@ -828,7 +833,7 @@ function writeproperties3(𝑉𝑐 = 𝑉𝑐, 𝑓 = scalingfactors)
         write(file, "#                              A              B          C              D              E          F              G              H          I              J          K              L          M             N              O          P                 Q              R      CFILO      CFILP\n")
         for j in 1:a
             @printf(file, "%-3d  %5.3f  %5.3f      %9.6f      %9.6f  %9.6f      %9.6f      %9.6f  %9.6f      %9.6f      %9.6f  %9.6f      %9.6f  %9.6f      %9.6f  %9.6f     %9.6f      %9.6f  %9.6f      %12.6f      %9.6f  %9.6f  %9.6f\n", 
-                            j, 𝑓[j], 𝑠[j], 𝐸_nuclei_charges[j], 𝑑𝐸_nuclei_charges╱𝑑𝑠ₙ[j], 𝑑𝐸_nuclei_charges╱𝑑𝑠[j], 𝐸_charges_charges[j], 𝑑𝐸_charges_charges╱𝑑𝑠ₙ[j], 𝑑𝐸_charges_charges╱𝑑𝑠[j], 𝐸_electrons_charges[j], 𝑑𝐸_electrons_charges╱𝑑𝑠ₙ[j], 𝑑𝐸_electrons_charges╱𝑑𝑠[j], 𝑊ₚₒₗ′[j], 𝑊ₚₒₗ[j], 𝑑𝑊ₚₒₗ′╱𝑑𝑠[j], 𝑑𝑊ₚₒₗ╱𝑑𝑠[j], 𝐸ₚₐᵤₗᵢ[j], 𝑑𝐸ₚₐᵤₗᵢ╱𝑑𝑠ₙ[j], 𝑑𝐸ᵣ╱𝑑𝑠[j], 𝐺ₑᵣ[j], 𝑑𝐺ₑᵣ╱𝑑𝑠ₙ[j], 
+                            j, 𝑓[j], 𝑠[j], 𝐸_nuclei_charges[j], 𝑑𝐸_nuclei_charges╱𝑑𝑠ₙ[j], 𝑑𝐸_nuclei_charges╱𝑑𝑠[j], 𝐸_charges_charges[j], 𝑑𝐸_charges_charges╱𝑑𝑠ₙ[j], 𝑑𝐸_charges_charges╱𝑑𝑠[j], 𝐸_electrons_charges[j], 𝑑𝐸_electrons_charges╱𝑑𝑠ₙ[j], 𝑑𝐸_electrons_charges╱𝑑𝑠[j], 𝑊ₚₒₗ′[j], 𝑊ₚₒₗ[j], 𝑑𝑊ₚₒₗ′╱𝑑𝑠[j], 𝑑𝑊ₚₒₗ′╱𝑑𝑠_2[j], 𝐸ₚₐᵤₗᵢ[j], 𝑑𝐸ₚₐᵤₗᵢ╱𝑑𝑠ₙ[j], 𝑑𝐸ᵣ╱𝑑𝑠[j], 𝐺ₑᵣ[j], 𝑑𝐺ₑᵣ╱𝑑𝑠ₙ[j], 
                             𝑑𝐸_nuclei_charges╱𝑑𝑠[j]+𝑑𝐸_charges_charges╱𝑑𝑠[j]+𝑑𝐸_electrons_charges╱𝑑𝑠[j]+𝑑𝑊ₚₒₗ′╱𝑑𝑠[j]+𝑑𝐸ₚₐᵤₗᵢ╱𝑑𝑠ₙ[j],
                             𝑑𝐸_nuclei_charges╱𝑑𝑠[j]+𝑑𝐸_charges_charges╱𝑑𝑠[j]+𝑑𝐸_electrons_charges╱𝑑𝑠[j]+𝑑𝑊ₚₒₗ′╱𝑑𝑠[j]+𝑑𝐸ᵣ╱𝑑𝑠[j])
         end
@@ -960,7 +965,7 @@ function calc_𝒵()
     return @. 0.063 * 𝜌 * sp[4] / sp[3]
 end
 
-function calc_𝒵_new(𝒵, 𝑅𝑟𝑒𝑓, 𝑓=[scalingfactors[1]])
+#= function calc_𝒵_new(𝒵, 𝑅𝑟𝑒𝑓, 𝑓=[scalingfactors[1]])
     #sp = solventparameters()
     #𝜌 = calc_𝜌(𝜂)
     𝐸ₚₐᵤₗᵢ = get_𝐸ₚₐᵤₗᵢ(𝑓)[1]
@@ -988,11 +993,12 @@ function calc_𝒵_new(𝒵, 𝑅𝑟𝑒𝑓, 𝑓=[scalingfactors[1]])
     end
 
     return 𝒵_new
-end
+end =#
 
 function calc_𝒵_new_pointcharges(𝒵, 𝑅𝑟𝑒𝑓, 𝑓=[scalingfactors[1]])
     sp = solventparameters()
-    𝜌 = calc_𝜌(𝜂)
+    #𝜌 = calc_𝜌(𝜂)
+    𝑊ₚₒₗ′ = get_𝑊ₚₒₗ′()[1]  # polarization energy computed by Gaussian
     𝐸_nuclei_charges = get_data("Ger.log", "Nuclei-charges interaction", 4, 𝑓)[1]
     𝐸_charges_charges = get_data("Ger.log", "Self energy", 7, 𝑓)[1]
     𝐸ₚₐᵤₗᵢ = get_𝐸ₚₐᵤₗᵢ(𝑓)[1]
@@ -1002,12 +1008,12 @@ function calc_𝒵_new_pointcharges(𝒵, 𝑅𝑟𝑒𝑓, 𝑓=[scalingfactors
     𝐼₁ = 𝐸ₚₐᵤₗᵢ / 𝒵
     𝐼₂ = 4π * 𝑅𝑟𝑒𝑓^3 * 𝑒𝑓𝑔╱𝑛𝑡𝑠 #-𝑅𝑟𝑒𝑓 * (4π * 𝑅𝑟𝑒𝑓^2 / 𝑛𝑡𝑠) * 𝑒𝑓𝑔
     denominator = (3 + 𝜂) * 𝐼₁ + 𝐼₂
-    numerator =  0.5*(1 - 1/1.0025) * abs(charge)^2 / 𝑅𝑟𝑒𝑓 * (1 + 3/1.0025) -𝐸_nuclei_charges - 𝐸_charges_charges + 𝑅𝑟𝑒𝑓 * get_EFM()[1][1]
-    #numerator = (-𝐸_nuclei_charges - 𝐸_charges_charges + 𝑅𝑟𝑒𝑓 * get_EFM()[1][1])
+    #numerator =  0.5*(1 - 1/dielectric) * abs(charge)^2 / 𝑅𝑟𝑒𝑓 * (1 + 3/dielectric) -𝐸_nuclei_charges - 𝐸_charges_charges + 𝑅𝑟𝑒𝑓 * get_EFM()[1][1]
+    numerator = -𝑊ₚₒₗ′ * (1 + 3/dielectric) - 𝐸_nuclei_charges - 𝐸_charges_charges + 𝑅𝑟𝑒𝑓 * get_EFM()[1][1]
     𝒵_new =  numerator / denominator
 
     open("iterativeZ.dat", "a") do file
-        println(file, 
+#=         println(file, 
             "𝜌_sol ", 𝒵 * sp[3] / sp[4] / 0.063, 
             " 𝒵 ", 𝒵, 
             " 𝐸_nuclei_charges ", 𝐸_nuclei_charges, 
@@ -1021,7 +1027,10 @@ function calc_𝒵_new_pointcharges(𝒵, 𝑅𝑟𝑒𝑓, 𝑓=[scalingfactors
             " 𝐼₂ ", 𝐼₂, 
             " numerator ", numerator,
             " denominator ", denominator,
-            " 𝒵_new ", 𝒵_new)
+            " 𝒵_new ", 𝒵_new) =#
+        #@printf(file, "       𝜌_sol            𝒵      𝐸_nu_ch      𝐸_ch_ch      𝐸_el_ch       𝐸ₚₐᵤₗᵢ          𝑛𝑡𝑠      𝑒𝑓𝑔/𝑛𝑡𝑠          𝑒𝑓𝑔           𝐼₁           𝐼₂    numerator  denominator        𝒵_new\n",)
+        @printf(file, "%12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12i %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f\n",
+                      𝒵*sp[3]/sp[4]/0.063, 𝒵, 𝐸_nuclei_charges, 𝐸_charges_charges, get_EFM()[2][1], 𝐸ₚₐᵤₗᵢ, 𝑛𝑡𝑠, 𝑒𝑓𝑔╱𝑛𝑡𝑠, 𝑒𝑓𝑔, 𝐼₁, 𝐼₂, numerator, denominator, 𝒵_new)
     end
 
     return 𝒵_new
@@ -1153,10 +1162,12 @@ end
             sp = solventparameters()
             𝑟ₐ = atomicradii()
             atoms = atomlist()
-            𝑅𝑟𝑒𝑓 = 𝑓[1] * 𝑟ₐ[atoms[1]] * 1.88973 # reference radius of Cl- in bohr
+            𝑅𝑟𝑒𝑓 = 𝑓[1] * 𝑟ₐ[atoms[1]] * 1.88973 # reference radius of the ion in bohr
 
             if impose_equilibrium == true # at 1st scalingfactor so that p(f0)=0
-                open("iterativeZ.dat", "w") do file end # erase the file content if exists
+                open("iterativeZ.dat", "w") do file 
+                    @printf(file, "       𝜌_sol            𝒵      𝐸_nu_ch      𝐸_ch_ch      𝐸_el_ch       𝐸ₚₐᵤₗᵢ          𝑛𝑡𝑠      𝑒𝑓𝑔/𝑛𝑡𝑠          𝑒𝑓𝑔           𝐼₁           𝐼₂    numerator  denominator        𝒵_new\n",)
+                end # create the file and erase the file content if exists
                 𝜌_old = sp[2]  # initial solvent density
                 𝒵_old = 0.063 * 𝜌_old * sp[4] / sp[3]
                 𝒵_new = 𝒵_old * 1.1  # a guess of 𝒵_new
@@ -1189,12 +1200,13 @@ end
             end
 
             # ion-medium polarization energy
-            𝑊ₚₒₗ′ = get_𝑊ₚₒₗ′()
+            𝑊ₚₒₗ′ = get_𝑊ₚₒₗ′()  # polarization energy computed by Gaussian
             𝑑𝑊ₚₒₗ′╱𝑑𝑠 = finitedifference(𝑊ₚₒₗ′)
             𝜀 = calc_𝜀()
+            𝑑𝑊ₚₒₗ′╱𝑑𝑠_2 = @. -𝑊ₚₒₗ′ / 𝑠 * (1 + 3/𝜀)
             𝛼ₚₒₗ = 0.5(1 .- 1 ./ 𝜀)
-            𝑊ₚₒₗ = @. -𝛼ₚₒₗ * abs(charge)^2 / 𝑠 / 𝑅𝑟𝑒𝑓  # 𝑊ₚₒₗ is an approximate to 𝑊ₚₒₗ′
-            𝑑𝑊ₚₒₗ╱𝑑𝑠 = @. -𝑊ₚₒₗ′ / 𝑠 * (1 + 3/𝜀)
+            𝑊ₚₒₗ = @. -𝛼ₚₒₗ * abs(charge)^2 / 𝑠 / 𝑅𝑟𝑒𝑓  # 𝑊ₚₒₗ (Born model) is an approximate to 𝑊ₚₒₗ′
+            𝑑𝑊ₚₒₗ╱𝑑𝑠 = @. -𝑊ₚₒₗ / 𝑠 * (1 + 3/𝜀)
 
             # Pauli repulsion energy
             𝐸ₚₐᵤₗᵢ = get_𝐸ₚₐᵤₗᵢ()
@@ -1221,7 +1233,7 @@ end
             𝐺ₑᵣ = get_data("Ger.log", "SCF Done", 5)
             𝑑𝐺ₑᵣ╱𝑑𝑠ₙ = finitedifference(𝐺ₑᵣ)
             𝐸ₜₒₜ = 𝐺ₑᵣ
-            𝑑𝐸ₜₒₜ╱𝑑𝑠 = 𝑑𝑊ₚₒₗ╱𝑑𝑠 + 𝑑𝐸ᵣ╱𝑑𝑠 + 𝑑𝐸_nuclei_charges╱𝑑𝑠 + 𝑑𝐸_charges_charges╱𝑑𝑠 + 𝑑𝐸_electrons_charges╱𝑑𝑠
+            𝑑𝐸ₜₒₜ╱𝑑𝑠 = 𝑑𝑊ₚₒₗ′╱𝑑𝑠 + 𝑑𝐸ᵣ╱𝑑𝑠 + 𝑑𝐸_nuclei_charges╱𝑑𝑠 + 𝑑𝐸_charges_charges╱𝑑𝑠 + 𝑑𝐸_electrons_charges╱𝑑𝑠
 
             # analytical pressure
             𝑑𝑉𝑐╱𝑑𝑠 = @. 3𝑉𝑐 / 𝑠
