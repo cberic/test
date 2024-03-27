@@ -4,7 +4,7 @@
 exedir = "/scratch/bochen/Gaussian16/xppcm-links/exe-dir"
 
 solvent = "cyclohexane"      # "cyclohexane", "benzene", or "argon"
-cavity = "vdw"               # "vdw" or "ses" (default) cavity
+cavity = "custom"            # "vdw" or "ses" (default) cavity, or "custom"
 
 tesserae = 0.075             # the mean area in Å² of the tesserae by
                              # which the surfaces of the cavity
@@ -33,8 +33,18 @@ keywords = "pbepbe/cc-pvdz"    # Gaussian keywords; add more if needed
 charge = 0
 multiplicity = 1
 
-# Provide the geometry in z-matrix; optimization will be done in z-matrix coordinates.
-# The atom list also needs to be provided in addition to the z-matrix specification.
+# Geometry
+# Can be provided in Cartesian or Z-matrix format. 
+# When using Z-matrix, `atomlist` needs to be provided.
+
+#= cartesian = """
+          6                   0.000000    0.000000    0.000000
+          1                   0.000000    0.000000    1.105570
+          1                   1.042341    0.000000   -0.368523
+          1                  -0.521171   -0.902694   -0.368523
+          1                  -0.521171    0.902694   -0.368523
+""" =#
+
 atomlist = "C H H  H H  "
 zmatrix = """
 C
@@ -48,6 +58,10 @@ Constant:
 a=109.471220
 d1=120.0
 d2=-120.0
-
-
 """
+
+# Custom cavity
+# When `cavity = custom`, list the sphere locations (on which atoms) and radii.
+spherespec = [2  2.04 
+             4  2.06
+             3  2.08]

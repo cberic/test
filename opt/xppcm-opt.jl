@@ -1,19 +1,18 @@
-using Statistics
-using Printf
-using LsqFit
+#using Statistics
+#using Printf
+#using LsqFit
 
 #include("CH4.jl")
 #filename_without_extension = "CH4"
 include(ARGS[1])
 filename_without_extension = replace(ARGS[1], ".jl" => "")  # remove the ".jl" extension
-ismultithreading = false
-sphere = "hard"     # fixed cavity ("hard", which is the default or varied cavity ("soft") in Gcav job
+
 #------------------------------------------------------------------------------
 # Solvents.jl
 #------------------------------------------------------------------------------
 struct Solvent <: Real #FieldVector{5, Real} #
 	𝜀::Float64  # dielectric
-	𝜌::Float64  # valence electron density
+	𝜌::Float64  # solvent density
 	𝑀::Float64  # molar mass
 	𝑛::Int64    # number of valence electrons
 	𝑟::Float64  # molecular radius
@@ -49,6 +48,8 @@ end
 # AtomicRadii.jl
 #------------------------------------------------------------------------------
 bondi = Base.ImmutableDict(
+    #dummy atom
+    "X" => 0.0,
     #1s
     "H" => 1.20,    "1" => 1.20,
     "He"=> 1.40,    "2" => 1.40,
@@ -98,6 +99,8 @@ bondi = Base.ImmutableDict(
 # add more if needed from https://en.wikipedia.org/wiki/Van_der_Waals_radius
 
 rahm = Base.ImmutableDict(
+    #dummy atom
+    "X" => 0.0,
     #1s
     "H" => 1.54,    "1" => 1.54,
     "He"=> 1.34,    "2" => 1.34,
@@ -179,74 +182,72 @@ function get_atom_radius(atom::AbstractString,
 end
 
 #------------------------------------------------------------------------------
-# Geometries.jl
+# Geometry.jl
 #------------------------------------------------------------------------------
-function calc_num_structs(s::String = geometries)
-    count(r"\n+\s*\n+", strip(s)) + 1
-end
-#@time calc_num_structs()
-
-function split_geoms(s::String = geometries)
-    split(strip(s), r"\n+\s*\n+", keepempty=false)
+function calc_num_atoms_cartesian(s::String = cartesian)
+    #count(r"\n", s) + 1
+    count(r"\n", strip(s)) + 1
 end
 
-function calc_num_atoms(s::AbstractString)
-    count(r"\n", s) + 1
+function calc_num_atoms_zmatrix(s::String = atomlist)
+    length(split(atomlist))
 end
 
-# Get the atomic label of the `n`th atom in the `m`th structure from `geomdata`
-function get_atomlabel(n::Int64, m::Int64, geom::Vector{SubString{String}} = geomdata, 
-                                            noa::Vector{Int64} = numatoms)
-    #nos = length(noa)
-    index = sum(noa[i]*4 for i in 1:m) - noa[m]*4 + (n-1)*4 + 1
-    geom[index]
+# Get the atomic label of the `i`th atom
+function get_atomlabel_cartesian(i_atom::Int64, s::String = cartesian)
+    index = (i_atom-1)*4 + 1
+    split(s)[index]
 end
-# @time get_atomlabel(1,1)
 
-# Get the xyz coordinates of the `n`th atom in the `m`th structure from `geomdata`
-function get_atomcoor(n::Int64, m::Int64, geom::Vector{SubString{String}} = geomdata, 
-                                       noa::Vector{Int64} = numatoms)
-    nos = length(noa)
-    index = sum(noa[i]*4 for i in 1:m) - noa[m]*4 + (n-1)*4 + 1  # the index of the atomlabel 
-    geom[index+1], geom[index+2], geom[index+3]  # the following three elements in the array are the xyz coordinates
+function get_atomlabel_zmatrix(i_atom::Int64, s::String = atomlist)
+    split(s)[i_atom]
 end
-# @time get_atomcoor.(1:18,103)
 
-function print_line(io::IO, type::String, n::Int64, m::Int64, 𝑓::Float64, sphere::String = sphere)
-    atomlable = get_atomlabel(n, m)
-    atomcoor = get_atomcoor(n, m)
-    radius = get_atom_radius(atomlable)
-    if type == "structure"
-        println(io, atomlable, "    ", atomcoor[1], " ", atomcoor[2], " ", atomcoor[3])
-        #println("$atomlable    $(atomcoor[1]) $(atomcoor[2]) $(atomcoor[3])")
-    elseif type == "Vc" || type == "Ger" || type == "opt"
-        println(io, atomcoor[1], " ", atomcoor[2], " ", atomcoor[3], "    ", radius, "    ", 𝑓)
-    elseif type == "Gcav"
-        if sphere == "hard"
-            𝑓 = scalingfactors[1]
+#= # Get the xyz coordinates of the `i`th atom
+function get_atomcoor(i_atom::Int64, s::String = cartesian)
+    index = (i_atom-1)*4 + 1
+    tidygeom = strip(s)
+    tidygeom[index+1], tidygeom[index+2], tidygeom[index+3]
+end
+
+function print_line(io::IO, type::String, i_atom::Int64, 𝑓::Float64)
+    if @isdefined(cartesian)
+        atomlable = get_atomlabel(i_atom)
+        atomcoor = get_atomcoor(i_atom)
+        radius = get_atom_radius(atomlable)
+        if type == "structure"
+            println(io, atomlable, "    ", atomcoor[1], " ", atomcoor[2], " ", atomcoor[3])
+        elseif type in ("Vc", "Ger")
+            println(io, atomcoor[1], " ", atomcoor[2], " ", atomcoor[3], "    ", radius, "    ", 𝑓)
+        elseif type == "Gcav"
+            if sphere == "hard"
+                𝑓 = scalingfactors[1]
+            end
+            println(io, n, "    ", radius * 𝑓, "    1.0")
+        elseif type == "opt"
+            println(io, i_atom, "    ", radius, "    ", 𝑓)
         end
-        println(io, n, "    ", radius * 𝑓, "    1.0")
+    end
+    if @isdefined(zmatrix)
+        println(io, i_atom, "    ", get_atom_radius(split(atomlist)[i_atom]), "    ", 𝑓)
     end
 end
 # @time print_line(stdout, "structure", 1, 1, 1.2)
 
-function print_structure(io::IO, type::String, m::Int64, 𝑓::Float64, noa::Vector{Int64} = numatoms)
-    for n in 1:noa[m]
-        print_line(io, type, n, m, 𝑓)
+function print_structure(io::IO, type::String, 𝑓::Float64, noa::Int64 = numatoms)
+    for i_atom in 1:noa
+        print_line(io, type, i_atom, 𝑓)
     end
-end
+end =#
 
 #------------------------------------------------------------------------------
 # Gaussian.jl
 #------------------------------------------------------------------------------
-function calc_num_scalingfactors(𝑓::Tuple = scalingfactors)
-    length(𝑓)
-end
 
 # Gaussian input sections are explained here: https://gaussian.com/input/?tabid=0
 # Link0, Route, Title, Molecule Specification, etc. sections
-function print_link0(io::IO, jobtype::String, i::Int64, j::Int64, np::Int64 = nproc, mem::String = mem)
-    if jobtype == "Vc"  # jobtype == "Vc" or "Gcav"
+function print_link0(io::IO, jobtype::String, i_𝑓::Int64, np::Int64 = nproc, mem::String = mem)
+    if jobtype == "Vc"
         println(io, "%kjob l301")
         println(io, "%nproc=1")
         println(io, "%mem=1gb")
@@ -254,97 +255,118 @@ function print_link0(io::IO, jobtype::String, i::Int64, j::Int64, np::Int64 = np
         println(io, "%subst l301 $exedir")
         println(io, "%subst l502 $exedir")
         println(io, "%subst l701 $exedir")
-        println(io, j == 1 ? "" : "%kjob l502\n", "%chk=$filename_without_extension-",i,"-Ger.chk")
+        println(io, i_𝑓 == 1 ? "" : "%kjob l502\n", "%chk=$filename_without_extension-Ger.chk")
         println(io, "%nproc=",np)
         println(io, "%mem=",mem)
     elseif jobtype == "opt"
         println(io, "%subst l301 $exedir")
         println(io, "%subst l502 $exedir")
         println(io, "%subst l701 $exedir")
-        println(io, "%chk=$filename_without_extension-",i,"-opt.chk")
+        println(io, "%chk=$filename_without_extension-opt.chk")
         println(io, "%nproc=",np)
         println(io, "%mem=",mem)
     end
 end
 
-function print_route(io::IO, jobtype::String, j::Int64, kws::String = keywords, sol::String = solvent)
-    println(io, "#p ",kws, (jobtype == "Ger" || jobtype == "opt" && j > 1) ? " guess=read" : "", jobtype == "opt" ? " opt" : "")
-    println(io, "#p scrf=(iefpcm,solvent=",sol,",read) nosym 6d 10f")
+function print_route(io::IO, jobtype::String, i_𝑓::Int64, kws::String = keywords, sol::String = solvent)
+    println(io, "#p ", kws, ((jobtype == "Ger" || jobtype == "opt") && i_𝑓 > 1) ? " guess=read" : "")
+    if jobtype == "opt"
+        if @isdefined(cartesian)
+            println(io, "#p opt")
+        elseif @isdefined(zmatrix)
+            println(io, "#p popt=(z-matrix)")
+        end
+    end
+    println(io, "#p scrf=(iefpcm,solvent=",sol,",read) nosymm 6d 10f")
 end
 
-function print_title(io::IO, jobtype::String, j::Int64, 𝑓::Tuple = scalingfactors)
-    println(io, jobtype," calculation with scalingfactor = ",𝑓[j])  # title
+function print_title(io::IO, jobtype::String, i_𝑓::Int64, 𝑓list = scalingfactors)
+    println(io, jobtype, " calculation with scalingfactor = ", 𝑓list[i_𝑓])
 end
 
-function print_mol_spec(io::IO, i::Int64, j::Int64, chrg::Int64 = charge, mulplct::Int64 = multiplicity, 𝑓::Tuple = scalingfactors)
-    println(io, chrg," ",mulplct)
-    print_structure(io, "structure", i, 𝑓[j])
-end
-
-function print_pcm_spec(io::IO, jobtype::String, i::Int64, j::Int64, tsare::Float64 = tesserae, noa::Vector{Int64} = numatoms, cavity::String = cavity)
-    sp = get_sol_params()
-    if jobtype == "Vc"
-        println(io, "norep nodis nocav pcmdoc g03defaults tsare=",tsare)
-        println(io, "nsfe=",noa[i], cavity == "vdw" ? " noaddsph" : " rsolv=$(sp.𝑟)")
-    elseif jobtype == "Ger"
-        println(io, "qrep pcmdoc geomview nodis nocav g03defaults tsare=",tsare)
-        println(io, "nsfe=",noa[i])
-        println(io, "STen=",float(𝜂))
-        println(io, "cmf=0")
-        println(io, "nvesolv=",sp.𝑛," solvmw=",sp.𝑀, cavity == "vdw" ? " noaddsph" : " rsolv=$(sp.𝑟)")
-        println(io, "eps=",𝜀[j]," rhos=",𝜌[j])
-    elseif jobtype == "opt"
-        println(io, "qrep pcmdoc geomview nodis nocav g03defaults tsare=",tsare)
-        println(io, "nsfe=",noa[i])
-        println(io, "STen=",float(𝜂))
-        println(io, "cmf=100")
-        println(io, "dsten=",𝑝[j]/29419.7918) # 1 Ha/bohr³ = 29419.7918 GPa
-        println(io, "nvesolv=",sp.𝑛," solvmw=",sp.𝑀, cavity == "vdw" ? " noaddsph" : " rsolv=$(sp.𝑟)")
-        println(io, "eps=",𝜀[j]," rhos=",𝜌[j])
-    elseif jobtype == "Gcav"
-        #𝑉ₘ = calc_𝑉ₘ()    # molar volume 𝑉ₘ of the solvent
-        println(io, "norep nodis cav g03defaults tsare=",tsare)
-        println(io, "nsfe=",noa[i], cavity == "vdw" ? " noaddsph" : "")
-        println(io, "Vmol=",𝑉ₘ[j]," rsolv=",sp.𝑟)
+function print_mol_spec(io::IO, chrg::Int64 = charge, mulplct::Int64 = multiplicity, noa::Int64 = numatoms)
+    println(io, chrg, " ", mulplct)
+    if @isdefined(cartesian)
+        s = split(cartesian)
+        for i_atom in 1:noa
+            println(io, s[4*(i_atom-1)+1], "    ", s[4*(i_atom-1)+2], "  ", s[4*(i_atom-1)+3], "  ", s[4*(i_atom-1)+4])
+        end
+    elseif @isdefined(zmatrix)
+        println(io, strip(zmatrix))
     end
 end
 
-function print_sphere_spec(io::IO, jobtype::String, i::Int64, j::Int64, 𝑓::Tuple = scalingfactors)
-    print_structure(io, jobtype, i, 𝑓[j])
+function print_pcm_spec(io::IO, jobtype::String, i_𝑓::Int64, noa::Int64 = numatoms, tsare::Float64 = tesserae, cav::String = cavity, sp::Solvent = get_sol_params())
+    # determine the number of spheres
+    if cavity == "custom"
+        nsfe = size(spherespec, 1)
+    else
+        nsfe = noa
+    end
+    # determine if addsph is needed and what to write on the nsfe line
+    if cav in ("vdw", "custom") 
+        nsfeline = "nsfe=$nsfe noaddsph"
+    elseif cav == "ses"
+        nsfeline = "nsfe=$nsfe addsph rsolv=$(sp.𝑟)"
+    end
+    # print for differnt jobtype
+    if jobtype == "Vc"
+        println(io, "pcmdoc geomview g03defaults tsare=", tsare)
+    elseif jobtype in ("Ger", "opt")
+        println(io, "qrep pcmdoc geomview nodis nocav g03defaults tsare=", tsare)
+        println(io, "nvesolv=", sp.𝑛, " solvmw=", sp.𝑀)
+        println(io, "eps=", 𝜀[i_𝑓], " rhos=", 𝜌[i_𝑓])  # 𝜀 and 𝜌 are global variables of 1D array of length nosf
+        println(io, "sten=", float(𝜂))
+        if jobtype == "Ger"
+            println(io, "cmf=0")
+        else # i.e. jobtype == "opt"
+            println(io, "cmf=100")
+            println(io, "dsten=", 𝑝[i_𝑓])
+        end
+    end
+    println(io, nsfeline)
+end
+
+function print_sphere_spec(io::IO, i_𝑓::Int64, 𝑓list = scalingfactors)
+    if cavity == "custom"
+        for i_sph in axes(spherespec, 1) # axes() gives 1:number_of_spheres
+            println(io, Int(spherespec[i_sph,1]), "    ", spherespec[i_sph,2], "    ", 𝑓list[i_𝑓])
+        end
+    else # i.e. cavity in ("vdw", "ses")
+        for i_atom in 1:numatoms
+            radius = get_atom_radius(atomlist_array[i_atom])
+            println(io, i_atom, "    ", radius, "    ", 𝑓list[i_𝑓])
+        end
+    end
 end
 
 # combining the above pieces
-function print_content(io::IO, jobtype::String, i::Int64, j::Int64)
-    nosf = calc_num_scalingfactors()
-    print_link0(io, jobtype, i, j)
-    print_route(io, jobtype, j)
+function print_content(io::IO, jobtype::String, i_𝑓::Int64, nosf::Int64 = length(scalingfactors))
+    print_link0(io, jobtype, i_𝑓)
+    print_route(io, jobtype, i_𝑓)
     println(io)
-    print_title(io, jobtype, j)
+    print_title(io, jobtype, i_𝑓)
     println(io)
-    print_mol_spec(io, i, j)
+    print_mol_spec(io)
     println(io)
-    print_pcm_spec(io, jobtype, i, j)
+    print_pcm_spec(io, jobtype, i_𝑓)
     println(io)
-    print_sphere_spec(io, jobtype, i, j)
+    print_sphere_spec(io, i_𝑓)
     println(io)
-    if j != nosf println(io, "--link1--") end
+    if i_𝑓 != nosf; println(io, "--link1--"); end
 end
 
-function write_gjf(jobtype::String)
-    nos = calc_num_structs()
-    nosf = calc_num_scalingfactors()
-    Threads.@threads for i in 1:nos  # use multithreading
-        open("$filename_without_extension-$i-$jobtype.gjf", "w") do file
-            for j in 1:nosf
-                print_content(file, jobtype, i, j)
-            end
+function write_gjf(jobtype::String, nosf::Int64 = length(scalingfactors))
+    open("$filename_without_extension-$jobtype.gjf", "w") do file
+        for i_𝑓 in 1:nosf
+            print_content(file, jobtype, i_𝑓)
         end
     end
 end
 
 # check if g16 or g09 is installed and loaded
 function get_gau_ver()
-    if gethostname() == "atlas-fdr-login-01" || gethostname() == "atlas-fdr-login-02"
+    if occursin("atlas", gethostname())
         return "g16"
     elseif typeof(Sys.which("g16")) === String
         return "g16"
@@ -355,66 +377,20 @@ function get_gau_ver()
     end
 end
 
-function submit_job(gau::String, num::Int64, jobtype::String)
-    run(`$gau $filename_without_extension-$num-$jobtype.gjf`)
-end
-
-function submit_jobs(gau::String, nums::Union{Vector{Int64},UnitRange{Int64}}, jobtype::String)
-    Threads.@threads for i in nums
-        run(`$gau $filename_without_extension-$i-$jobtype.gjf`)
-    end
-end
-
-function run_gaussian(jobtype::String, nums::Union{Vector{Int64},UnitRange{Int64}} = 1:calc_num_structs(), ismulthrd::Bool = ismultithreading)
+function run_gaussian(jobtype::String)
     gau = get_gau_ver()
-    #cd("tmp")
-    # Only when ismultithreading = false and only for Ger jobs, do not use multithreading 
-    if !ismulthrd #&& jobtype == "Ger" 
-        submit_job.(gau, nums, jobtype)
-    else  # is multithreading
-        submit_jobs(gau, nums, jobtype)
-    end
-    #cd("..")
+    run(`$gau $filename_without_extension-$jobtype.gjf`)
 end
 
-function find_unfinished_Ger_jobs()
-    nos = calc_num_structs()
-    nosf = calc_num_scalingfactors()
-    unfinished = Int64[]   # empty array to collect the unfinished job numbers
-    Threads.@threads for i in 1:nos
-        try # try open file
-            file = read("$filename_without_extension-$i-Ger.log", String)
-            n = count("SCF Done", file)
-            if n != nosf
-                push!(unfinished,i)  # collect i if the number of energies found is != nosf
-            end
-        catch  # file not found; collect the file number
-            push!(unfinished,i)
-        end
-    end
-    unfinished
-end
-
-function restart_Ger_jobs()
-    unfinished = find_unfinished_Ger_jobs()
-    if !isempty(unfinished)
-        run_gaussian("Ger", unfinished)
-    end
-end
-
-# extract data from Gaussian .log write_properties files
-function get_data(jobtype::String, searchstring::String, fieldnum::Int64)
-    nos = calc_num_structs()
-    nosf = calc_num_scalingfactors()
-    data = Matrix{Float64}(undef, nos,nosf)    # nos * nosf 2D array
-    Threads.@threads for i in 1:nos
-        j = 1    # j ranges from 1:nosf
-        open("$filename_without_extension-$i-$jobtype.log", "r") do file
-            for line in eachline(file)
-                if occursin(searchstring, line)
-                    data[i,j] = parse(Float64, split(line)[fieldnum])
-                    j += 1
-                end 
+# extract data from Gaussian .log files
+function get_data(jobtype::String, searchstring::String, fieldnum::Int64, nosf::Int64 = length(scalingfactors))
+    data = Vector{Float64}(undef, nosf)    # 1D array
+    i_𝑓 = 1    # i_𝑓 ranges from 1:nosf
+    open("$filename_without_extension-$jobtype.log", "r") do file
+        for line in eachline(file)
+            if occursin(searchstring, line)
+                data[i_𝑓] = parse(Float64, split(line)[fieldnum])
+                i_𝑓 += 1
             end
         end
     end
@@ -422,163 +398,51 @@ function get_data(jobtype::String, searchstring::String, fieldnum::Int64)
 end
 
 #------------------------------------------------------------------------------
-# write_properties.jl
-#------------------------------------------------------------------------------
-function write_properties(𝑓, 
-                        𝑉𝑐::Matrix{Float64}, 
-                        𝑠::Matrix{Float64}, 
-                        𝑠̄::Matrix{Float64}, 
-                        𝜀::Matrix{Float64}, 
-                        𝜌::Matrix{Float64}, 
-                        𝑉ₘ::Matrix{Float64}, 
-                        𝐺𝑒𝑟::Matrix{Float64}, 
-                        𝑝::Matrix{Float64}, 
-                        𝑝̄::Matrix{Float64}, 
-                        𝑉𝑐𝑎𝑣::Matrix{Float64}, 
-                        𝐸𝑐𝑎𝑣::Matrix{Float64}, 
-                        𝐺𝑐𝑎𝑣::Matrix{Float64}, 
-                        𝐺𝑡𝑜𝑡::Matrix{Float64}, 
-                        Δ𝐺𝑡𝑜𝑡::Matrix{Float64})
-    nos = calc_num_structs()
-    nosf = calc_num_scalingfactors()
-    #𝑠 = calc_𝑠()
-    #𝑠̄ = mean(𝑠, dims=2)
-    #𝜀 = calc_𝜀()
-    #𝜌 = calc_𝜌()
-    #𝑉ₘ = calc_𝑉ₘ()
-    #𝑝 = calc_𝑝()
-    #𝑝̄ = mean(𝑝, dims=2)
-    #𝐺𝑐𝑎𝑣 = calc_𝐺𝑐𝑎𝑣()
-    #𝐺𝑡𝑜𝑡 = calc_𝐺𝑡𝑜𝑡()
-    #Δ𝐺𝑡𝑜𝑡 = calc_Δ𝐺𝑡𝑜𝑡()
-    𝐸𝑔𝑎𝑠 = get_data("Ger", "<psi(f)|   H    |psi(f)>", 6)
-    𝐸ₑₗₑₛₜₐₜ = get_data("Ger", "(Polarized solute)-Solvent", 5)
-    𝐸ₚₐᵤₗᵢ = get_data("Ger", "Quantum repulsion energy", 6)
-    open("properties.dat", "w") do file
-        for i in 1:nos
-            println(file, "structure $i")
-            println(file, "#      𝑓       𝑉𝑐       𝑠       𝑠̄       𝜀     𝜌ₛₒₗ       𝑉ₘ            𝐸𝑔𝑎𝑠  𝐸ₑₗₑₛₜₐₜ    𝐸ₚₐᵤₗᵢ             𝐺𝑒𝑟        𝑝        𝑝̄     𝑉𝑐𝑎𝑣        𝑝̄𝑉𝑐𝑎𝑣       𝐸𝑐𝑎𝑣          𝐺𝑐𝑎𝑣            𝐺𝑡𝑜𝑡     Δ𝐺𝑡𝑜𝑡")
-            println(file, "               Å³                                                        Eₕ  kcal/mol  kcal/mol              Eₕ      GPa      GPa       Å³           Eₕ          Eₕ           Eₕ              Eₕ  kcal/mol")
-            for j in 1:nosf
-                pv = 𝑝̄[j] * 𝑉𝑐𝑎𝑣[i,j] * 2.293712569e-4
-                @printf(file, "%-2d %5.3f  %7.3f  %6.4f  %6.4f  %6.4f  %7.4f  %7.3f  %14.8f    %6.2f    %6.2f  %14.8f  %7.3f  %7.3f  %7.3f  %11.8f  %10.8f  %11.8f  %14.8f   %7.2f\n", 
-                        j, 𝑓[j], 𝑉𝑐[i,j], 𝑠[i,j], 𝑠̄[j], 𝜀[j], 𝜌[j], 𝑉ₘ[j], 𝐸𝑔𝑎𝑠[i,j], 𝐸ₑₗₑₛₜₐₜ[i,j], 𝐸ₚₐᵤₗᵢ[i,j], 𝐺𝑒𝑟[i,j], 𝑝[i,j], 𝑝̄[j], 𝑉𝑐𝑎𝑣[i,j], pv, 𝐸𝑐𝑎𝑣[i,j], 𝐺𝑐𝑎𝑣[i,j], 𝐺𝑡𝑜𝑡[i,j], Δ𝐺𝑡𝑜𝑡[i,j])
-            end
-            println(file)
-        end
-    end
-end
-
-#------------------------------------------------------------------------------
-# Algebra.jl
-#------------------------------------------------------------------------------
-# # linear scaling factor 𝑠, as the cubic root of the volume scaling
-# 𝑠 = @. ∛(𝑉𝑐/𝑉𝑐[:,1])  # nos * nosf 2D array
-
-# # average of 𝑠 over all structures at the same scalingfactor 𝑓
-# 𝑠̄ = mean(𝑠, dims=1)  # 1D array of length nosf
-
-# # dielectric permitivity 𝜀 = 1 + (𝜀₀-1)/𝑠̄³
-# 𝜀₀ = get_sol_params().𝜀
-# 𝜀 = @. 1 + (𝜀₀ - 1) / 𝑠̄^3  # 1D array of length nosf
-
-# # solvent density 𝜌 = 𝜌₀/𝑠̄⁽³⁺𝜂⁾
-# 𝜌₀ = get_sol_params().𝜌
-# 𝜌 = @. 𝜌₀ / 𝑠̄^(3+𝜂)  # 1D array of length nosf
-
-# # molar volume of solvent 𝑉ₘ = (𝑀/𝜌₀) * 𝑠̄³
-# 𝑀 = get_sol_params().𝑀
-# 𝑉ₘ = @. (𝑀/𝜌₀) * 𝑠̄^3  # 1D array of length nosf
-
-# Murnaghan equation of state fitting for pressure 𝑝 calculation
-# using LsqFit
-function eos_fitting(𝑉𝑐, 𝐺𝑒𝑟)
-    nos = calc_num_structs()
-    abc_parameters = Array{Float64}(undef, nos,3)
-    Threads.@threads for i in 1:nos
-    # python: y = (a/b)*(1/x)**b+(a-c)*x; y is Ger, x is Vc
-    # mathematica: a*x ((1/b)*(t[[1, 1]]/x)^(b + 1) + 1) - c*x
-    # a=p[1], b=p[2], c=p[3], x is Vc
-        @. model(x, p) = (p[1]/p[2])*x^(-p[2]) + (p[1]-p[3])*x
-        xdata = 𝑉𝑐[i,:] ./ 𝑉𝑐[i,1]
-        ydata = 𝐺𝑒𝑟[i,:] .- 𝐺𝑒𝑟[i,1]
-        p0 = [0.0, 5.0, 0.0]
-        fit = curve_fit(model, xdata, ydata, p0)
-        abc_parameters[i,1] = fit.param[1]/𝑉𝑐[i,1]
-        abc_parameters[i,2] = fit.param[2]
-        abc_parameters[i,3] = fit.param[3]/𝑉𝑐[i,1]
-    end
-    return abc_parameters    # nos * 3 2D array
-end
-
-function calc_𝑝(𝑉𝑐, 𝐺𝑒𝑟)
-    abc = eos_fitting(𝑉𝑐, 𝐺𝑒𝑟)    # nos * 3 2D array
-    𝑎 = abc[:,1]   # 1D array of length nosf
-    𝑏 = abc[:,2]
-    𝑐 = abc[:,3]
-    # nos * a 2D array; 1 hartree/Å³ = 4359.74417 GPa
-    return @. (𝑎 * ( (𝑉𝑐[:,1]/𝑉𝑐)^(𝑏+1) - 1 ) + 𝑐) * 4359.74417
-end
-
-function calc_Δ𝐺𝑡𝑜𝑡(𝐺𝑡𝑜𝑡, mol = molecularity)
-    Δ𝐺𝑡𝑜𝑡 = Array{Float64}(undef, size(𝐺𝑡𝑜𝑡))  # nos * nosf 2D array
-    if mol == "uni"
-        for i in 1:length(𝐺𝑡𝑜𝑡[1,:])
-            @. Δ𝐺𝑡𝑜𝑡[:,i] = (𝐺𝑡𝑜𝑡[:,i] - 𝐺𝑡𝑜𝑡[1,i]) * 627.509  # 1 hartree = 627.509 kcal/mol
-        end
-    elseif mol == "bi"
-        Δ𝐺𝑡𝑜𝑡[1,:] .= Δ𝐺𝑡𝑜𝑡[2,:] .= 0.0
-        for i in 1:length(𝐺𝑡𝑜𝑡[1,:])
-            @. Δ𝐺𝑡𝑜𝑡[3:end,i] = (𝐺𝑡𝑜𝑡[3:end,i] - 𝐺𝑡𝑜𝑡[1,i] - 𝐺𝑡𝑜𝑡[2,i]) * 627.509
-        end
-    end
-    return Δ𝐺𝑡𝑜𝑡
-end
-
-#------------------------------------------------------------------------------
 # main.jl
 #------------------------------------------------------------------------------
 #function main()
-    geomdata = split(geometries)
-    numatoms = calc_num_atoms.(split_geoms())
-    # Step 1: cavity volume 𝑉𝑐(𝑓) and solvent property calculations
-    #if !restart  # new job
-        #mkpath("tmp")    # creat a tmp folder in current directory
-    write_gjf("Vc")
-    run_gaussian("Vc")
-    #end
-    𝑉𝑐 = get_data("Vc", "Cavity volume", 5)
-    # linear scaling factor 𝑠, as the cubic root of the volume scaling
-    𝑠 = @. ∛(𝑉𝑐/𝑉𝑐[:,1])  # nos * nosf 2D array
-    # average of 𝑠 over all structures at the same scalingfactor 𝑓
-    𝑠̄ = mean(𝑠, dims=1)  # 1D array of length nosf
-    # dielectric permitivity 𝜀 = 1 + (𝜀₀-1)/𝑠̄³
-    𝜀₀ = get_sol_params().𝜀
-    global 𝜀 = @. 1 + (𝜀₀ - 1) / 𝑠̄^3  # 1D array of length nosf
-    # solvent density 𝜌 = 𝜌₀/𝑠̄⁽³⁺𝜂⁾
-    𝜌₀ = get_sol_params().𝜌
-    global 𝜌 = @. 𝜌₀ / 𝑠̄^(3+𝜂)  # 1D array of length nosf
-    # molar volume of solvent 𝑉ₘ = (𝑀/𝜌₀) * 𝑠̄³
-    𝑀 = get_sol_params().𝑀
-    global 𝑉ₘ = @. (𝑀/𝜌₀) * 𝑠̄^3  # 1D array of length nosf
+# Input error checking
+if @isdefined(cartesian) && @isdefined(zmatrix)
+    error("Both `cartesian` and `zmatrix` are found; use one only.")
+end
+if @isdefined(zmatrix) && !@isdefined(atomlist)
+    error("No atom list found; provide `atomlist` for the zmatrix.")
+end
+if cavity == "custom" && !@isdefined(spherespec)
+    error("No custom sphere specification found; provide `spherespec` for the custom cavity.")
+end
 
-    # Step 2: electronic structure Gaussian jobs and pressure calculations
-    #if restart  # restart Ger jobs
-    #    restart_Ger_jobs()
-    #else
-        write_gjf("Ger")
-        run_gaussian("Ger")
-    #end
-    𝐺𝑒𝑟 = get_data("Ger", "SCF Done", 5)
-    #𝑝 = calc_𝑝(𝑉𝑐, 𝐺𝑒𝑟)
-    𝑝 = get_data("Ger", "p(GPa)", 2)
-    # average of 𝑝 over all structures at the same scalingfactor 𝑓
-    #𝑝̄ = mean(𝑝, dims=1)   # 1 * nosf 2D array
+if @isdefined(cartesian)
+    numatoms = calc_num_atoms_cartesian(cartesian)
+    atomlist_array = [get_atomlabel_cartesian(i_atom) for i_atom in 1:numatoms]
+elseif @isdefined(zmatrix)
+    numatoms = calc_num_atoms_zmatrix(atomlist)
+    atomlist_array = [get_atomlabel_zmatrix(i_atom) for i_atom in 1:numatoms] 
+end
 
-    # Step 3: geometry opt (Ger + pVc) at constant pressure
-    write_gjf("opt")
-    #run_gaussian("opt")
+# Step 1: cavity volume 𝑉𝑐(𝑓) and solvent property calculations
+write_gjf("Vc")
+run_gaussian("Vc")
+𝑉𝑐 = get_data("Vc", "Cavity volume", 5)
 
-#end
+𝑠 = @. ∛(𝑉𝑐/𝑉𝑐[1])  # linear scaling factor 𝑠, as the cubic root of the volume ratio
+
+𝜀₀ = get_sol_params().𝜀
+𝜀 = @. 1 + (𝜀₀ - 1) / 𝑠^3  # dielectric permitivity 𝜀 = 1 + (𝜀₀-1)/𝑠̄³
+
+𝜌₀ = get_sol_params().𝜌
+𝜌 = @. 𝜌₀ / 𝑠^(3+𝜂)  # solvent density 𝜌 = 𝜌₀/𝑠̄⁽³⁺𝜂⁾
+
+# Step 2: electronic structure Gaussian jobs and pressure calculations
+write_gjf("Ger")
+run_gaussian("Ger")
+#𝐺𝑒𝑟 = get_data("Ger", "SCF Done", 5)
+𝑝 = get_data("Ger", "-dG/dV", 3)  # in a.u.; 1 Ha/bohr³ = 29421.0471 GPa
+
+# Step 3: geometry opt (Ger + pVc) at constant pressure
+write_gjf("opt")
+#run_gaussian("opt")
+
+#end  # function main
 
 #main()
