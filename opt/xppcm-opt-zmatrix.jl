@@ -48,6 +48,8 @@ end
 # AtomicRadii.jl
 #------------------------------------------------------------------------------
 bondi = Base.ImmutableDict(
+    #dummy atom
+    "X" => 0.0,
     #1s
     "H" => 1.20,    "1" => 1.20,
     "He"=> 1.40,    "2" => 1.40,
@@ -215,7 +217,7 @@ function print_route(io::IO, jobtype::String, j::Int64, kws::String = keywords, 
     println(io, "#p scrf=(iefpcm,solvent=",sol,",read) nosym 6d 10f")
 end
 
-function print_title(io::IO, jobtype::String, j::Int64, 𝑓::Tuple = scalingfactors)
+function print_title(io::IO, jobtype::String, j::Int64, 𝑓 = scalingfactors)
     println(io, jobtype," calculation with scalingfactor = ",𝑓[j])  # title
 end
 
@@ -246,7 +248,7 @@ function print_pcm_spec(io::IO, jobtype::String, j::Int64, noa::Int64 = numatoms
     end
 end
 
-function print_sphere_spec(io::IO,  j::Int64, noa::Int64 = numatoms, 𝑓::Tuple = scalingfactors)
+function print_sphere_spec(io::IO,  j::Int64, noa::Int64 = numatoms, 𝑓 = scalingfactors)
     for i in 1:noa
         println(io, i, "    ", get_atom_radius(split(atomlist)[i]), "    ", 𝑓[j])
     end
