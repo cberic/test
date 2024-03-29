@@ -78,7 +78,7 @@ opt/*.log
 opt/Gau-*
 opt/fort.*
 opt/tesserae*
-opt/charge.off
+opt/*.off
 
 H2
 

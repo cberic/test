@@ -19,7 +19,6 @@ struct Solvent <: Real #FieldVector{5, Real} #
 end
 
 function Solvent(s::String)
-	@isdefined(dielectric)
 	if s == "cyclohexane"
 		Solvent(2.0165, 0.7781, 84.1595, 36, 2.815)
 	elseif s == "benzene"
@@ -184,6 +183,7 @@ end
 #------------------------------------------------------------------------------
 # Geometry.jl
 #------------------------------------------------------------------------------
+# Get number of atomss
 function calc_num_atoms_cartesian(s::String = cartesian)
     #count(r"\n", s) + 1
     count(r"\n", strip(s)) + 1
@@ -191,6 +191,14 @@ end
 
 function calc_num_atoms_zmatrix(s::String = atomlist)
     length(split(atomlist))
+end
+
+function calc_num_atoms()
+    if @isdefined(cartesian)
+        calc_num_atoms_cartesian()
+    elseif @isdefined(zmatrix)
+        calc_num_atoms_zmatrix()
+    end
 end
 
 # Get the atomic label of the `i`th atom
@@ -202,6 +210,15 @@ end
 function get_atomlabel_zmatrix(i_atom::Int64, s::String = atomlist)
     split(s)[i_atom]
 end
+
+# Get the atom list
+#= function get_atom_list()
+    if @isdefined(cartesian)
+        Tuple([get_atomlabel_cartesian(i_atom) for i_atom in 1:calc_num_atoms_cartesian()])
+    elseif @isdefined(zmatrix)
+        Tuple([get_atomlabel_zmatrix(i_atom) for i_atom in 1:calc_num_atoms_zmatrix()])
+    end
+end =#
 
 #= # Get the xyz coordinates of the `i`th atom
 function get_atomcoor(i_atom::Int64, s::String = cartesian)
@@ -234,7 +251,7 @@ function print_line(io::IO, type::String, i_atom::Int64, 𝑓::Float64)
 end
 # @time print_line(stdout, "structure", 1, 1, 1.2)
 
-function print_structure(io::IO, type::String, 𝑓::Float64, noa::Int64 = numatoms)
+function print_structure(io::IO, type::String, 𝑓::Float64, noa::Int64 = calc_num_atoms())
     for i_atom in 1:noa
         print_line(io, type, i_atom, 𝑓)
     end
@@ -284,11 +301,11 @@ function print_title(io::IO, jobtype::String, i_𝑓::Int64, 𝑓list = scalingf
     println(io, jobtype, " calculation with scalingfactor = ", 𝑓list[i_𝑓])
 end
 
-function print_mol_spec(io::IO, chrg::Int64 = charge, mulplct::Int64 = multiplicity, noa::Int64 = numatoms)
+function print_mol_spec(io::IO, chrg::Int64 = charge, mulplct::Int64 = multiplicity)
     println(io, chrg, " ", mulplct)
     if @isdefined(cartesian)
         s = split(cartesian)
-        for i_atom in 1:noa
+        for i_atom in 1:calc_num_atoms_cartesian()
             println(io, s[4*(i_atom-1)+1], "    ", s[4*(i_atom-1)+2], "  ", s[4*(i_atom-1)+3], "  ", s[4*(i_atom-1)+4])
         end
     elseif @isdefined(zmatrix)
@@ -296,12 +313,18 @@ function print_mol_spec(io::IO, chrg::Int64 = charge, mulplct::Int64 = multiplic
     end
 end
 
-function print_pcm_spec(io::IO, jobtype::String, i_𝑓::Int64, noa::Int64 = numatoms, tsare::Float64 = tesserae, cav::String = cavity, sp::Solvent = get_sol_params())
+function print_pcm_spec(io::IO, jobtype::String, i_𝑓::Int64, cav::String = cavity, sp::Solvent = get_sol_params())
     # determine the number of spheres
-    if cavity == "custom"
+    if cav == "custom"
         nsfe = size(spherespec, 1)
     else
-        nsfe = noa
+        nsfe = calc_num_atoms()
+    end
+    # determine whether to use surface charge smoothing
+    if @isdefined(tesserae) # no smoothing
+        smoothing = "g03defaults tsare=$tesserae"
+    elseif @isdefined(pdens) # York-Karplus smoothing
+        smoothing = "pdens=$pdens"
     end
     # determine if addsph is needed and what to write on the nsfe line
     if cav in ("vdw", "custom") 
@@ -311,9 +334,9 @@ function print_pcm_spec(io::IO, jobtype::String, i_𝑓::Int64, noa::Int64 = num
     end
     # print for differnt jobtype
     if jobtype == "Vc"
-        println(io, "pcmdoc geomview g03defaults tsare=", tsare)
+        println(io, "pcmdoc geomview ", smoothing)
     elseif jobtype in ("Ger", "opt")
-        println(io, "qrep pcmdoc geomview nodis nocav g03defaults tsare=", tsare)
+        println(io, "qrep pcmdoc geomview nodis nocav ", smoothing)
         println(io, "nvesolv=", sp.𝑛, " solvmw=", sp.𝑀)
         println(io, "eps=", 𝜀[i_𝑓], " rhos=", 𝜌[i_𝑓])  # 𝜀 and 𝜌 are global variables of 1D array of length nosf
         println(io, "sten=", float(𝜂))
@@ -333,9 +356,16 @@ function print_sphere_spec(io::IO, i_𝑓::Int64, 𝑓list = scalingfactors)
             println(io, Int(spherespec[i_sph,1]), "    ", spherespec[i_sph,2], "    ", 𝑓list[i_𝑓])
         end
     else # i.e. cavity in ("vdw", "ses")
-        for i_atom in 1:numatoms
-            radius = get_atom_radius(atomlist_array[i_atom])
-            println(io, i_atom, "    ", radius, "    ", 𝑓list[i_𝑓])
+        if @isdefined(cartesian)
+            for i_atom in 1:calc_num_atoms_cartesian()
+                radius = get_atom_radius(get_atomlabel_cartesian(i_atom))
+                println(io, i_atom, "    ", radius, "    ", 𝑓list[i_𝑓])
+            end
+        elseif @isdefined(zmatrix)
+            for i_atom in 1:calc_num_atoms_zmatrix()
+                radius = get_atom_radius(get_atomlabel_zmatrix(i_atom))
+                println(io, i_atom, "    ", radius, "    ", 𝑓list[i_𝑓])
+            end
         end
     end
 end
@@ -397,28 +427,30 @@ function get_data(jobtype::String, searchstring::String, fieldnum::Int64, nosf::
     data
 end
 
+# Input error checking
+function chk_input_error()
+    if @isdefined(cartesian) && @isdefined(zmatrix)
+        error("Both `cartesian` and `zmatrix` are found; use one only.")
+    end
+    if @isdefined(zmatrix) && !@isdefined(atomlist)
+        error("No atom list found; provide `atomlist` for the zmatrix.")
+    end
+    if cavity == "custom" && !@isdefined(spherespec)
+        error("No custom sphere specification found; provide `spherespec` for the custom cavity.")
+    end
+    if @isdefined(tesserae) && @isdefined(pdens)
+        error("Both `tesserae` and `pdens` are found; use one only.")
+    end
+    if !@isdefined(tesserae) && !@isdefined(pdens)
+        error("No `tesserae` or `pdens` found; define one.")
+    end
+end
+
 #------------------------------------------------------------------------------
 # main.jl
 #------------------------------------------------------------------------------
 #function main()
-# Input error checking
-if @isdefined(cartesian) && @isdefined(zmatrix)
-    error("Both `cartesian` and `zmatrix` are found; use one only.")
-end
-if @isdefined(zmatrix) && !@isdefined(atomlist)
-    error("No atom list found; provide `atomlist` for the zmatrix.")
-end
-if cavity == "custom" && !@isdefined(spherespec)
-    error("No custom sphere specification found; provide `spherespec` for the custom cavity.")
-end
-
-if @isdefined(cartesian)
-    numatoms = calc_num_atoms_cartesian(cartesian)
-    atomlist_array = [get_atomlabel_cartesian(i_atom) for i_atom in 1:numatoms]
-elseif @isdefined(zmatrix)
-    numatoms = calc_num_atoms_zmatrix(atomlist)
-    atomlist_array = [get_atomlabel_zmatrix(i_atom) for i_atom in 1:numatoms] 
-end
+chk_input_error()
 
 # Step 1: cavity volume 𝑉𝑐(𝑓) and solvent property calculations
 write_gjf("Vc")

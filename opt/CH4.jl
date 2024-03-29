@@ -6,9 +6,14 @@ exedir = "/scratch/bochen/Gaussian16/xppcm-links/exe-dir"
 solvent = "cyclohexane"      # "cyclohexane", "benzene", or "argon"
 cavity = "custom"            # "vdw" or "ses" (default) cavity, or "custom"
 
+# Cavity surface charge smoothing
+# Choose no smoothing (g03 default; by defining tesserae) or the York-Karplus smoothing scheme (g09/g16 default; by defining pdens).
 tesserae = 0.075             # the mean area in Å² of the tesserae by
                              # which the surfaces of the cavity
                              # is partitioned. default value = 0.075
+
+#pdens = 20                   # the density of integration points on the
+                             # surface, in units of Å⁻²
 
 # The default dielectric permittivity of the solvent may be set close to 1
 # for calculations on charged systems.
@@ -37,14 +42,15 @@ multiplicity = 1
 # Can be provided in Cartesian or Z-matrix format. 
 # When using Z-matrix, `atomlist` needs to be provided.
 
-#= cartesian = """
+cartesian = """
           6                   0.000000    0.000000    0.000000
           1                   0.000000    0.000000    1.105570
           1                   1.042341    0.000000   -0.368523
           1                  -0.521171   -0.902694   -0.368523
           1                  -0.521171    0.902694   -0.368523
-""" =#
+"""
 
+#=
 atomlist = "C H H  H H  "
 zmatrix = """
 C
@@ -59,6 +65,7 @@ a=109.471220
 d1=120.0
 d2=-120.0
 """
+=#
 
 # Custom cavity
 # When `cavity = custom`, list the sphere locations (on which atoms) and radii.
