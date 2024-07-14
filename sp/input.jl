@@ -1,6 +1,6 @@
 # example input for XP-PCM calculations
 # If not sure about the options below, only modify the geometry and Gaussian 
-# realted keywords for your calculation.
+# related keywords for your calculation.
 
 # multithreading
 # "true" means each Ger job is assigned only 1 cpu core and multiple jobs will 
@@ -24,11 +24,16 @@ restart = false
 molecularity = "uni"
 
 solvent = "cyclohexane"      # "cyclohexane", "benzene", or "argon"
-cavity = "vdw"               # "vdw" or "ses" cavity
-sphere = "hard"              # fixed cavity ("hard") or varied cavity ("soft") in Gcav jobs
+cavity = "ses"               # "vdw" or "ses" (default) cavity, or "custom"
+Gcav_spheres = "hard"         # fixed cavity ("hard") or varied cavity ("soft") in Gcav jobs
+
+# Cavity surface charge smoothing
+# Choose no smoothing (g03 default; by defining tesserae) or the York-Karplus smoothing scheme (g09/g16 default; by defining pdens).
 tesserae = 0.075             # the mean area in Å² of the tesserae by
                              # which the surfaces of the cavity
-                             # is partitioned.
+                             # is partitioned. default value = 0.075
+#pdens = 20                  # the density of integration points on the
+                             # surface, in units of Å⁻²
 
 # The default dielectric permittivity of the solvent may be set close to 1
 # for calculations on charged systems.
@@ -48,11 +53,12 @@ scalingfactors = (1.2, 1.15, 1.1, 1.05, 1.0, 0.975, 0.95)
 
 # Gaussian 09/16 parameters
 nproc = 4     # change to total cpus if ismultithreading = false
-mem = "2gb"   # memory per core; change to total memory if ismultithreading = false
+mem = "4gb"   # memory per core; change to total memory if ismultithreading = false
 keywords = "pbepbe def2svp"    # Gaussian keywords; add more if needed
 charge = 0
 multiplicity = 1
 
+# Geometry
 # Keep the coordinates within the triple """ block.
 # Separate each geometry by one or more blank lines.
 # Do not include comments or other text in the """ block.
@@ -65,7 +71,13 @@ H    0.37 0.0 0.0
 H    -0.365 0.0 0.0
 H    0.365 0.0 0.0
 
-H    -0.36 0.0 0.0
-H    0.36 0.0 0.0
-
 """
+
+# Custom cavity
+# When `cavity = custom`, list the sphere locations (on which atoms) and radii.
+#spherespec = """
+#1  1.25
+#2  1.15
+
+#2  2.35
+#"""

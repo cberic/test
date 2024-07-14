@@ -215,36 +215,36 @@ function calc_num_atoms(s::AbstractString)
     count(r"\n", s) + 1
 end
 
-geomdata = split(geometries)
-numatoms_vector = calc_num_atoms.(split_geoms()) # 1D array collecting numatom of each structure
-
-# Get the atomic label of the `iₐₜₒₘ`th atom in the `iₛₜᵣᵤ`th structure from `geomdata`
-function get_atomlabel(iₐₜₒₘ::Int64, iₛₜᵣᵤ::Int64, geom::Vector{SubString{String}} = geomdata, noa::Vector{Int64} = numatoms_vector)
+# Get the atomic label of the `iₐₜₒₘ`th atom in the `iₛₜᵣᵤ`th structure from `split(geometries)`
+function get_atomlabel(iₐₜₒₘ::Int64, iₛₜᵣᵤ::Int64, geom::Vector{SubString{String}} = split(geometries), noa::Vector{Int64} = calc_num_atoms.(split_geoms()))
     #nos = length(noa)
     index = sum(noa[i]*4 for i in 1:iₛₜᵣᵤ) - noa[iₛₜᵣᵤ]*4 + (iₐₜₒₘ-1)*4 + 1
     geom[index]
 end
 # @time get_atomlabel(1,1)
 
-# Get the xyz coordinates of the `iₐₜₒₘ`th atom in the `iₛₜᵣᵤ`th structure from `geomdata`
-function get_atomcoor(iₐₜₒₘ::Int64, iₛₜᵣᵤ::Int64, geom::Vector{SubString{String}} = geomdata, noa::Vector{Int64} = numatoms_vector)
+# Get the xyz coordinates of the `iₐₜₒₘ`th atom in the `iₛₜᵣᵤ`th structure from `split(geometries)`
+function get_atomcoor(iₐₜₒₘ::Int64, iₛₜᵣᵤ::Int64, geom::Vector{SubString{String}} = split(geometries), noa::Vector{Int64} = calc_num_atoms.(split_geoms()))
     #nos = length(noa)
     index = sum(noa[i]*4 for i in 1:iₛₜᵣᵤ) - noa[iₛₜᵣᵤ]*4 + (iₐₜₒₘ-1)*4 + 1  # the index of the atomlabel 
     geom[index+1], geom[index+2], geom[index+3]  # the following three elements in the array are the xyz coordinates
 end
 # @time get_atomcoor.(1:18,103)
 
-function print_line(io::IO, type::String, iₐₜₒₘ::Int64, iₛₜᵣᵤ::Int64, 𝑓::Float64, Gcav_sph::String = Gcav_sphere)
+# Get the sphere info (on which atom and radius) of the `iₛₚₕ`th sphere for the `iₛₜᵣᵤ`th structure from `split(spherespecs)`
+function get_sphereinfo(iₛₚₕ::Int64, iₛₜᵣᵤ::Int64, sph::Vector{SubString{String}} = split(spherespec), nosph::Vector{Int64} = numspheres_vector)
+    index = sum(nosph[i]*2 for i in 1:iₛₜᵣᵤ) - nosph[iₛₜᵣᵤ]*2 + (iₛₚₕ-1)*2 + 1
+    sph[index], sph[index+1]
+end
+
+#= function print_line(io::IO, jobtype::String, iₐₜₒₘ::Int64, iₛₜᵣᵤ::Int64, 𝑓::Float64, Gcav_spheres::String = Gcav_spheresere)
     atomlable = get_atomlabel(iₐₜₒₘ, iₛₜᵣᵤ)
-    atomcoor = get_atomcoor(iₐₜₒₘ, iₛₜᵣᵤ)
     atomradius = get_atom_radius(atomlable)
-    if type == "structure"
-        println(io, atomlable, "    ", atomcoor[1], "  ", atomcoor[2], "  ", atomcoor[3])
-    elseif type in ("Vc", "Ger")
+    if jobtype in ("Vc", "Ger")
         println(io, iₐₜₒₘ, "    ", atomradius, "    ", 𝑓)
         #println(io, atomcoor[1], "  ", atomcoor[2], "  ", atomcoor[3], "    ", atomradius, "    ", 𝑓)
     elseif type == "Gcav"
-        if Gcav_sph == "hard" # alwasys use the first scaling factor, otherwise (i.e. sphere=="soft"), use appropriate scaling factors
+        if Gcav_spheres == "hard" # alwasys use the first scaling factor, otherwise (i.e. sphere=="soft"), use appropriate scaling factors
             𝑓 = scalingfactors[1]
         end
         println(io, iₐₜₒₘ, "    ", atomradius * 𝑓, "    1.0")
@@ -252,14 +252,24 @@ function print_line(io::IO, type::String, iₐₜₒₘ::Int64, iₛₜᵣᵤ::I
         # The scaling factor seems to be ignored.
         #println(io, iₐₜₒₘ, "    ", atomradius, "    ", 𝑓)
     end
-end
+end =#
 # @time print_line(stdout, "structure", 1, 1, 1.2)
 
-function print_structure(io::IO, type::String, iₛₜᵣᵤ::Int64, 𝑓::Float64, noa::Vector{Int64} = numatoms_vector)
+function print_structure(io::IO, iₛₜᵣᵤ::Int64, noa::Vector{Int64} = calc_num_atoms.(split_geoms()))
+    for iₐₜₒₘ in 1:noa[iₛₜᵣᵤ]
+        atomlable = get_atomlabel(iₐₜₒₘ, iₛₜᵣᵤ)
+        atomcoor = get_atomcoor(iₐₜₒₘ, iₛₜᵣᵤ)
+        println(io, atomlable, "    ", atomcoor[1], "  ", atomcoor[2], "  ", atomcoor[3])
+    end
+end
+#=
+function print_structure(io::IO, type::String, iₛₜᵣᵤ::Int64, 𝑓::Float64, noa::Vector{Int64} = calc_num_atoms.(split_geoms()))
     for iₐₜₒₘ in 1:noa[iₛₜᵣᵤ]
         print_line(io, type, iₐₜₒₘ, iₛₜᵣᵤ, 𝑓)
     end
 end
+=#
+
 
 #------------------------------------------------------------------------------
 # Gaussian.jl
@@ -291,33 +301,74 @@ function print_title(io::IO, jobtype::String, i_𝑓::Int64, 𝑓list = scalingf
     println(io, jobtype, " calculation with scalingfactor = ", 𝑓list[i_𝑓])
 end
 
-function print_mol_spec(io::IO, iₛₜᵣᵤ::Int64, i_𝑓::Int64, chrg::Int64 = charge, mulplct::Int64 = multiplicity, 𝑓list = scalingfactors)
+function print_mol_spec(io::IO, iₛₜᵣᵤ::Int64, chrg::Int64 = charge, mulplct::Int64 = multiplicity)
     println(io, chrg," ",mulplct)
-    print_structure(io, "structure", iₛₜᵣᵤ, 𝑓list[i_𝑓])
+    print_structure(io, iₛₜᵣᵤ)
 end
 
-function print_pcm_spec(io::IO, jobtype::String, iₛₜᵣᵤ::Int64, i_𝑓::Int64, tsare::Float64 = tesserae, noa::Vector{Int64} = numatoms_vector, cav::String = cavity)
+function print_pcm_spec(io::IO, jobtype::String, iₛₜᵣᵤ::Int64, i_𝑓::Int64, tsare::Float64 = tesserae, noa::Vector{Int64} = calc_num_atoms.(split_geoms()), nosph::Vector{Int64} = numspheres_vector, cav::String = cavity)
     sp = get_sol_params()
+    # determine the number of spheres
+    if cav == "custom"
+        nsfe = nosph
+    else
+        nsfe = noa
+    end
+    # determine if addsph is needed and what to write on the nsfe line
+    if cav in ("vdw", "custom") 
+        nsfeline = "nsfe=$(nsfe[iₛₜᵣᵤ]) noaddsph"
+    elseif cav == "ses"
+        nsfeline = "nsfe=$(nsfe[iₛₜᵣᵤ]) addsph rsolv=$(sp.𝑟)"
+    end
+    #print for different jobtypes
     if jobtype == "Vc"
         println(io, "pcmdoc geomview g03defaults tsare=",tsare)
-        println(io, "nsfe=",noa[iₛₜᵣᵤ], cav == "vdw" ? " noaddsph" : " rsolv=$(sp.𝑟)")
+        println(io, nsfeline)
     elseif jobtype == "Ger"
-        #𝜀 = calc_𝜀()    # data of 𝜀 and 𝜌 needed for the Ger gjf files
-        #𝜌 = calc_𝜌()
         println(io, "qrep pcmdoc geomview nodis nocav g03defaults tsare=",tsare)
-        println(io, "nsfe=",noa[iₛₜᵣᵤ], cav == "vdw" ? " noaddsph" : " rsolv=$(sp.𝑟)")
         println(io, "nvesolv=",sp.𝑛," solvmw=",sp.𝑀)
         println(io, "eps=",𝜀[i_𝑓]," rhos=",𝜌[i_𝑓])
+        println(io, nsfeline)
     elseif jobtype == "Gcav"
-        #𝑉ₘ = calc_𝑉ₘ()    # molar volume 𝑉ₘ of the solvent
         println(io, "norep nodis cav g03defaults tsare=",tsare)
-        println(io, "nsfe=",noa[iₛₜᵣᵤ], cav == "vdw" ? " noaddsph" : " rsolv=$(sp.𝑟)")
         println(io, "Vmol=",𝑉ₘ[i_𝑓])
+        println(io, nsfeline)
     end
 end
 
-function print_sphere_spec(io::IO, jobtype::String, iₛₜᵣᵤ::Int64, i_𝑓::Int64, 𝑓list = scalingfactors)
-    print_structure(io, jobtype, iₛₜᵣᵤ, 𝑓list[i_𝑓])
+function print_sphere_spec(io::IO, jobtype::String, iₛₜᵣᵤ::Int64, i_𝑓::Int64, 𝑓list = scalingfactors, nosph::Vector{Int64} = numspheres_vector, noa::Vector{Int64} = calc_num_atoms.(split_geoms()))
+    if cavity == "custom"
+        for iₛₚₕ in 1:nosph[iₛₜᵣᵤ]
+            sphereinfo = get_sphereinfo(iₛₚₕ, iₛₜᵣᵤ)
+            if jobtype in ("Vc", "Ger")
+                println(io, sphereinfo[1], "    ", sphereinfo[2], "    ", 𝑓list[i_𝑓])
+            elseif jobtype == "Gcav"
+                if Gcav_spheres == "hard" # use the first (fixed) scaling factor
+                    𝑓 = 𝑓list[1]
+                elseif Gcav_spheres == "soft" # use varied scaling factor
+                    𝑓 = 𝑓list[i_𝑓]
+                end
+                # In Gcav calculation, the scaling factor is ignored. So the scaled radius `sphereinfo[2] * 𝑓` needs to be provided.
+                println(io, sphereinfo[1], "    ", parse(Float64, sphereinfo[2]) * 𝑓, "    1.0")
+            end
+        end
+    else # i.e. cavity in ("vdw", "ses")
+        for iₐₜₒₘ in 1:noa[iₛₜᵣᵤ]
+            atomlable = get_atomlabel(iₐₜₒₘ, iₛₜᵣᵤ)
+            atomradius = get_atom_radius(atomlable)
+            if jobtype in ("Vc", "Ger")
+                println(io, iₐₜₒₘ, "    ", atomradius, "    ", 𝑓list[i_𝑓])
+            elseif jobtype == "Gcav"
+                if Gcav_spheres == "hard" # use the first (fixed) scaling factor
+                    𝑓 = 𝑓list[1]
+                elseif Gcav_spheres == "soft" # use varied scaling factor
+                    𝑓 = 𝑓list[i_𝑓]
+                end
+                # In Gcav calculation, the scaling factor is ignored. So the scaled radius `atomradius * 𝑓` needs to be provided.
+                println(io, iₐₜₒₘ, "    ", atomradius * 𝑓, "    1.0")
+            end
+        end
+    end
 end
 
 # combining the above pieces
@@ -328,7 +379,7 @@ function print_content(io::IO, jobtype::String, iₛₜᵣᵤ::Int64, i_𝑓::In
     println(io)
     print_title(io, jobtype, i_𝑓)
     println(io)
-    print_mol_spec(io, iₛₜᵣᵤ, i_𝑓)
+    print_mol_spec(io, iₛₜᵣᵤ)
     println(io)
     print_pcm_spec(io, jobtype, iₛₜᵣᵤ, i_𝑓)
     println(io)
@@ -558,11 +609,29 @@ function calculateΔ𝑉activation()
     return slope * 4.184    # 1 kcal mol⁻¹ / GPa = 4.184 cm³/mol; 4.184 * 10^3 / 10^9 * 10^6
 end
 =#
+function chk_input_error()
+    if cavity == "custom" 
+        if !@isdefined(spherespec)
+            error("No custom sphere specification found; provide `spherespec` for the custom cavity.")
+        end
+        if calc_num_structs(geometries) !== calc_num_structs(spherespec)
+            error("The number of structures in `geometries` does not match the number of sphere sets in `spherespec`.")
+        end
+    end
+end
 
 #------------------------------------------------------------------------------
 # main.jl
 #------------------------------------------------------------------------------
 #function main()
+    # Step 0: input error checking and some variable initiation
+    chk_input_error()
+    if cavity == "custom"
+        numspheres_vector = calc_num_atoms.(split_geoms(spherespec)) # 1D array collecting numsphere of each sphere set
+    else
+        numspheres_vector = calc_num_atoms.(split_geoms(geometries))
+    end
+
     # Step 1: cavity volume 𝑉𝑐(𝑓) and solvent property calculations
     if restart  # restart "Vc" jobs
         restart_jobs("Vc")
