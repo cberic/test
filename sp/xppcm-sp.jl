@@ -33,7 +33,7 @@ include("input.jl")
 #------------------------------------------------------------------------------
 struct Solvent <: Real #FieldVector{5, Real} #
 	𝜀::Float64  # dielectric
-	𝜌::Float64  # valence electron density
+	𝜌::Float64  # solvent density
 	𝑀::Float64  # molar mass
 	𝑛::Int64    # number of valence electrons
 	𝑟::Float64  # molecular radius
@@ -557,13 +557,13 @@ end
 
 # Murnaghan equation of state fitting for pressure 𝑝 calculation
 # using LsqFit
-function eos_fitting(𝑉𝑐, 𝐺𝑒𝑟)
+function eos_fitting_v1(𝑉𝑐, 𝐺𝑒𝑟)
     nos = calc_num_structs()
     abc_parameters = Array{Float64}(undef, nos,3)
     Threads.@threads for iₛₜᵣᵤ in 1:nos
-    # python: y = (a/b)*(1/x)**b+(a-c)*x; y is Ger, x is Vc
+    # python: y = (a/b)*(1/x)**b+(a-c)*x; y is Ger-Ger(Vc_0), x is Vc/Vc_0
     # mathematica: a*x ((1/b)*(t[[1, 1]]/x)^(b + 1) + 1) - c*x
-    # LsqFit: a=p[1], b=p[2], c=p[3], x is Vc
+    # LsqFit: a=p[1], b=p[2], c=p[3], x is Vc/Vc_0
         @. model(x, p) = (p[1]/p[2])*x^(-p[2]) + (p[1]-p[3])*x
         xdata = 𝑉𝑐[iₛₜᵣᵤ,:] ./ 𝑉𝑐[iₛₜᵣᵤ,1]
         ydata = 𝐺𝑒𝑟[iₛₜᵣᵤ,:] .- 𝐺𝑒𝑟[iₛₜᵣᵤ,1]
@@ -576,8 +576,31 @@ function eos_fitting(𝑉𝑐, 𝐺𝑒𝑟)
     return abc_parameters    # nos * 3 2D array
 end
 
+function eos_fitting_v2(𝑉𝑐, 𝐺𝑒𝑟)
+    nos = calc_num_structs()
+    abc_parameters = Array{Float64}(undef, nos,3)
+    Threads.@threads for iₛₜᵣᵤ in 1:nos
+    # python: y = (a/b)*(1/x)**b+(a-c)*x; y is Ger-Ger(Vc_0), x is Vc/Vc_0
+    # mathematica: a*x ((1/b)*(t[[1, 1]]/x)^(b + 1) + 1) - c*x
+    # LsqFit: a=p[1], b=p[2], c=p[3], x is Vc/Vc_0
+        @. model(x, p) = (p[1]/p[2])*x^(-p[2]) + (p[1]-p[3])*x - p[1] - p[1]/p[2] + p[3]
+        xdata = 𝑉𝑐[iₛₜᵣᵤ,:] ./ 𝑉𝑐[iₛₜᵣᵤ,1]
+        ydata = 𝐺𝑒𝑟[iₛₜᵣᵤ,:] .- 𝐺𝑒𝑟[iₛₜᵣᵤ,1]
+        p0 = [0.0, 5.0, 0.0]
+        fit = curve_fit(model, xdata, ydata, p0)
+        abc_parameters[iₛₜᵣᵤ,1] = fit.param[1]/𝑉𝑐[iₛₜᵣᵤ,1]
+        abc_parameters[iₛₜᵣᵤ,2] = fit.param[2]
+        abc_parameters[iₛₜᵣᵤ,3] = fit.param[3]/𝑉𝑐[iₛₜᵣᵤ,1]
+    end
+    return abc_parameters    # nos * 3 2D array
+end
+
 function calc_𝑝(𝑉𝑐, 𝐺𝑒𝑟)
-    abc = eos_fitting(𝑉𝑐, 𝐺𝑒𝑟)    # nos * 3 2D array
+    if @isdefined(original_eos_fitting) && original_eos_fitting == true
+        abc = eos_fitting_v1(𝑉𝑐, 𝐺𝑒𝑟)    # nos * 3 2D array
+    else
+        abc = eos_fitting_v2(𝑉𝑐, 𝐺𝑒𝑟)    # nos * 3 2D array
+    end
     𝑎 = abc[:,1]   # 1D array of length nosf
     𝑏 = abc[:,2]
     𝑐 = abc[:,3]
@@ -669,10 +692,11 @@ end
     𝑝̄ = mean(𝑝, dims=1)   # 1 * nosf 2D array
 
     # Step 3: cavitation energy Gaussian jobs
+    write_gjf("Gcav")
     if restart  # restart Gcav jobs
         restart_jobs("Gcav")
     else
-        write_gjf("Gcav")
+        #write_gjf("Gcav")
         run_gaussian("Gcav")
     end
     𝑉𝑐𝑎𝑣 = get_data("Gcav", "Cavity volume", 5) # 𝑉𝑐𝑎𝑣 could be different from 𝑉𝑐 in Gcav calculation using hard sphere
