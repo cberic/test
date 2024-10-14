@@ -423,7 +423,7 @@ function extract_normal_modes(filename)
                 continue  # skip the rest and go to the next line
             end
             # Extract Cartesian displacements using regex matching, 2 integers + 3 float numbers
-            if occursin(r"^\s*\d\s+\d\s+[-+]?\d\.\d\d(?:\s+[-+]?\d\.\d\d){8}$", line)
+            if occursin(r"^\s*\d+\s+\d+\s+[-+]?\d\.\d\d(?:\s+[-+]?\d\.\d\d){8}$", line)
                 displacement_strings = split(line)[3:end]
                 displacement_values = parse.(Float64, displacement_strings)
                 append!(displacements, displacement_values)
@@ -448,6 +448,11 @@ function extract_normal_modes(filename)
                 break
             end
         end
+    end
+    # change force constants to negative for imaginary frequencies
+    imaginary_freq_indices = findall(x -> x < 0, frequencies)
+    for i in imaginary_freq_indices
+        force_constants[i] *= -1
     end
     return displacements, frequencies, symmetry_labels, force_constants
 end
@@ -585,6 +590,74 @@ function extract_pressures_and_volume_gradients(filename, num_atoms)
     DRV = zeros(num_coords, num_pressures)
     for j in 1:num_pressures
         DRV[:, j] = DRV_list[j]
+    end
+
+    return pressure_values, DRV
+end
+
+function extract_pressures_and_volume_gradients_v2(filename, num_atoms)
+    pressure_values = Float64[]
+    DRV_list = []
+
+    open(filename, "r") do io
+        lines = readlines(io)
+        i = 1
+        while i <= length(lines)
+            line = lines[i]
+            if occursin("p(au)/p(GPa)=", line)
+                # Extract pressure value
+                pressure_line = line
+                pressure_value = nothing
+                # Extract the value after '=' and before '/'
+                pressure_parts = split(pressure_line, "=")
+                if length(pressure_parts) >= 2
+                    pressure_str = strip(split(pressure_parts[2], "/")[1])
+                    # Replace D with E in case of scientific notation
+                    pressure_str = replace(pressure_str, "D" => "E")
+                    pressure_value = parse(Float64, pressure_str)
+                    push!(pressure_values, pressure_value)
+                else
+                    error("Cannot parse pressure value in line: $line")
+                end
+
+                # Now read Vx, Vy, Vz values for each atom
+                volume_gradients = Float64[]
+                read_lines = 0
+                while read_lines < num_atoms * 3 && i + 1 <= length(lines)
+                    i += 1
+                    vg_line = strip(lines[i])
+                    if isempty(vg_line)
+                        continue
+                    end
+                    # Each line should be like 'Vx    value' or 'Vy    value' or 'Vz    value'
+                    # Split the line
+                    data = split(vg_line)
+                    if length(data) >= 2
+                        value_str = data[2]
+                        # Replace D with E if necessary
+                        value_str = replace(value_str, "D" => "E")
+                        value = parse(Float64, value_str)
+                        push!(volume_gradients, value)
+                        read_lines += 1
+                    else
+                        error("Cannot parse volume gradient in line: $vg_line")
+                    end
+                end
+                # Append volume_gradients to DRV_list
+                push!(DRV_list, volume_gradients)
+            else
+                i += 1
+            end
+        end
+    end
+
+    # Now, convert DRV_list to a 2D array
+    num_pressures = length(pressure_values)
+    num_coords = num_atoms * 3
+    DRV = zeros(num_coords, num_pressures)
+    for j in 1:num_pressures
+        # Use the volume gradients at the first pressure (or cavity) for all pressures (i.e., cavities)
+        DRV[:, j] = DRV_list[1]
     end
 
     return pressure_values, DRV
@@ -738,7 +811,8 @@ function main()
 
     # Extract pressures and volume gradients from pressure output file
     # DRV is a 2D matrix with dimensions num_coords * num_pressures
-    pressure_values, DRV = extract_pressures_and_volume_gradients(force_calculation_output_file, num_atoms)
+    #pressure_values, DRV = extract_pressures_and_volume_gradients(force_calculation_output_file, num_atoms)
+    pressure_values, DRV = extract_pressures_and_volume_gradients_v2(force_calculation_output_file, num_atoms)
     num_pressures = length(pressure_values)
 
     # ---------------------------
@@ -780,6 +854,13 @@ function main()
         end
         println("\n")
     end
+
+    # pressures
+    println("Pressures:")
+    for J in 1:num_pressures
+        @printf("p[%s]:  %10.3f GPa    %.8e Eh/a₀³\n", J, pressure_values[J]*29421.0471, pressure_values[J])
+    end
+    println("\n")
 
     # Volume gradients
     println("Volume gradients (a₀²):")
@@ -914,6 +995,14 @@ function main()
             @printf("%-6s %12.6f %12.6f %12.6f\n", atom_labels[i], new_geometry[i, 1], new_geometry[i, 2], new_geometry[i, 3])
         end
         println();println()
+        # Print equilibrium geometries in xyz format
+        open("p$J.xyz", "w") do file
+            println(file, num_atoms)
+            @printf(file, "Pressure:  %.3f GPa    %.8e Eh/a₀³\n", pressure_values[J]*29421.0471, pressure_values[J])
+            for i in 1:num_atoms
+                @printf(file, "%-6s %12.6f %12.6f %12.6f\n", atom_labels[i], new_geometry[i, 1], new_geometry[i, 2], new_geometry[i, 3])
+            end
+        end
     end
     #--------------------
     # end of xppcm-Qeq-v1.jl
