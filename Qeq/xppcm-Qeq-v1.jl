@@ -2,11 +2,11 @@
 # Usage:
 
 # run the script with julia, passing as commaned line arguments the two file names 
-# (gasphase freq calculation and high pressure force calculation) and the 
-# indexes of totally_symmetric_modes of the gas phase freq calculation (separated
-# by comma and no space allowed)
+# (gasphase freq calculation and high pressure force calculation), the 
+# indices of totally_symmetric_modes of the gas phase freq calculation (separated
+# by comma and no space allowed), and the pressure values in GPa
 
-# julia xppcm-Qeq-v1.jl freq.log force.log 1,5,17
+# julia xppcm-Qeq-v1.jl freq.log force.log 1,5,17 1:5
 
 
 using Printf
@@ -54,16 +54,25 @@ using Printf
      9   1    -0.12   0.00  -0.42    -0.01  -0.00  -0.36    -0.02   0.10   0.28
 """
 =#
-function extract_normal_modes(filename)
+function extract_normal_modes(filename, num_atoms, num_modes)
     # Initialize output variables
     displacements = Float64[]
     symmetry_labels = String[]
     frequencies = Float64[]
     force_constants = Float64[]
+    formatted_displacements_matrix = zeros(3, num_atoms, num_modes)
 
     open(filename, "r") do io
         frequency_section_flag = false
+        hpmodes_flag = false
+        mode_num_counter = 0
         for line in eachline(io)
+            if hpmodes_flag == false # i.e., normal freq output format
+                if occursin(r"hpmodes"i, line)
+                    hpmodes_flag = true
+                    continue  # skip the rest and go to the next line
+                end
+            end
             if frequency_section_flag == false # i.e., not in the right section
                 # Look for the start of the harmonic frequencies section and reset the line counter to 1
                 if occursin("Harmonic frequencies (cm**-1)", line)
@@ -71,30 +80,73 @@ function extract_normal_modes(filename)
                 end
                 continue  # skip the rest and go to the next line
             end
-            # Extract Cartesian displacements using regex matching, 2 integers + 3 float numbers
-            if occursin(r"^\s*\d+\s+\d+\s+[-+]?\d\.\d\d(?:\s+[-+]?\d\.\d\d){8}$", line)
-                displacement_strings = split(line)[3:end]
-                displacement_values = parse.(Float64, displacement_strings)
-                append!(displacements, displacement_values)
-            # Extract the symmetry labels using regex matching, 3 symmetry labels with 2 or 3 (upper letters or number)
-            elseif occursin(r"^\s*[A-Z][A-Z0-9]{0,2}(?:\s+[A-Z][A-Z0-9]{0,2}){2}$", line)
-                symmetry_values = split(line)
-                append!(symmetry_labels, symmetry_values)
-            # Extract frequencies
-            elseif occursin("Frequencies --", line)
-                # Skip the "Frequencies" and "--" tokens
-                freq_strings = split(line)[3:end]
-                freq_values = parse.(Float64, freq_strings)
-                append!(frequencies, freq_values)
-            # Extract force constant
-            elseif occursin("Frc consts  --", line)
-                # Skip the "Frc", "consts" and "--" tokens
-                force_constants_strings = split(line)[4:end]
-                force_constants_values = parse.(Float64, force_constants_strings)
-                append!(force_constants, force_constants_values)
-            # Exit the `for line in eachline(io)` loop; i.e., stop reading file
-            elseif occursin("- Thermochemistry -", line)
-                break
+            if hpmodes_flag == true
+                # Extract Cartesian displacements using regex matching, 2 integers + 3 float numbers
+                if occursin(r"^\s*[1-3]\s+\d+\s+\d+\s+[-+]?\d\.\d\d\d\d\d(?:\s+[-+]?\d\.\d\d\d\d\d){0,4}$", line)
+                    coord_component_string = split(line)[1]
+                    atom_num_string = split(line)[2]
+                    displacement_strings = split(line)[4:end]
+                    coord_component_value = parse(Int64, coord_component_string)
+                    atom_num_value = parse(Int64, atom_num_string)
+                    displacement_values = parse.(Float64, displacement_strings)
+                    for i in eachindex(displacement_values)
+                        formatted_displacements_matrix[coord_component_value, atom_num_value, mode_num_counter+i] = displacement_values[i]
+                    end
+                    if atom_num_value == num_atoms && coord_component_value == 3 # the last line of the displacement for this mode block
+                        mode_num_counter += 5
+                    end
+                # Extract the symmetry labels using regex matching, 3 symmetry labels with 2 or 3 (upper letters or number)
+                elseif occursin(r"^\s*[A-Z]([1-9]|[GU]|['\"]|[0-9]?[A-Z]?)?(?:\s+[A-Z]([1-9]|[GU]|['\"]|[0-9]?[A-Z]?)?){0,4}$", line)
+                    symmetry_values = split(line)
+                    append!(symmetry_labels, symmetry_values)
+                # Extract frequencies
+                elseif occursin("Frequencies ---", line)
+                    # Skip the "Frequencies" and "---" tokens
+                    freq_strings = split(line)[3:end]
+                    freq_values = parse.(Float64, freq_strings)
+                    append!(frequencies, freq_values)
+                # Extract force constant
+                elseif occursin("Force constants ---", line)
+                    # Skip the "Force", "constants" and "---" tokens
+                    force_constants_strings = split(line)[4:end]
+                    force_constants_values = parse.(Float64, force_constants_strings)
+                    append!(force_constants, force_constants_values)
+                # Exit the `for line in eachline(io)` loop; i.e., stop reading file
+                elseif occursin("Harmonic frequencies (cm**-1)", line) # stop when reading the string 2nd time.
+                    break
+                end
+            else # hpmodes is off
+                # Extract Cartesian displacements using regex matching, 2 integers + 3 float numbers
+                if occursin(r"^\s*\d+\s+\d+\s+[-+]?\d\.\d\d(?:\s+[-+]?\d\.\d\d){8}$", line)
+                    displacement_strings = split(line)[3:end]
+                    displacement_values = parse.(Float64, displacement_strings)
+                    append!(displacements, displacement_values)
+                # Extract the symmetry labels using regex matching, 3 symmetry labels with 2 or 3 (upper letters or number)
+                elseif occursin(r"^\s*[A-Z]([1-9]|[GU]|['\"]|[0-9]?[A-Z]?)?(?:\s+[A-Z]([1-9]|[GU]|['\"]|[0-9]?[A-Z]?)?){2}$", line)
+                    symmetry_values = split(line)
+                    append!(symmetry_labels, symmetry_values)
+                # Extract frequencies
+                elseif occursin("Frequencies --", line)
+                    # Skip the "Frequencies" and "--" tokens
+                    freq_strings = split(line)[3:end]
+                    freq_values = parse.(Float64, freq_strings)
+                    append!(frequencies, freq_values)
+                # Extract force constant
+                elseif occursin("Frc consts  --", line)
+                    # Skip the "Frc", "consts" and "--" tokens
+                    force_constants_strings = split(line)[4:end]
+                    force_constants_values = parse.(Float64, force_constants_strings)
+                    append!(force_constants, force_constants_values)
+                # Exit the `for line in eachline(io)` loop; i.e., stop reading file
+                elseif occursin("- Thermochemistry -", line)
+                    break
+                end
+            end
+        end
+        if hpmodes_flag == false
+            N = reshape(displacements, 9, :)
+            for i in 1:num_modes
+                formatted_displacements_matrix[:,:,i] = N[((i-1)%3*3+1):((i-1)%3*3+3), ((ceil(Int, i/3)-1)*num_atoms+1):ceil(Int, i/3)*num_atoms]
             end
         end
     end
@@ -103,9 +155,10 @@ function extract_normal_modes(filename)
     for i in imaginary_freq_indices
         force_constants[i] *= -1
     end
-    return displacements, frequencies, symmetry_labels, force_constants
+    return formatted_displacements_matrix, frequencies, symmetry_labels, force_constants
 end
 
+#=
 function transform_normal_modes(displacements_vector, num_atoms, num_modes)
     formatted_matrix = zeros(3, num_atoms, num_modes)
     N = reshape(displacements_vector, 9, :)
@@ -114,6 +167,7 @@ function transform_normal_modes(displacements_vector, num_atoms, num_modes)
     end
     return formatted_matrix
 end
+=#
 
 # Function to extract the initial geometry as a num_atoms × 3 matrix
 function extract_initial_geometry(filename)
@@ -176,6 +230,7 @@ function extract_initial_geometry(filename)
     return atom_numbers, geometry_matrix, num_atoms
 end
 
+#=
 # Function to extract pressures and volume gradients from a different output file
 function extract_pressures_and_volume_gradients(filename, num_atoms)
     pressure_values = Float64[]
@@ -244,6 +299,7 @@ function extract_pressures_and_volume_gradients(filename, num_atoms)
     return pressure_values, DRV
 end
 
+# Always use the volume gradients at the first pressure (or cavity) for all pressures (i.e., cavities)
 function extract_pressures_and_volume_gradients_v2(filename, num_atoms)
     pressure_values = Float64[]
     DRV_list = []
@@ -311,6 +367,82 @@ function extract_pressures_and_volume_gradients_v2(filename, num_atoms)
 
     return pressure_values, DRV
 end
+=#
+
+# Function to extract the pressures from force.log output
+function extract_pressures(filename)
+    pressure_values = Float64[]
+    for line in eachline(filename) 
+        if occursin("p(au)/p(GPa)=", line)
+            # Extract pressure value
+            pressure_line = line
+            pressure_value = nothing
+            # Extract the value after '=' and before '/'
+            pressure_parts = split(pressure_line, "=")
+            if length(pressure_parts) >= 2
+                pressure_str = strip(split(pressure_parts[2], "/")[1])
+                pressure_value = parse(Float64, pressure_str)
+                push!(pressure_values, pressure_value)
+            else
+                error("Cannot parse pressure value in line: $line")
+            end
+        end
+    end
+    return pressure_values
+end
+
+# Function to extract pressures and volume gradients from a different output file
+function extract_volume_gradients(filename, num_atoms)
+    DRV_list = Float64[]
+
+    open(filename, "r") do io
+        lines = readlines(io)
+        i = 1
+        while i <= length(lines)
+            line = lines[i]
+            if occursin("Cavity step function theory", line)
+                # Now read Vx, Vy, Vz values for each atom
+                #volume_gradients = Float64[]
+                read_lines = 0
+                while read_lines < num_atoms * 3 && i + 1 <= length(lines)
+                    i += 1
+                    vg_line = strip(lines[i])
+                    if isempty(vg_line)
+                        continue
+                    end
+                    # Each line should be like 'Vx    value' or 'Vy    value' or 'Vz    value'
+                    # Split the line
+                    data = split(vg_line)
+                    if length(data) >= 2
+                        value_str = data[2]
+                        # Replace D with E if necessary
+                        value_str = replace(value_str, "D" => "E")
+                        value = parse(Float64, value_str)
+                        push!(DRV_list, value)
+                        read_lines += 1
+                    else
+                        error("Cannot parse volume gradient in line: $vg_line")
+                    end
+                end
+                # Append volume_gradients to DRV_list
+                #push!(DRV_list, volume_gradients)
+            else
+                i += 1
+            end
+        end
+    end
+
+    # Now, convert DRV_list to a 2D array
+    #num_coords = num_atoms * 3
+    #DRV = zeros(num_coords, num_pressures)
+    #for j in 1:num_pressures
+        # Use the volume gradients at the first pressure (or cavity) for all pressures (i.e., cavities)
+        #DRV[:, j] = DRV_list[1]
+    #end
+
+    return DRV_list
+end
+
 #=
 # Function to extract the point group from Gaussian output
 function extract_point_group(filename)
@@ -385,8 +517,11 @@ function main()
     # Replace 'your_pressure_output.log' with the path to the pressure output file
     force_calculation_output_file = ARGS[2]
 
-    # List the indexes of the totally symmetric normal modes in the gas phase calculation
-    totally_symmetric_mode_indexes = eval(Meta.parse(ARGS[3]))
+    # List the indices of the totally symmetric normal modes in the gas phase calculation
+    totally_symmetric_mode_indices = eval(Meta.parse(ARGS[3]))
+
+    # Pressures in GPa
+    pressure_values_GPa = eval(Meta.parse(ARGS[4]))
 
     # ---------------------------
     # Data Extraction
@@ -402,9 +537,9 @@ function main()
     num_modes = num_coords - 6  # For nonlinear molecules
 
     # Extract freq and normal modes
-    displacements, frequencies, symmetry_labels, force_constants_mdyne_per_angstrom = extract_normal_modes(freq_calculation_output_file)
+    normal_modes, frequencies, symmetry_labels, force_constants_mdyne_per_angstrom = extract_normal_modes(freq_calculation_output_file, num_atoms, num_modes)
 
-    normal_modes = transform_normal_modes(displacements, num_atoms, num_modes)
+    #normal_modes = transform_normal_modes(displacements, num_atoms, num_modes)
 
     # Extract the point group
     #point_group = extract_point_group(freq_calculation_output_file)
@@ -422,8 +557,10 @@ function main()
     # Extract pressures and volume gradients from pressure output file
     # DRV is a 2D matrix with dimensions num_coords * num_pressures
     #pressure_values, DRV = extract_pressures_and_volume_gradients(force_calculation_output_file, num_atoms)
-    pressure_values, DRV = extract_pressures_and_volume_gradients_v2(force_calculation_output_file, num_atoms)
+    #pressure_values = extract_pressures(force_calculation_output_file)
+    pressure_values = pressure_values_GPa/29421.0471
     num_pressures = length(pressure_values)
+    DRV = extract_volume_gradients(force_calculation_output_file, num_atoms)
 
     # ---------------------------
     # Data Reporting
@@ -460,7 +597,7 @@ function main()
         println("Atom     Δx         Δy         Δz")
         println("------------------------------------")
         for j in 1:num_atoms
-            @printf("%-6s %9.6f %9.6f %9.6f\n", atom_labels[j], mode_matrix[j, 1], mode_matrix[j, 2], mode_matrix[j, 3])
+            @printf("%-6s %9.5f %9.5f %9.5f\n", atom_labels[j], mode_matrix[j, 1], mode_matrix[j, 2], mode_matrix[j, 3])
         end
         println("\n")
     end
@@ -474,17 +611,18 @@ function main()
 
     # Volume gradients
     println("Volume gradients (a₀²):")
-    for J in 1:num_pressures
-        println("Pressure p[$J]: $(pressure_values[J]) Eh/a₀³")
-        DRV_J = DRV[:, J]
-        DRV_matrix = reshape(DRV_J, 3, num_atoms)'
+    #for J in 1:num_pressures
+        #println("Pressure p[$J]: $(pressure_values[J]) Eh/a₀³")
+        #DRV_J = DRV[:, J]
+        #DRV_matrix = reshape(DRV_J, 3, num_atoms)'
+        DRV_matrix = reshape(DRV, 3, num_atoms)'
         println("Atom     Vx          Vy          Vz")
         println("----------------------------------------")
         for i in 1:num_atoms
             @printf("%-6s %11.6f %11.6f %11.6f\n", atom_labels[i], DRV_matrix[i, 1], DRV_matrix[i, 2], DRV_matrix[i, 3])
         end
         println("\n")
-    end
+    #end
 
     # ---------------------------
     # Computational Steps
@@ -535,22 +673,41 @@ function main()
     # ---------------------------
 
     # Compute the normal modes gradient vector DQV of the compression cavity volume
-    # DQV has dimensions (num_modes x num_pressures)
+    # DQV is 1D vector of length num_modes
     DQV = transpose(U) * DRV  # U^T * DRV
+    compression_propensity_vector = -DQV ./ force_constants_au
+
+
+    # Print compression_propensity_vector before adjustment for totally symmetric modes
+    println("-DQV/k (sorted and in a₀⁴/Eh):")
+    println("* indicates the modes used in Qeq calculation")
+    if length(compression_propensity_vector) == length(symmetry_labels)
+        sorted_indices = sortperm(compression_propensity_vector, by=abs, rev=true)  # Sort indices by absolute value in descending order
+        @printf("              -DQV/k       DQV       k      symm_label\n")
+        for i in sorted_indices
+            @printf("Mode %3d: %10.3f %10.3f %10.3f      %s%s\n", i, compression_propensity_vector[i], DQV[i], force_constants_au[i], symmetry_labels[i], i in totally_symmetric_mode_indices ? "   *" : "")
+        end
+        #for (i, k) in enumerate(compression_propensity_vector)
+        #    @printf("Mode %3d: %10.3f   %s\n", i, k, symmetry_labels[i])
+        #end
+        println("Modes used in Qeq calculation: $totally_symmetric_mode_indices")
+        println("\n")
+    end
 
     # ---------------------------
     # Adjust for Totally Symmetric Modes
     # ---------------------------
 
     # Set the volume gradient to zero for modes that are not totally symmetric
-    for j in 1:num_pressures
+    #for j in 1:num_pressures
         for i in 1:num_modes
-            if !(i in totally_symmetric_mode_indexes)
+            if !(i in totally_symmetric_mode_indices)
             #if !is_totally_symmetric[i]
-                DQV[i, j] = 0.0
+            #DQV[i, j] = 0.0
+            DQV[i] = 0.0
             end
         end
-    end
+    #end
 
     # ---------------------------
     # Compute Compression Propensity Vector
@@ -568,7 +725,7 @@ function main()
     # Compute the compression along the normal modes DQ at various pressures (a₀)
     normal_mode_displacements = zeros(num_modes, num_pressures)
     for J in 1:num_pressures
-        normal_mode_displacements[:, J] = compression_propensity_vector[:, J] * pressure_values[J]
+        normal_mode_displacements[:, J] = compression_propensity_vector * pressure_values[J]
     end
 
     # ---------------------------
@@ -587,7 +744,7 @@ function main()
     println("Compresseion matrices and new equiliurm geometries:")
     for J in 1:num_pressures
         #println("\n-----------------------------------------")
-        @printf("Pressure p[%d] (Eh/a₀³): %.6e\n", J, pressure_values[J])
+        println("Pressure p[$J]: $(pressure_values_GPa[J]) GPa")
         println("Compression matrix at p[$J] (Å):")
         DR_ang_matrix = reshape(atomic_displacements_angstrom[:, J], 3, num_atoms)'
         # Print header
@@ -608,7 +765,7 @@ function main()
         # Print equilibrium geometries in xyz format
         open("p$J.xyz", "w") do file
             println(file, num_atoms)
-            @printf(file, "Pressure:  %.3f GPa    %.8e Eh/a₀³\n", pressure_values[J]*29421.0471, pressure_values[J])
+            @printf(file, "Pressure:  %.3f GPa    %.8e Eh/a₀³\n", pressure_values_GPa[J], pressure_values[J])
             for i in 1:num_atoms
                 @printf(file, "%-6s %12.6f %12.6f %12.6f\n", atom_labels[i], new_geometry[i, 1], new_geometry[i, 2], new_geometry[i, 3])
             end

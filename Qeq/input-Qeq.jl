@@ -3,9 +3,12 @@
 # file name of the gas phase freq calculation output
 freq_calculation_output_file = "freq.log"
 
-# indexes of the totally symmetric normal modes in the gas phase calculation
-#otally_symmetric_mode_indexes = (1, 5, 17)
-totally_symmetric_mode_indexes = (6,)
+# indices of the totally symmetric normal modes in the gas phase calculation
+#otally_symmetric_mode_indices = (1, 5, 17)
+totally_symmetric_mode_indices = (6,)
+
+# pressures in GPa
+pressure_values_GPa = 1:5
 
 # path to the directory of modified Gaussian links
 exedir = "/scratch/bochen/Gaussian16/xppcm-links/exe-dir"
@@ -36,7 +39,7 @@ tesserae = 0.075             # the mean area in Å² of the tesserae by
 # Scaling factors of the vdW atomic radii for constructing the cavity.
 # Include the values inside the () and separate them by ,
 #scalingfactors = (1.2, 1.15, 1.1, 1.05, 1.0, 0.975, 0.95)
-scalingfactors = (1.2, 1.15)
+scalingfactors = (1.2,) # don't change this
 
 # Gaussian 09/16 parameters
 nproc = 4     # change to total cpus if ismultithreading = false
