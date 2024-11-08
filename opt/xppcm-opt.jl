@@ -1,11 +1,11 @@
-#using Statistics
-#using Printf
-#using LsqFit
+# Julia Script: Geometry optimization under pressure
+# Usage:
+# julia xppcm-opt.jl input-opt.jl
 
-#include("CH4.jl")
+include("input-opt.jl")
 #filename_without_extension = "CH4"
-include(ARGS[1])
-filename_without_extension = replace(ARGS[1], ".jl" => "")  # remove the ".jl" extension
+#include(ARGS[1])
+#filename_without_extension = replace(ARGS[1], ".jl" => "")  # remove the ".jl" extension
 
 #------------------------------------------------------------------------------
 # Solvents.jl
@@ -190,7 +190,7 @@ function calc_num_atoms_cartesian(s::String = cartesian)
 end
 
 function calc_num_atoms_zmatrix(s::String = atomlist)
-    length(split(atomlist))
+    length(split(s))
 end
 
 function calc_num_atoms()
@@ -211,52 +211,6 @@ function get_atomlabel_zmatrix(i_atom::Int64, s::String = atomlist)
     split(s)[i_atom]
 end
 
-# Get the atom list
-#= function get_atom_list()
-    if @isdefined(cartesian)
-        Tuple([get_atomlabel_cartesian(i_atom) for i_atom in 1:calc_num_atoms_cartesian()])
-    elseif @isdefined(zmatrix)
-        Tuple([get_atomlabel_zmatrix(i_atom) for i_atom in 1:calc_num_atoms_zmatrix()])
-    end
-end =#
-
-#= # Get the xyz coordinates of the `i`th atom
-function get_atomcoor(i_atom::Int64, s::String = cartesian)
-    index = (i_atom-1)*4 + 1
-    tidygeom = strip(s)
-    tidygeom[index+1], tidygeom[index+2], tidygeom[index+3]
-end
-
-function print_line(io::IO, type::String, i_atom::Int64, 𝑓::Float64)
-    if @isdefined(cartesian)
-        atomlable = get_atomlabel(i_atom)
-        atomcoor = get_atomcoor(i_atom)
-        radius = get_atom_radius(atomlable)
-        if type == "structure"
-            println(io, atomlable, "    ", atomcoor[1], " ", atomcoor[2], " ", atomcoor[3])
-        elseif type in ("Vc", "Ger")
-            println(io, atomcoor[1], " ", atomcoor[2], " ", atomcoor[3], "    ", radius, "    ", 𝑓)
-        elseif type == "Gcav"
-            if sphere == "hard"
-                𝑓 = scalingfactors[1]
-            end
-            println(io, n, "    ", radius * 𝑓, "    1.0")
-        elseif type == "opt"
-            println(io, i_atom, "    ", radius, "    ", 𝑓)
-        end
-    end
-    if @isdefined(zmatrix)
-        println(io, i_atom, "    ", get_atom_radius(split(atomlist)[i_atom]), "    ", 𝑓)
-    end
-end
-# @time print_line(stdout, "structure", 1, 1, 1.2)
-
-function print_structure(io::IO, type::String, 𝑓::Float64, noa::Int64 = calc_num_atoms())
-    for i_atom in 1:noa
-        print_line(io, type, i_atom, 𝑓)
-    end
-end =#
-
 #------------------------------------------------------------------------------
 # Gaussian.jl
 #------------------------------------------------------------------------------
@@ -272,14 +226,14 @@ function print_link0(io::IO, jobtype::String, i_𝑓::Int64, np::Int64 = nproc, 
         println(io, "%subst l301 $exedir")
         println(io, "%subst l502 $exedir")
         println(io, "%subst l701 $exedir")
-        println(io, i_𝑓 == 1 ? "" : "%kjob l502\n", "%chk=$filename_without_extension-Ger.chk")
+        println(io, i_𝑓 == 1 ? "" : "%kjob l502\n", "%chk=Ger.chk")
         println(io, "%nproc=",np)
         println(io, "%mem=",mem)
     elseif jobtype == "opt"
         println(io, "%subst l301 $exedir")
         println(io, "%subst l502 $exedir")
         println(io, "%subst l701 $exedir")
-        println(io, "%chk=$filename_without_extension-opt.chk")
+        println(io, "%chk=opt.chk")
         println(io, "%nproc=",np)
         println(io, "%mem=",mem)
     end
@@ -332,9 +286,9 @@ function print_pcm_spec(io::IO, jobtype::String, i_𝑓::Int64, cav::String = ca
     elseif cav == "ses"
         nsfeline = "nsfe=$nsfe addsph rsolv=$(sp.𝑟)"
     end
-    # print for differnt jobtype
+    # print for different jobtypes
     if jobtype == "Vc"
-        println(io, "pcmdoc geomview ", smoothing)
+        println(io, "qrep pcmdoc geomview nodis nocav ", smoothing)
     elseif jobtype in ("Ger", "opt")
         println(io, "qrep pcmdoc geomview nodis nocav ", smoothing)
         println(io, "nvesolv=", sp.𝑛, " solvmw=", sp.𝑀)
@@ -345,6 +299,7 @@ function print_pcm_spec(io::IO, jobtype::String, i_𝑓::Int64, cav::String = ca
         else # i.e. jobtype == "opt"
             println(io, "cmf=100")
             println(io, "dsten=", 𝑝[i_𝑓])
+            println(io, "tce=1.0") # tce=1.0 using Cavity step function theory for volume gradients
         end
     end
     println(io, nsfeline)
@@ -387,7 +342,7 @@ function print_content(io::IO, jobtype::String, i_𝑓::Int64, nosf::Int64 = len
 end
 
 function write_gjf(jobtype::String, nosf::Int64 = length(scalingfactors))
-    open("$filename_without_extension-$jobtype.gjf", "w") do file
+    open("$jobtype.gjf", "w") do file
         for i_𝑓 in 1:nosf
             print_content(file, jobtype, i_𝑓)
         end
@@ -409,14 +364,14 @@ end
 
 function run_gaussian(jobtype::String)
     gau = get_gau_ver()
-    run(`$gau $filename_without_extension-$jobtype.gjf`)
+    run(`$gau $jobtype.gjf`)
 end
 
 # extract data from Gaussian .log files
 function get_data(jobtype::String, searchstring::String, fieldnum::Int64, nosf::Int64 = length(scalingfactors))
     data = Vector{Float64}(undef, nosf)    # 1D array
     i_𝑓 = 1    # i_𝑓 ranges from 1:nosf
-    open("$filename_without_extension-$jobtype.log", "r") do file
+    open("$jobtype.log", "r") do file
         for line in eachline(file)
             if occursin(searchstring, line)
                 data[i_𝑓] = parse(Float64, split(line)[fieldnum])
@@ -473,7 +428,7 @@ run_gaussian("Ger")
 
 # Step 3: geometry opt (Ger + pVc) at constant pressure
 write_gjf("opt")
-#run_gaussian("opt")
+run_gaussian("opt")
 
 #end  # function main
 
