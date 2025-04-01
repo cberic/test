@@ -1,5 +1,5 @@
 # =============================================================================
-#                                  xppcm.jl
+#                                  xppcm-sp.jl
 # -----------------------------------------------------------------------------
 #                                Roberto Cammi
 #                   Department of Chemical Science (SCVSA)
@@ -9,7 +9,7 @@
 #                  Donostia International Physics Center, SPAIN
 # -----------------------------------------------------------------------------
 #
-# xppcm.jl is a Julia script to conduct XP-PCM calculations for
+# xppcm-sp.jl is a Julia script to conduct XP-PCM calculations for
 # studying chemical reactions under pressure [1,2].
 # References:
 #         [1] R. Cammi, J. Comp. Chem., 36, 2246-2259 (2015)
@@ -20,7 +20,7 @@
 #         [4] R. Cammi, J. Chem. Phys.,150,164122 (2019)
 #         [5] M. Rahm, R. Cammi, N.W. Ashcroft. R. Hoffman, JACS,   (2020)
 #
-# Note: The presents script is under development and its use is confidential.
+# Note: The present script is under development and its use is confidential.
 # =============================================================================
 
 using Statistics
@@ -40,21 +40,26 @@ struct Solvent <: Real #FieldVector{5, Real} #
 end
 
 function Solvent(s::String)
-	@isdefined(dielectric)
 	if s == "cyclohexane"
 		Solvent(2.0165, 0.7781, 84.1595, 36, 2.815)
 	elseif s == "benzene"
 		Solvent(2.2706, 0.8756, 78.1118, 30, 2.63 )
 	elseif s == "argon"
 		Solvent(1.43  , 1.3954, 39.948 ,  8, 1.705)
-	else
-		error("solvent not implemented. Try cyclohexane, benzene, or argon.")
+	elseif s == "water"
+        Solvent(78.85 , 0.9970,18.01528,  8, 1.385)
+    elseif s == "acetonitrile"
+        Solvent(35.688, 0.7767, 41.0519, 16, 2.155)
+    else
+		error("solvent not implemented. Try cyclohexane, benzene, argon, water or acetonitrile.")
 	end
 end
-	#implemented = ("cyclohexane", "benzene", "argon")
+	#implemented = ("cyclohexane", "benzene", "argon", "water", "acetonitrile")
 	#cyclohexane = Solvent(2.0165, 0.7781, 84.1595, 36, 2.815)
 	#benzene     = Solvent(2.2706, 0.8756, 78.1118, 30, 2.63 )
 	#argon       = Solvent(1.43  , 1.3954, 39.948 ,  8, 1.705)
+    #water       = Solvent(78.85 , 0.9970,18.01528,  8, 1.385)
+    #acetonitrile= Solvent(35.688, 0.7767, 41.0519, 16, 2.155)
 #@time Solvent("benzene")
 
 function get_sol_params(s::String = solvent)
@@ -669,11 +674,17 @@ end
     𝑠 = @. ∛(𝑉𝑐/𝑉𝑐[:,1])  # nos * nosf 2D array
     # average of 𝑠 over all structures at the same scalingfactor 𝑓
     𝑠̄ = mean(𝑠, dims=1)  # 1D array of length nosf
-    # dielectric permitivity 𝜀 = 1 + (𝜀₀-1)/𝑠̄³
+    # dielectric permitivity
     𝜀₀ = get_sol_params().𝜀
-    global 𝜀 = @. 1 + (𝜀₀ - 1) / 𝑠̄^3  # 1D array of length nosf
-    # solvent density 𝜌 = 𝜌₀/𝑠̄⁽³⁺𝜂⁾
     𝜌₀ = get_sol_params().𝜌
+    if solvent == "water"
+        global 𝜀 = @. 14.1113*log((476.69+0.1)*exp((𝜌₀*(1/𝑠̄^3-1))/0.214)-476.69+341.5902)-14.1113*log(341.5902+10)+𝜀₀
+    elseif solvent =="acetonitrile"
+        global 𝜀 = @. 6.0695*log((1435.9+1)*exp((𝜌₀*(1/𝑠̄^3-1))/0.1189)-1435.9+1532.5)-6.0695*log(1532.5+1)+𝜀₀
+    else # other nonpolar solvents 𝜀 = 1 + (𝜀₀-1)/𝑠̄³
+        global 𝜀 = @. 1 + (𝜀₀ - 1) / 𝑠̄^3  # 1D array of length nosf
+    end
+    # effective solvent density for Pauli repulsive potential: 𝜌 = 𝜌₀/𝑠̄⁽³⁺𝜂⁾
     global 𝜌 = @. 𝜌₀ / 𝑠̄^(3+𝜂)  # 1D array of length nosf
     # molar volume of solvent 𝑉ₘ = (𝑀/𝜌₀) * 𝑠̄³
     𝑀 = get_sol_params().𝑀

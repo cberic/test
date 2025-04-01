@@ -6,13 +6,13 @@
 # "true" means each Ger job is assigned only 1 cpu core and multiple jobs will 
 # be running at the same time. "false" means all cpu cores work on one job at 
 # a time. Vc and Gcav jobs are set to be always multithreaded. It is advised to
-# use multithreading if the total number of structures are much larger than the 
+# use multithreading if the total number of structures is much larger than the 
 # total number of cpu cores assigned to the job.
 ismultithreading = false
 
 # restart
 # Run a new calculation or restart from previously interupted Ger jobs.
-# The program will read all existing .log files and figure out which jobs
+# The script will check all existing .log files and figure out which jobs
 # are not finished, and then restart the unfinished jobs.
 restart = false
 
@@ -23,15 +23,15 @@ restart = false
 # of the energies of the first two structures.
 molecularity = "uni"
 
-solvent = "cyclohexane"      # "cyclohexane", "benzene", or "argon"
+solvent = "cyclohexane"      # "cyclohexane", "benzene", "argon", "water", or "acetonitrile"
 cavity = "ses"               # "vdw" or "ses" (default) cavity, or "custom"
-Gcav_spheres = "hard"         # fixed cavity ("hard") or varied cavity ("soft") in Gcav jobs
+Gcav_spheres = "hard"        # fixed cavity ("hard") or varied cavity ("soft") in Gcav jobs
 
 # Cavity surface charge smoothing
-# Choose no smoothing (g03 default; by defining tesserae) or the York-Karplus smoothing scheme (g09/g16 default; by defining pdens).
+# Choose no smoothing (g03 default; by defining tesserae) or the York-Karplus 
+# smoothing scheme (g09/g16 default; by defining pdens).
 tesserae = 0.075             # the mean area in Å² of the tesserae by
-                             # which the surfaces of the cavity
-                             # is partitioned. default value = 0.075
+                             # which the cavity surface is discretized.
 #pdens = 20                  # the density of integration points on the
                              # surface, in units of Å⁻²
 
@@ -49,12 +49,21 @@ radiustype = "bondi"        # "bondi" (default) or "rahm"
 # scalingfactors
 # Scaling factors of the vdW atomic radii for constructing the cavity.
 # Include the values inside () or [] and separate them by ,
-scalingfactors = (1.2, 1.15, 1.1, 1.05, 1.0, 0.975, 0.95)
+#= scalingfactors = (1.201, 1.2,  1.199, 
+                  1.151, 1.15, 1.149,
+                  1.101, 1.1,  1.099,
+                  1.051, 1.05, 1.049,
+                  1.001, 1.0,  0.999,
+                  0.976, 0.975,0.974,
+                  0.951, 0.95, 0.949) =#
+scalingfactors = [1.2, 1.15, 1.1, 1.05, 1.0, 0.975]
+#scalingfactors = [1.2]
 
 # Gaussian 09/16 parameters
-nproc = 4     # change to total cpus if ismultithreading = false
-mem = "4gb"   # memory per core; change to total memory if ismultithreading = false
-keywords = "pbepbe def2svp"    # Gaussian keywords; add more if needed
+nproc = 16     # change to total cpus if ismultithreading = false
+mem = "32gb"   # memory per core if ismultithreading = true
+               # or total memory if ismultithreading = false
+keywords = "wb97xd def2svp"    # Gaussian keywords; add more if needed
 charge = 0
 multiplicity = 1
 
@@ -65,12 +74,14 @@ multiplicity = 1
 # Leading or trailing spaces on each line are ok.
 # Atoms may be specified by element symbols or atomic numbers.
 geometries = """
-H    -0.37 0.0 0.0
-H    0.37 0.0 0.0
+H 0.000000  0.000000  0.000000
+H 0.000000  0.000000  0.740000
 
-H    -0.365 0.0 0.0
-H    0.365 0.0 0.0
+H 0.000000  0.000000  0.000000
+H 0.000000  0.000000  0.730000
 
+H 0.000000  0.000000  0.000000
+H 0.000000  0.000000  0.720000
 """
 
 # Custom cavity
