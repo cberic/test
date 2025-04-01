@@ -95,9 +95,10 @@ function extract_normal_modes(filename, num_atoms, num_modes)
                     if atom_num_value == num_atoms && coord_component_value == 3 # the last line of the displacement for this mode block
                         mode_num_counter += 5
                     end
-                # Extract the symmetry labels using regex matching, 3 symmetry labels with 2 or 3 (upper letters or number)
-                elseif occursin(r"^\s*[A-Z]([1-9]|[GU]|['\"]|[0-9]?[A-Z]?)?(?:\s+[A-Z]([1-9]|[GU]|['\"]|[0-9]?[A-Z]?)?){0,4}$", line)
-                    symmetry_values = split(line)
+                # Extract the symmetry labels using regex matching, 5 symmetry labels with 2 or 3 (upper letters or number)
+                #elseif occursin(r"^\s*[A-Z]([1-9]|[GU]|['\"]|[0-9]?[A-Z]?)?(?:\s+[A-Z]([1-9]|[GU]|['\"]|[0-9]?[A-Z]?)?){0,4}$", line)
+                elseif occursin(r"^\s*([A-Z][1-9GU'\"]{0,2}\s*){1,5}$", line)
+                symmetry_values = split(line)
                     append!(symmetry_labels, symmetry_values)
                 # Extract frequencies
                 elseif occursin("Frequencies ---", line)
@@ -122,8 +123,9 @@ function extract_normal_modes(filename, num_atoms, num_modes)
                     displacement_values = parse.(Float64, displacement_strings)
                     append!(displacements, displacement_values)
                 # Extract the symmetry labels using regex matching, 3 symmetry labels with 2 or 3 (upper letters or number)
-                elseif occursin(r"^\s*[A-Z]([1-9]|[GU]|['\"]|[0-9]?[A-Z]?)?(?:\s+[A-Z]([1-9]|[GU]|['\"]|[0-9]?[A-Z]?)?){2}$", line)
-                    symmetry_values = split(line)
+                #elseif occursin(r"^\s*[A-Z]([1-9]|[GU]|['\"]|[0-9]?[A-Z]?)?(?:\s+[A-Z]([1-9]|[GU]|['\"]|[0-9]?[A-Z]?)?){2}$", line)
+                elseif occursin(r"^\s*([A-Z][1-9GU'\"]{0,2}\s*){1,3}$", line)
+                symmetry_values = split(line)
                     append!(symmetry_labels, symmetry_values)
                 # Extract frequencies
                 elseif occursin("Frequencies --", line)
@@ -415,8 +417,6 @@ function extract_volume_gradients(filename, num_atoms)
                     data = split(vg_line)
                     if length(data) >= 2
                         value_str = data[2]
-                        # Replace D with E if necessary
-                        value_str = replace(value_str, "D" => "E")
                         value = parse(Float64, value_str)
                         push!(DRV_list, value)
                         read_lines += 1

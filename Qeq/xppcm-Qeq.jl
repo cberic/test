@@ -303,6 +303,7 @@ function print_pcm_spec(io::IO, jobtype::String, i_𝑓::Int64, cav::String = ca
             println(io, "cmf=100")
             #println(io, "dsten=", 𝑝[i_𝑓])
             println(io, "dsten=0.00003398927294") # 1GPa in a.u. as a random pressure
+            println(io, "tce=1.0") # tce=1.0 using Cavity step function theory for volume gradients
         end
     end
     println(io, nsfeline)

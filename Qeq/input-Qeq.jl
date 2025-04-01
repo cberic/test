@@ -18,7 +18,7 @@ cavity = "vdw"            # "vdw" or "ses" (default) cavity, or "custom"
 
 # Cavity surface charge smoothing
 # Choose no smoothing (g03 default; by defining tesserae) or the York-Karplus smoothing scheme (g09/g16 default; by defining pdens).
-tesserae = 0.075             # the mean area in Å² of the tesserae by
+tesserae = 0.15             # the mean area in Å² of the tesserae by
                              # which the surfaces of the cavity
                              # is partitioned. default value = 0.075
 
@@ -53,11 +53,11 @@ multiplicity = 1
 # When using Z-matrix, `atomlist` needs to be provided.
 
 cartesian = """
-          6                   0.000000    0.000000    0.000000
-          1                   0.000000    0.000000    1.105570
-          1                   1.042341    0.000000   -0.368523
-          1                  -0.521171   -0.902694   -0.368523
-          1                  -0.521171    0.902694   -0.368523
+                6                   0.000000    0.000000    0.000000
+                1                   0.627899    0.627899    0.627899
+                1                  -0.627899   -0.627899    0.627899
+                1                  -0.627899    0.627899   -0.627899
+                1                   0.627899   -0.627899   -0.627899
 """
 
 #=
