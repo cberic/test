@@ -285,10 +285,10 @@ end
 # using LsqFit
 function eos_fitting(𝑉𝑐, 𝐺𝑒𝑟)
     abc_parameters = Vector{Float64}(undef, 3)
-    # python: y = (a/b)*(1/x)**b+(a-c)*x; y is Ger, x is Vc
+    # python: y = (a/b)*(1/x)**b+(a-c)*x; y is Ger-Ger(Vc_0), x is Vc/Vc_0
     # mathematica: a*x ((1/b)*(t[[1, 1]]/x)^(b + 1) + 1) - c*x
-    # LsqFit: a=p[1], b=p[2], c=p[3], x is Vc
-    @. model(x, p) = (p[1]/p[2])*x^(-p[2]) + (p[1]-p[3])*x
+    # LsqFit: a=p[1], b=p[2], c=p[3], x is Vc/Vc_0
+    @. model(x, p) = (p[1]/p[2])*x^(-p[2]) + (p[1]-p[3])*x - p[1] - p[1]/p[2] + p[3]
     xdata = 𝑉𝑐 / 𝑉𝑐[1]
     ydata = 𝐺𝑒𝑟 .- 𝐺𝑒𝑟[1]
     p0 = [0.1, 5.0, 0.1]

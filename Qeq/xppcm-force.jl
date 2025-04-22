@@ -294,8 +294,8 @@ function print_pcm_spec(io::IO, jobtype::String, i_𝑓::Int64, cav::String = ca
     elseif jobtype in ("Ger", "force")
         println(io, "qrep pcmdoc geomview nodis nocav ", smoothing)
         println(io, "nvesolv=", sp.𝑛, " solvmw=", sp.𝑀)
-        #println(io, "eps=", 𝜀[i_𝑓], " rhos=", 𝜌[i_𝑓])  # 𝜀 and 𝜌 are global variables of 1D array of length nosf
-        println(io, "eps=2.0165 rhos=0.7781")  # 𝜀 and 𝜌 at f=1.2
+        println(io, "eps=", 𝜀[i_𝑓], " rhos=", 𝜌[i_𝑓])  # 𝜀 and 𝜌 are global variables of 1D array of length nosf
+        #println(io, "eps=2.0165 rhos=0.7781")  # 𝜀 and 𝜌 at f=1.2
         println(io, "sten=", float(𝜂))
         if jobtype == "Ger"
             println(io, "cmf=0")

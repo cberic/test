@@ -2,10 +2,10 @@ using Printf
 using LsqFit
 using DelimitedFiles
 
-include("Na.jl")
-filename_without_extension = "Na"
-#include(ARGS[1])
-#filename_without_extension = replace(ARGS[1], ".jl" => "")  # remove the ".jl" extension
+#include("Na.jl")
+#filename_without_extension = "Na"
+include(ARGS[1])
+filename_without_extension = replace(ARGS[1], ".jl" => "")  # remove the ".jl" extension
 
 #------------------------------------------------------------------------------
 # solvent
@@ -173,10 +173,11 @@ function atomicradii(type = radiustype)
 			"F" => 1.92,    "9" => 1.92, # From RA16
             #3s
             #"Na"=> 0.95,    "11"=> 0.95, # From collin2005, hard ionic radii from Pauling
-			"Na"=> 1.11,    "11"=> 1.11, # From 5E-3 cutoff
+			#"Na"=> 1.26,    "11"=> 1.26, # From 5E-3 cutoff
 			#"Na"=> 1.18,    "11"=> 1.18, # From 3E-3 cutoff
 			#"Na"=> 1.20,    "11"=> 1.20, # From Alvaro
-			#"Na"=> 1.33,    "11"=> 1.33, # From RA16
+			#"Na"=> 1.33,    "11"=> 1.33, # From RA16, 1e-3 cutoff
+            "Na"=> 2.72,    "11"=> 2.72, # Na-, 1e-3 cutoff
             #3p
 			"Cl"=> 1.78,    "17"=> 1.78, # From 5E-3 cutoff
 			#"Cl"=> 1.93,    "17"=> 1.93, # From 3E-3 cutoff

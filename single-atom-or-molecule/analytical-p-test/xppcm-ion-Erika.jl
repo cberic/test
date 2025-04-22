@@ -2,10 +2,10 @@ using Printf
 using LsqFit
 using DelimitedFiles
 
-#include("Na.jl")
-#filename_without_extension = "Na"
-include(ARGS[1])
-filename_without_extension = replace(ARGS[1], ".jl" => "")  # remove the ".jl" extension
+include("Na-minus.jl")
+filename_without_extension = "Na-minus"
+#include(ARGS[1])
+#filename_without_extension = replace(ARGS[1], ".jl" => "")  # remove the ".jl" extension
 
 #------------------------------------------------------------------------------
 # solvent
@@ -369,11 +369,11 @@ end
 
 
 #------------------------------------------------------------------------------
-# charge sphere
+# generate spherecally distributed points for putting point charges --by Jonatan Gastaldi
 #------------------------------------------------------------------------------
 
 function charge_sphere(t = t_new, r = r_new)
-    #Defining neccessary arrays that will be used in the coming calculations
+    #Defining necessary arrays that will be used in the coming calculations
     phi = zeros(0)
     theta = zeros(0)
     x = zeros(0)
@@ -390,7 +390,7 @@ function charge_sphere(t = t_new, r = r_new)
     point_charges = string.(point_charges)
 
     #Determine the angles used to create the sphere based on the number of points and indices
-    for k in 1:length(indices)
+    for k in eachindex(indices)
         phi_new = acos(1.0 - 2.0*indices[k]/num_pts)
         theta_new = pi * (1.0 + 5.0^(0.5)) * indices[k]
         append!(phi, phi_new)
@@ -398,7 +398,7 @@ function charge_sphere(t = t_new, r = r_new)
     end
 
     #calculate x, y, z positions for the charge sphere
-    for k in 1:length(indices)
+    for k in eachindex(indices)
         x_new = 1 * t * r * cos(theta[k]) * sin(phi[k])
         y_new = 1 * t * r * sin(theta[k]) * sin(phi[k])
         z_new = 1 * t * r * cos(phi[k])
@@ -418,7 +418,7 @@ function charge_sphere(t = t_new, r = r_new)
     old_sphere = ""
     old_prop = ""
     
-    for m in 1:length(x_string)
+    for m in eachindex(x_string)
         sphere = old_sphere * " " * x_string[m] * " " * y_string[m] * " " * z_string[m] * " " * point_charges[m] * "\n"
 		prop_sphere = old_prop * " " * x_string[m] * " " * y_string[m] * " " * z_string[m] * "\n"
         old_sphere = sphere
@@ -880,7 +880,7 @@ end
 
 
 # use the Printf package to write the properties.dat file
-function writeproperties(𝑉𝑐 = 𝑉𝑐, 𝐺ₑᵣ = 𝐺ₑᵣ, 𝑓 = scalingfactors)
+#= function writeproperties(𝑉𝑐 = 𝑉𝑐, 𝐺ₑᵣ = 𝐺ₑᵣ, 𝑓 = scalingfactors)
     a = length(𝑓)
     𝑠 = calc_𝑠()
     𝜀 = calc_𝜀()
@@ -926,7 +926,7 @@ function writeproperties2(𝑉𝑐 = 𝑉𝑐, 𝑓 = scalingfactors)
         end
     end
 end
-
+ =#
 
 function writeproperties3(𝑉𝑐 = 𝑉𝑐, 𝑓 = scalingfactors)
     a = length(𝑓)
@@ -965,7 +965,7 @@ function writeproperties3(𝑉𝑐 = 𝑉𝑐, 𝑓 = scalingfactors)
 end
 
 
-function debug(𝑉𝑐 = 𝑉𝑐, 𝐺ₑᵣ = 𝐺ₑᵣ, 𝑓 = scalingfactors)
+#= function debug(𝑉𝑐 = 𝑉𝑐, 𝐺ₑᵣ = 𝐺ₑᵣ, 𝑓 = scalingfactors)
     a = length(𝑓)
     𝑠 = calc_𝑠()
     𝜀 = calc_𝜀()
@@ -998,7 +998,7 @@ function debug2(𝑉𝑐 = 𝑉𝑐, 𝑓 = scalingfactors)
                             j,   𝑓[j],   𝑉𝑐[j],   𝑠[j],    𝜀[j],   𝜌[j],   𝒵[j], 𝑒𝑓𝑔╱𝑛𝑡𝑠[j],𝑊ₑ[j], 𝑊ₚₒₗ[j],𝑊ₚₒₗ′[j], 𝐸ₚₐᵤₗᵢ[j], 𝑊ₗ[j], 𝑝[j])
         end
     end
-end
+end =#
 
 #------------------------------------------------------------------------------
 # rungaussian
@@ -1160,13 +1160,13 @@ end
 
 # eq (24) in DOI:10.1002/jcc.25544
 # for atoms only; lattice energy (Born model) or ion-charges energy (point charges model) not considered
-function calc_analytical𝑝(𝜂 = 𝜂, 𝑉𝑐 = 𝑉𝑐)
+#= function calc_analytical𝑝(𝜂 = 𝜂, 𝑉𝑐 = 𝑉𝑐)
     𝐸ₚₐᵤₗᵢ = get_𝐸ₚₐᵤₗᵢ()
     𝒵 = calc_𝒵()
     𝑒𝑓𝑔╱𝑛𝑡𝑠 = get_𝑒𝑓𝑔╱𝑛𝑡𝑠()
     # 1 angstrom = 1.88973 bohr; 1 hartree/Å³ = 4359.74417 GPa
     return @. ((3 + 𝜂)/(3 * 𝑉𝑐 * 1.88973^3) * 𝐸ₚₐᵤₗᵢ + 𝒵 * 𝑒𝑓𝑔╱𝑛𝑡𝑠) * 1.88973^3 * 4359.74417
-end
+end =#
 
 #------------------------------------------------------------------------------
 # main
@@ -1315,6 +1315,7 @@ end
 
             rungaussian("Ger")
 
+            # for numerical pressure calcualtion using finite difference
             function finitedifference(energy::Vector{Float64}, 𝑠=𝑠)
                 derivative = zeros(length(energy))
                 derivative[1] = (energy[2] - energy[1]) / (𝑠[2] - 𝑠[1])
