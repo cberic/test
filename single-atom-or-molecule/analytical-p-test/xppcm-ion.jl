@@ -700,7 +700,7 @@ function get_𝑒𝑓𝑔╱𝑛𝑡𝑠(𝑓 = scalingfactors)
     return @. 𝑒𝑓𝑔sum / 4 / pi / 𝑛𝑡𝑠
 end
 
-# extract electronic energy 𝐺ₑᵣ data from gaussian output files
+# extract electronic energy Gₜₒₜₐₗ data from gaussian output files
 function get_𝐸ₚₐᵤₗᵢ(𝑓 = scalingfactors)
     a = length(𝑓)
     𝐸ₚₐᵤₗᵢ = Array{Float64}(undef, a)
@@ -763,7 +763,7 @@ end
 
 
 # use the Printf package to write the properties.dat file
-function writeproperties(𝑉𝑐 = 𝑉𝑐, 𝐺ₑᵣ = 𝐺ₑᵣ, 𝑓 = scalingfactors)
+function writeproperties(𝑉𝑐 = 𝑉𝑐, Gₜₒₜₐₗ = Gₜₒₜₐₗ, 𝑓 = scalingfactors)
     a = length(𝑓)
     𝑠 = calc_𝑠()
     𝜀 = calc_𝜀()
@@ -772,10 +772,10 @@ function writeproperties(𝑉𝑐 = 𝑉𝑐, 𝐺ₑᵣ = 𝐺ₑᵣ, 𝑓 = sc
     𝑝a = calc_analytical𝑝()
     Eorbital = get_orbitalenergy()
     open("$filename_without_extension-properties.dat", "w") do file
-        write(file, "#     𝑓         𝑉𝑐(𝑓) Å³   𝑠(𝑓)        𝜀(𝑠)        𝜌(𝑠)        𝐺ₑᵣ(𝑓) a.u.    𝑝(𝑓)-numeric. -analyt.GPa\n")
+        write(file, "#     𝑓         𝑉𝑐(𝑓) Å³   𝑠(𝑓)        𝜀(𝑠)        𝜌(𝑠)        Gₜₒₜₐₗ(𝑓) a.u.    𝑝(𝑓)-numeric. -analyt.GPa\n")
         for j in 1:a
             @printf(file, "%-2d    %.3f     %7.3f    %.6f    %.6f    %9.6f    %.8f    %6.3f    %6.3f\n", 
-                            j,   𝑓[j],   𝑉𝑐[j],   𝑠[j],    𝜀[j],   𝜌[j],   𝐺ₑᵣ[j],  𝑝n[j],  𝑝a[j])
+                            j,   𝑓[j],   𝑉𝑐[j],   𝑠[j],    𝜀[j],   𝜌[j],   Gₜₒₜₐₗ[j],  𝑝n[j],  𝑝a[j])
         end
         write(file, "\n")
         for j in 1:a
@@ -792,14 +792,14 @@ function writeproperties2(𝑉𝑐 = 𝑉𝑐, 𝑓 = scalingfactors)
     #𝑠 = calc_𝑠()
     𝜀 = calc_𝜀()
     #𝜌 = calc_𝜌()
-    #𝐺ₑᵣ = get_data("Ger.log", "SCF Done", 5)
+    #Gₜₒₜₐₗ = get_data("Ger.log", "SCF Done", 5)
     Eorbital = get_orbitalenergy()
     open("$filename_without_extension-properties.dat", "w") do file
-        write(file, "#     𝑓         𝑉𝑐      𝑠       𝜀     𝜌ₛₒₗ        𝒵         𝑊ₑ       𝑊ₚₒₗ    𝐸ₚₐᵤₗᵢ           𝐺ₑᵣ     𝑊ₗ=𝑊ₑ+𝐺ₑᵣ        𝑝  𝑉_cell\n")
+        write(file, "#     𝑓         𝑉𝑐      𝑠       𝜀     𝜌ₛₒₗ        𝒵         𝑊ₑ       𝑊ₚₒₗ    𝐸ₚₐᵤₗᵢ           Gₜₒₜₐₗ     𝑊ₗ=𝑊ₑ+Gₜₒₜₐₗ        𝑝  𝑉_cell\n")
         write(file, "#               Å³                    g/ml   mol/ml         Eₕ         Eₕ        Eₕ            Eₕ            Eₕ      GPa      Å³\n")
         for j in 1:a
             @printf(file, "%-2d  %5.3f  %7.3f  %5.3f  %6.4f  %7.4f  %7.4f  %9.6f  %9.6f  %8.6f  %12.6f  %12.6f  %7.3f  %6.3f\n", 
-                            j, 𝑓[j], 𝑉𝑐[j], 𝑠[j], 𝜀[j], 𝜌[j], 𝒵[j], 𝑊ₑ[j], 𝑊ₚₒₗ[j], 𝐸ₚₐᵤₗᵢ[j], 𝐺ₑᵣ[j], 𝑊ₗ[j], 𝑝[j], 𝑉_cell[j])
+                            j, 𝑓[j], 𝑉𝑐[j], 𝑠[j], 𝜀[j], 𝜌[j], 𝒵[j], 𝑊ₑ[j], 𝑊ₚₒₗ[j], 𝐸ₚₐᵤₗᵢ[j], Gₜₒₜₐₗ[j], 𝑊ₗ[j], 𝑝[j], 𝑉_cell[j])
         end
         write(file, "\n")
         for j in 1:a
@@ -816,27 +816,27 @@ function writeproperties3(𝑉𝑐 = 𝑉𝑐, 𝑓 = scalingfactors)
     #𝑠 = calc_𝑠()
     #𝜀 = calc_𝜀()
     #𝜌 = calc_𝜌()
-    #𝐺ₑᵣ = get_data("Ger.log", "SCF Done", 5)
+    #Gₜₒₜₐₗ = get_data("Ger.log", "SCF Done", 5)
     Eorbital = get_orbitalenergy()
     open("$filename_without_extension-properties.dat", "w") do file
         write(file, "# atom=$(atomlist()[1]), charge=$charge, multiplicity=$multiplicity, radius=$(atomicradii()[atomlist()[1]]) Å\n")
         write(file, "# solvent=$solvent, dielectric=$dielectric, 𝜂=$𝜂, tesserae=$tesserae, xppcm-model=$model\n")
         write(file, "# $keywords; basis-set=$gen_filename\n\n")
-        write(file, "#      𝑓         𝑉𝑐      𝑠       𝜀      𝜌ₛₒₗ        𝒵   𝐸(nu-ch)   𝑑𝐸(nu-ch)╱𝑑𝑠   𝐸(ch-ch)   𝑑𝐸(ch-ch)╱𝑑𝑠   𝐸(el-ch)   𝑑𝐸(el-ch)╱𝑑𝑠     𝐸ₚₒₗₐᵣ   𝑑𝐸ₚₒₗₐᵣ╱𝑑𝑠     𝐸ₚₐᵤₗᵢ   𝑑𝐸ₚₐᵤₗᵢ╱𝑑𝑠           𝐺ₑᵣ       𝑝ₐ       𝑝ₙ      𝑝ₙ′     𝑉/𝑉₀\n")
+        write(file, "#      𝑓         𝑉𝑐      𝑠       𝜀      𝜌ₛₒₗ        𝒵   𝐸(nu-ch)   𝑑𝐸(nu-ch)╱𝑑𝑠   𝐸(ch-ch)   𝑑𝐸(ch-ch)╱𝑑𝑠   𝐸(el-ch)   𝑑𝐸(el-ch)╱𝑑𝑠     𝐸ₚₒₗₐᵣ   𝑑𝐸ₚₒₗₐᵣ╱𝑑𝑠     𝐸ₚₐᵤₗᵢ   𝑑𝐸ₚₐᵤₗᵢ╱𝑑𝑠           Gₜₒₜₐₗ       𝑝ₐ       𝑝ₙ      𝑝ₙ′     𝑉/𝑉₀\n")
         write(file, "#                Å³                     g/ml                  Eₕ             Eₕ         Eₕ             Eₕ         Eₕ             Eₕ         Eₕ           Eₕ         Eₕ           Eₕ            Eₕ      GPa      GPa      GPa         \n")
         for j in 1:a
             @printf(file, "%-3d  %5.3f  %7.3f  %5.3f  %7.3f  %7.3f  %7.4f  %9.6f  %13.6f  %9.6f  %13.6f  %9.6f  %13.6f  %9.6f  %11.6f  %9.6f  %11.6f  %12.6f  %7.3f  %7.3f  %7.3f  %7.3f\n", 
-                            j, 𝑓[j], 𝑉𝑐[j], 𝑠[j], 𝜀[j], 𝜌[j], 𝒵[j], 𝐸_nuclei_charges[j], 𝑑𝐸_nuclei_charges╱𝑑𝑠[j], 𝐸_charges_charges[j], 𝑑𝐸_charges_charges╱𝑑𝑠[j], 𝐸_electrons_charges[j], 𝑑𝐸_electrons_charges╱𝑑𝑠[j], 𝑊ₚₒₗ′[j], 𝑑𝑊ₚₒₗ′╱𝑑𝑠[j], 𝐸ₚₐᵤₗᵢ[j], 𝑑𝐸ᵣ╱𝑑𝑠[j], 𝐺ₑᵣ[j], 𝑝ₐ[j], 𝑝ₙ[j], 𝑝ₙ′[j], 𝑉𝑐[j]/𝑉𝑐[1])
+                            j, 𝑓[j], 𝑉𝑐[j], 𝑠[j], 𝜀[j], 𝜌[j], 𝒵[j], 𝐸_nuclei_charges[j], 𝑑𝐸_nuclei_charges╱𝑑𝑠[j], 𝐸_charges_charges[j], 𝑑𝐸_charges_charges╱𝑑𝑠[j], 𝐸_electrons_charges[j], 𝑑𝐸_electrons_charges╱𝑑𝑠[j], 𝑊ₚₒₗ′[j], 𝑑𝑊ₚₒₗ′╱𝑑𝑠[j], 𝐸ₚₐᵤₗᵢ[j], 𝑑𝐸ₚₐᵤₗᵢ╱𝑑𝑠[j], Gₜₒₜₐₗ[j], 𝑝ₐ[j], 𝑝ₙ[j], 𝑝ₙ′[j], 𝑉𝑐[j]/𝑉𝑐[1])
         end
         write(file, "\n")
-        write(file, "#      𝑓        𝑠       𝐸(nu-ch)      --- 𝑑𝐸(nu-ch)╱𝑑𝑠 ---       𝐸(ch-ch)      --- 𝑑𝐸(ch-ch)╱𝑑𝑠 ---       𝐸(el-ch)      --- 𝑑𝐸(el-ch)╱𝑑𝑠 ---      ------ 𝐸ₚₒₗₐᵣ ------      ---- 𝑑𝐸ₚₒₗₐᵣ╱𝑑𝑠 ----        𝐸ₚₐᵤₗᵢ      ---- 𝑑𝐸ₚₐᵤₗᵢ╱𝑑𝑠 ----               𝐺ₑᵣ       ----------- 𝑑𝐺ₑᵣ╱𝑑𝑠 ----------\n")
+        write(file, "#      𝑓        𝑠       𝐸(nu-ch)      --- 𝑑𝐸(nu-ch)╱𝑑𝑠 ---       𝐸(ch-ch)      --- 𝑑𝐸(ch-ch)╱𝑑𝑠 ---       𝐸(el-ch)      --- 𝑑𝐸(el-ch)╱𝑑𝑠 ---      ------ 𝐸ₚₒₗₐᵣ ------      ---- 𝑑𝐸ₚₒₗₐᵣ╱𝑑𝑠 ----        𝐸ₚₐᵤₗᵢ      ---- 𝑑𝐸ₚₐᵤₗᵢ╱𝑑𝑠 ----               Gₜₒₜₐₗ       ----------- 𝑑Gₜₒₜₐₗ╱𝑑𝑠 ----------\n")
         write(file, "#                                         numer     analyt                         numer     analyt                         numer     analyt       Gaussian       Born          numer     analyt                        numer     analyt                            numer                      \n")
         write(file, "#                              A              B          C              D              E          F              G              H          I              J          K              L          M             N              O          P                 Q              R      CFILO      CFILP\n")
         for j in 1:a
             @printf(file, "%-3d  %5.3f  %5.3f      %9.6f      %9.6f  %9.6f      %9.6f      %9.6f  %9.6f      %9.6f      %9.6f  %9.6f      %9.6f  %9.6f      %9.6f  %9.6f     %9.6f      %9.6f  %9.6f      %12.6f      %9.6f  %9.6f  %9.6f\n", 
-                            j, 𝑓[j], 𝑠[j], 𝐸_nuclei_charges[j], 𝑑𝐸_nuclei_charges╱𝑑𝑠ₙ[j], 𝑑𝐸_nuclei_charges╱𝑑𝑠[j], 𝐸_charges_charges[j], 𝑑𝐸_charges_charges╱𝑑𝑠ₙ[j], 𝑑𝐸_charges_charges╱𝑑𝑠[j], 𝐸_electrons_charges[j], 𝑑𝐸_electrons_charges╱𝑑𝑠ₙ[j], 𝑑𝐸_electrons_charges╱𝑑𝑠[j], 𝑊ₚₒₗ′[j], 𝑊ₚₒₗ[j], 𝑑𝑊ₚₒₗ′╱𝑑𝑠[j], 𝑑𝑊ₚₒₗ′╱𝑑𝑠_2[j], 𝐸ₚₐᵤₗᵢ[j], 𝑑𝐸ₚₐᵤₗᵢ╱𝑑𝑠ₙ[j], 𝑑𝐸ᵣ╱𝑑𝑠[j], 𝐺ₑᵣ[j], 𝑑𝐺ₑᵣ╱𝑑𝑠ₙ[j], 
+                            j, 𝑓[j], 𝑠[j], 𝐸_nuclei_charges[j], 𝑑𝐸_nuclei_charges╱𝑑𝑠ₙ[j], 𝑑𝐸_nuclei_charges╱𝑑𝑠[j], 𝐸_charges_charges[j], 𝑑𝐸_charges_charges╱𝑑𝑠ₙ[j], 𝑑𝐸_charges_charges╱𝑑𝑠[j], 𝐸_electrons_charges[j], 𝑑𝐸_electrons_charges╱𝑑𝑠ₙ[j], 𝑑𝐸_electrons_charges╱𝑑𝑠[j], 𝑊ₚₒₗ′[j], 𝑊ₚₒₗ[j], 𝑑𝑊ₚₒₗ′╱𝑑𝑠[j], 𝑑𝑊ₚₒₗ′╱𝑑𝑠_2[j], 𝐸ₚₐᵤₗᵢ[j], 𝑑𝐸ₚₐᵤₗᵢ╱𝑑𝑠ₙ[j], 𝑑𝐸ₚₐᵤₗᵢ╱𝑑𝑠[j], Gₜₒₜₐₗ[j], 𝑑Gₜₒₜₐₗ╱𝑑𝑠ₙ[j], 
                             𝑑𝐸_nuclei_charges╱𝑑𝑠[j]+𝑑𝐸_charges_charges╱𝑑𝑠[j]+𝑑𝐸_electrons_charges╱𝑑𝑠[j]+𝑑𝑊ₚₒₗ′╱𝑑𝑠[j]+𝑑𝐸ₚₐᵤₗᵢ╱𝑑𝑠ₙ[j],
-                            𝑑𝐸_nuclei_charges╱𝑑𝑠[j]+𝑑𝐸_charges_charges╱𝑑𝑠[j]+𝑑𝐸_electrons_charges╱𝑑𝑠[j]+𝑑𝑊ₚₒₗ′╱𝑑𝑠[j]+𝑑𝐸ᵣ╱𝑑𝑠[j])
+                            𝑑𝐸_nuclei_charges╱𝑑𝑠[j]+𝑑𝐸_charges_charges╱𝑑𝑠[j]+𝑑𝐸_electrons_charges╱𝑑𝑠[j]+𝑑𝑊ₚₒₗ′╱𝑑𝑠[j]+𝑑𝐸ₚₐᵤₗᵢ╱𝑑𝑠[j])
         end
         write(file, "\n")
         for j in 1:a
@@ -848,7 +848,7 @@ function writeproperties3(𝑉𝑐 = 𝑉𝑐, 𝑓 = scalingfactors)
 end
 
 
-function debug(𝑉𝑐 = 𝑉𝑐, 𝐺ₑᵣ = 𝐺ₑᵣ, 𝑓 = scalingfactors)
+function debug(𝑉𝑐 = 𝑉𝑐, Gₜₒₜₐₗ = Gₜₒₜₐₗ, 𝑓 = scalingfactors)
     a = length(𝑓)
     𝑠 = calc_𝑠()
     𝜀 = calc_𝜀()
@@ -860,10 +860,10 @@ function debug(𝑉𝑐 = 𝑉𝑐, 𝐺ₑᵣ = 𝐺ₑᵣ, 𝑓 = scalingfacto
     𝑝a = calc_analytical𝑝()
     #Eorbital = get_orbitalenergy()
     open("$filename_without_extension-debug.dat", "w") do file
-        write(file, "#    𝑓       𝑉𝑐(𝑓) Å³   𝑠(𝑓)         𝜀(𝑠)        𝜌ₛₒₗ(𝑠)     𝐺ₑᵣ(𝑓) a.u.     𝑝a(𝑓) GPa      PauliE(𝑓)     𝑒𝑓𝑔/𝑛𝑡𝑠     𝒵(𝑓)\n")
+        write(file, "#    𝑓       𝑉𝑐(𝑓) Å³   𝑠(𝑓)         𝜀(𝑠)        𝜌ₛₒₗ(𝑠)     Gₜₒₜₐₗ(𝑓) a.u.     𝑝a(𝑓) GPa      PauliE(𝑓)     𝑒𝑓𝑔/𝑛𝑡𝑠     𝒵(𝑓)\n")
         for j in 1:a
             @printf(file, "%-2d    %.3f     %7.3f    %.6f    %.6f    %9.6f    %.8f    %6.3f    %9.6f    %9.6f    %9.6f\n", 
-                            j,   𝑓[j],   𝑉𝑐[j],   𝑠[j],    𝜀[j],   𝜌[j],   𝐺ₑᵣ[j],  𝑝a[j],  𝐸ₚₐᵤₗᵢ[j], 𝑒𝑓𝑔╱𝑛𝑡𝑠[j], 𝒵[j])
+                            j,   𝑓[j],   𝑉𝑐[j],   𝑠[j],    𝜀[j],   𝜌[j],   Gₜₒₜₐₗ[j],  𝑝a[j],  𝐸ₚₐᵤₗᵢ[j], 𝑒𝑓𝑔╱𝑛𝑡𝑠[j], 𝒵[j])
         end
     end
 end
@@ -949,7 +949,7 @@ function eosfitting(𝑉, 𝐸)
 end
 
 
-function calc_numerical𝑝(𝑉 = 𝑉𝑐, 𝐸 = 𝐺ₑᵣ)
+function calc_numerical𝑝(𝑉 = 𝑉𝑐, 𝐸 = Gₜₒₜₐₗ)
     𝑎, 𝑏, 𝑐 = eosfitting(𝑉, 𝐸)
     # 1 hartree/Å³ = 4359.74417 GPa
     return @. (𝑎 * ( (𝑉𝑐[1]/𝑉𝑐)^(𝑏+1) - 1 ) + 𝑐) * 4359.74417 
@@ -1072,7 +1072,7 @@ end
     # if radiustype !== "ionic"
     #     writegjf("Ger")
     #     rungaussian("Ger")
-    #     global 𝐺ₑᵣ = get_data("Ger.log", "SCF Done", 5)
+    #     global Gₜₒₜₐₗ = get_data("Ger.log", "SCF Done", 5)
     #     writeproperties()
     #     #debug()
     # end
@@ -1114,7 +1114,7 @@ end
     #         𝑊ₚₒₗ = @. -𝛼ₚₒₗ * abs(charge)^2 / 𝑠 / 𝑅𝑟𝑒𝑓
     #         𝑑𝑊ₚₒₗ╱𝑑𝑠 = @. -𝑊ₚₒₗ / 𝑠 * (1 + 3/𝜀)
 
-    #         # xp-pcm energy, 𝐺ₑᵣ with polarization contribution and 𝐸ᵣ without
+    #         # xp-pcm energy, Gₜₒₜₐₗ with polarization contribution and 𝐸ₚₐᵤₗᵢ without
     #         ##RC-101221!
     #         𝒵 = @. 𝒵_new / 𝑠^(3 + 𝜂)
     #         𝜌 = 𝒵 * sp[3] / sp[4] / 0.063
@@ -1124,16 +1124,16 @@ end
     #         writegjf("Ger")
     #         ##RC-101221!
     #         rungaussian("Ger")
-    #         𝐺ₑᵣ = get_data("Ger.log", "SCF Done", 5)
+    #         Gₜₒₜₐₗ = get_data("Ger.log", "SCF Done", 5)
     #         𝑊ₚₒₗ′ = get_𝑊ₚₒₗ′()
     #         𝐸ₚₐᵤₗᵢ = get_𝐸ₚₐᵤₗᵢ()
     #         𝑒𝑓𝑔╱𝑛𝑡𝑠 = get_𝑒𝑓𝑔╱𝑛𝑡𝑠()
     #         𝑅 = 𝑅𝑟𝑒𝑓 * 𝑠
     #         𝐼₂ = @. -4π * 𝑅𝑟𝑒𝑓 * 𝑅^2 * 𝑒𝑓𝑔╱𝑛𝑡𝑠
-    #         𝑑𝐸ᵣ╱𝑑𝑠 = @. -(3 + 𝜂) * 𝐸ₚₐᵤₗᵢ / 𝑠 + 𝒵 * 𝐼₂
+    #         𝑑𝐸ₚₐᵤₗᵢ╱𝑑𝑠 = @. -(3 + 𝜂) * 𝐸ₚₐᵤₗᵢ / 𝑠 + 𝒵 * 𝐼₂
     #         # total lattice energy
-    #         𝑊ₗ = 𝑊ₑ + 𝐺ₑᵣ
-    #         𝑑𝑊ₗ╱𝑑𝑠 = 𝑑𝑊ₑ╱𝑑𝑠 + 𝑑𝑊ₚₒₗ╱𝑑𝑠 + 𝑑𝐸ᵣ╱𝑑𝑠
+    #         𝑊ₗ = 𝑊ₑ + Gₜₒₜₐₗ
+    #         𝑑𝑊ₗ╱𝑑𝑠 = 𝑑𝑊ₑ╱𝑑𝑠 + 𝑑𝑊ₚₒₗ╱𝑑𝑠 + 𝑑𝐸ₚₐᵤₗᵢ╱𝑑𝑠
 
     #         # unit cell volume per formula unit
     #         if lattice == "NaCl"
@@ -1215,7 +1215,7 @@ end
             𝑒𝑓𝑔╱𝑛𝑡𝑠 = get_𝑒𝑓𝑔╱𝑛𝑡𝑠()
             𝑅 = 𝑅𝑟𝑒𝑓 * 𝑠
             𝐼₂ = @. -4π * 𝑅𝑟𝑒𝑓 * 𝑅^2 * 𝑒𝑓𝑔╱𝑛𝑡𝑠
-            𝑑𝐸ᵣ╱𝑑𝑠 = @. -(3 + 𝜂) * 𝐸ₚₐᵤₗᵢ / 𝑠 + 𝒵 * 𝐼₂
+            𝑑𝐸ₚₐᵤₗᵢ╱𝑑𝑠 = @. -(3 + 𝜂) * 𝐸ₚₐᵤₗᵢ / 𝑠 + 𝒵 * 𝐼₂  # analytical derivative of E_Pauli
 
             # nuclei-charges and charges-charges Coulomb energies
             𝐸_nuclei_charges = get_data("Ger.log", "Nuclei-charges interaction", 4)
@@ -1231,18 +1231,17 @@ end
             𝑑𝐸_electrons_charges╱𝑑𝑠ₙ = finitedifference(𝐸_electrons_charges)
 
             # total energy
-            𝐺ₑᵣ = get_data("Ger.log", "SCF Done", 5)
-            𝑑𝐺ₑᵣ╱𝑑𝑠ₙ = finitedifference(𝐺ₑᵣ)
-            𝐸ₜₒₜ = 𝐺ₑᵣ
-            𝑑𝐸ₜₒₜ╱𝑑𝑠 = 𝑑𝑊ₚₒₗ′╱𝑑𝑠 + 𝑑𝐸ᵣ╱𝑑𝑠 + 𝑑𝐸_nuclei_charges╱𝑑𝑠 + 𝑑𝐸_charges_charges╱𝑑𝑠 + 𝑑𝐸_electrons_charges╱𝑑𝑠
+            Gₜₒₜₐₗ = get_data("Ger.log", "SCF Done", 5)
+            𝑑Gₜₒₜₐₗ╱𝑑𝑠ₙ = finitedifference(Gₜₒₜₐₗ)
+            𝑑Gₜₒₜₐₗ╱𝑑𝑠 = 𝑑𝑊ₚₒₗ′╱𝑑𝑠 + 𝑑𝐸ₚₐᵤₗᵢ╱𝑑𝑠 + 𝑑𝐸_nuclei_charges╱𝑑𝑠 + 𝑑𝐸_charges_charges╱𝑑𝑠 + 𝑑𝐸_electrons_charges╱𝑑𝑠
 
             # analytical pressure
             𝑑𝑉𝑐╱𝑑𝑠 = @. 3𝑉𝑐 / 𝑠
-            𝑝ₐ = @. -𝑑𝐸ₜₒₜ╱𝑑𝑠 / 𝑑𝑉𝑐╱𝑑𝑠 * 4359.7 # 1 hartree/bohr = 4359.7 GPa
+            𝑝ₐ = @. (-𝑑Gₜₒₜₐₗ╱𝑑𝑠) / (𝑑𝑉𝑐╱𝑑𝑠) * 4359.7 # 1 hartree/bohr = 4359.7 GPa
 
             # numerical pressure
-            𝑝ₙ = calc_numerical𝑝(𝑉𝑐, 𝐸ₜₒₜ)  # by Murnaghan ESO fitting
-            𝑝ₙ′ = -finitedifference(𝐸ₜₒₜ) ./ 𝑑𝑉𝑐╱𝑑𝑠 * 4359.7 # by finite difference
+            𝑝ₙ = calc_numerical𝑝(𝑉𝑐, Gₜₒₜₐₗ)  # by Murnaghan ESO fitting
+            𝑝ₙ′ = -finitedifference(Gₜₒₜₐₗ) ./ 𝑑𝑉𝑐╱𝑑𝑠 * 4359.7 # by finite difference
 
         end
         # print output
