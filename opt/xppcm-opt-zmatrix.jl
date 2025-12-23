@@ -173,7 +173,7 @@ rahm = Base.ImmutableDict(
     "Rn"=> 2.43,    "86"=> 2.43 )
 # add more if needed from https://chemistry-europe.onlinelibrary.wiley.com/doi/10.1002/chem.201700610
 
-function get_atom_radius(atom::AbstractString, 
+function get_atom_radius(atom::AbstractString,
                          type::String = @isdefined(radiustype) ? radiustype : "bondi",
                          r::Base.ImmutableDict{String,Float64} = eval(Symbol(type)))
     r[atom]
