@@ -1,5 +1,5 @@
 # Julia Script: Data Extraction and High-Pressure Equilibrium Geometry Calculations
-# v2: volume gradients are calculated using variable cavity.
+# v3: volume gradients are calculated using variable cavity, and by numerical differentiation.
 # Usage:
 
 # run the script with julia, passing as commaned line arguments the two file names 
@@ -7,7 +7,7 @@
 # indices of totally_symmetric_modes of the gas phase freq calculation (separated
 # by comma and no space allowed)
 
-# julia xppcm-Qeq-v2.jl freq.log force.log 1,5,17
+# julia xppcm-Qeq-v3.jl freq.log force.log 1,5,17
 
 
 using Printf
@@ -233,215 +233,82 @@ function extract_initial_geometry(filename)
     return atom_numbers, geometry_matrix, num_atoms
 end
 
-#=
-# Function to extract pressures and volume gradients from a different output file
-function extract_pressures_and_volume_gradients(filename, num_atoms)
-    pressure_values = Float64[]
-    DRV_list = []
-
+# Function to read in the pressures from pressures.dat
+function readin_pressures(filename)
+    pressures = Float64[]
     open(filename, "r") do io
-        lines = readlines(io)
-        i = 1
-        while i <= length(lines)
-            line = lines[i]
-            if occursin("p(au)/p(GPa)=", line)
-                # Extract pressure value
-                pressure_line = line
-                pressure_value = nothing
-                # Extract the value after '=' and before '/'
-                pressure_parts = split(pressure_line, "=")
-                if length(pressure_parts) >= 2
-                    pressure_str = strip(split(pressure_parts[2], "/")[1])
-                    # Replace D with E in case of scientific notation
-                    pressure_str = replace(pressure_str, "D" => "E")
-                    pressure_value = parse(Float64, pressure_str)
-                    push!(pressure_values, pressure_value)
-                else
-                    error("Cannot parse pressure value in line: $line")
-                end
-
-                # Now read Vx, Vy, Vz values for each atom
-                volume_gradients = Float64[]
-                read_lines = 0
-                while read_lines < num_atoms * 3 && i + 1 <= length(lines)
-                    i += 1
-                    vg_line = strip(lines[i])
-                    if isempty(vg_line)
-                        continue
-                    end
-                    # Each line should be like 'Vx    value' or 'Vy    value' or 'Vz    value'
-                    # Split the line
-                    data = split(vg_line)
-                    if length(data) >= 2
-                        value_str = data[2]
-                        # Replace D with E if necessary
-                        value_str = replace(value_str, "D" => "E")
-                        value = parse(Float64, value_str)
-                        push!(volume_gradients, value)
-                        read_lines += 1
-                    else
-                        error("Cannot parse volume gradient in line: $vg_line")
-                    end
-                end
-                # Append volume_gradients to DRV_list
-                push!(DRV_list, volume_gradients)
-            else
-                i += 1
-            end
+        for line in eachline(io)
+            push!(pressures, parse(Float64, strip(line)))
         end
     end
-
-    # Now, convert DRV_list to a 2D array
-    num_pressures = length(pressure_values)
-    num_coords = num_atoms * 3
-    DRV = zeros(num_coords, num_pressures)
-    for j in 1:num_pressures
-        DRV[:, j] = DRV_list[j]
-    end
-
-    return pressure_values, DRV
+    return pressures/29421.0471  # convert from GPa to hartree/bohr³
 end
 
-# Always use the volume gradients at the first pressure (or cavity) for all pressures (i.e., cavities)
-function extract_pressures_and_volume_gradients_v2(filename, num_atoms)
-    pressure_values = Float64[]
-    DRV_list = []
+# Function to extract volumes from an output file
+function extract_volumes(filename, num_atoms, num_pressures)
 
+    volumes = Float64[]
     open(filename, "r") do io
-        lines = readlines(io)
-        i = 1
-        while i <= length(lines)
-            line = lines[i]
-            if occursin("p(au)/p(GPa)=", line)
-                # Extract pressure value
-                pressure_line = line
-                pressure_value = nothing
-                # Extract the value after '=' and before '/'
-                pressure_parts = split(pressure_line, "=")
-                if length(pressure_parts) >= 2
-                    pressure_str = strip(split(pressure_parts[2], "/")[1])
-                    # Replace D with E in case of scientific notation
-                    pressure_str = replace(pressure_str, "D" => "E")
-                    pressure_value = parse(Float64, pressure_str)
-                    push!(pressure_values, pressure_value)
-                else
-                    error("Cannot parse pressure value in line: $line")
+        for line in eachline(io)
+            if occursin("Cavity volume", line)
+                # match a floating number after the '=' sign
+                m = match(r"=\s*([-+]?[0-9]*\.?[0-9]+)", line)
+                if m !== nothing && length(m.captures) >= 1
+                    push!(volumes, parse(Float64, m.captures[1]))
                 end
-
-                # Now read Vx, Vy, Vz values for each atom
-                volume_gradients = Float64[]
-                read_lines = 0
-                while read_lines < num_atoms * 3 && i + 1 <= length(lines)
-                    i += 1
-                    vg_line = strip(lines[i])
-                    if isempty(vg_line)
-                        continue
-                    end
-                    # Each line should be like 'Vx    value' or 'Vy    value' or 'Vz    value'
-                    # Split the line
-                    data = split(vg_line)
-                    if length(data) >= 2
-                        value_str = data[2]
-                        # Replace D with E if necessary
-                        value_str = replace(value_str, "D" => "E")
-                        value = parse(Float64, value_str)
-                        push!(volume_gradients, value)
-                        read_lines += 1
-                    else
-                        error("Cannot parse volume gradient in line: $vg_line")
-                    end
-                end
-                # Append volume_gradients to DRV_list
-                push!(DRV_list, volume_gradients)
-            else
-                i += 1
             end
         end
     end
 
-    # Now, convert DRV_list to a 2D array
-    num_pressures = length(pressure_values)
-    num_coords = num_atoms * 3
-    DRV = zeros(num_coords, num_pressures)
-    for j in 1:num_pressures
-        # Use the volume gradients at the first pressure (or cavity) for all pressures (i.e., cavities)
-        DRV[:, j] = DRV_list[1]
+    expected_number = (1 + num_atoms * 6) * num_pressures
+    if length(volumes) != expected_number
+        error("number of extracted volumes ($(length(volumes))) does not match expected ($expected_number)")
     end
 
-    return pressure_values, DRV
-end
-=#
-
-# Function to extract the pressures from force.log output
-function extract_pressures(filename)
-    pressure_values = Float64[]
-    for line in eachline(filename) 
-        if occursin("p(au)/p(GPa)=", line)
-            # Extract pressure value
-            pressure_line = line
-            pressure_value = nothing
-            # Extract the value after '=' and before '/'
-            pressure_parts = split(pressure_line, "=")
-            if length(pressure_parts) >= 2
-                pressure_str = strip(split(pressure_parts[2], "/")[1])
-                pressure_value = parse(Float64, pressure_str)
-                push!(pressure_values, pressure_value)
-            else
-                error("Cannot parse pressure value in line: $line")
-            end
-        end
-    end
-    return pressure_values
+    return volumes
 end
 
-# Function to extract pressures and volume gradients from a different output file
-function extract_volume_gradients(filename, num_atoms, num_pressures)
-    DRV_list = []
-
-    open(filename, "r") do io
-        lines = readlines(io)
-        i = 1
-        while i <= length(lines)
-            line = lines[i]
-            if occursin("Cavity step function theory", line)
-                # Now read Vx, Vy, Vz values for each atom
-                volume_gradients = Float64[]
-                read_lines = 0
-                while read_lines < num_atoms * 3 && i + 1 <= length(lines)
-                    i += 1
-                    vg_line = strip(lines[i])
-                    if isempty(vg_line)
-                        continue
-                    end
-                    # Each line should be like 'Vx    value' or 'Vy    value' or 'Vz    value'
-                    # Split the line
-                    data = split(vg_line)
-                    if length(data) >= 2
-                        value_str = data[2]
-                        value = parse(Float64, value_str)
-                        push!(volume_gradients, value)
-                        read_lines += 1
-                    else
-                        error("Cannot parse volume gradient in line: $vg_line")
-                    end
-                end
-                # Append volume_gradients to DRV_list
-                push!(DRV_list, volume_gradients)
-            else
-                i += 1
-            end
+# Function to calculate volume gradients by central difference
+function calculate_volume_gradients(volumes, stepsize, num_atoms, num_pressures)
+    # first clean the volume data from extract_volumes()
+    # volumes is a 1D array of length (1 + num_atoms * 6) * num_pressures
+    # the order of volumes is: unperturbed, atom1 +x, atom1 -x, atom1 +y, atom1 -y, atom1 +z, atom1 -z, atom2 +x, ...
+    # for the 1st pressure and so on for all pressures
+    # we need to remove the first entry (unperturbed) of each pressure block
+    cleaned_length = num_pressures * num_atoms * 6
+    cleaned_volumes = Vector{Float64}(undef, cleaned_length)
+    idx = 1
+    for J in 0:(num_pressures-1)
+        start_index = J * (1 + num_atoms * 6) + 2  # skip unperturbed
+        end_index = (J + 1) * (1 + num_atoms * 6)
+        for k in start_index:end_index
+            cleaned_volumes[idx] = volumes[k]
+            idx += 1
         end
     end
 
-    # Now, convert DRV_list to a 2D array
-    num_coords = num_atoms * 3
-    DRV = zeros(num_coords, num_pressures)
-    for j in 1:num_pressures
-        # Use the volume gradients at the first pressure (or cavity) for all pressures (i.e., cavities)
-        DRV[:, j] = DRV_list[j]
+    # now calculate the volume gradients using central difference
+    # cleaned_volumes is now of length num_pressures * num_atoms * 6
+    # volume_gradients will be a 2D array of size (num_atoms * 3) x num_pressures
+    volume_gradients = zeros(num_atoms * 3, num_pressures)
+    for J in 0:(num_pressures-1)
+        for i in 1:num_atoms
+            # x direction
+            vp = cleaned_volumes[J * num_atoms * 6 + (i - 1) * 6 + 1]  # +x
+            vm = cleaned_volumes[J * num_atoms * 6 + (i - 1) * 6 + 2]  # -x
+            volume_gradients[(i - 1) * 3 + 1, J + 1] = (vp - vm) / (2 * stepsize)
+            # y direction
+            vp = cleaned_volumes[J * num_atoms * 6 + (i - 1) * 6 + 3]  # +y
+            vm = cleaned_volumes[J * num_atoms * 6 + (i - 1) * 6 + 4]  # -y
+            volume_gradients[(i - 1) * 3 + 2, J + 1] = (vp - vm) / (2 * stepsize)
+            # z direction
+            vp = cleaned_volumes[J * num_atoms * 6 + (i - 1) * 6 + 5]  # +z
+            vm = cleaned_volumes[J * num_atoms * 6 + (i - 1) * 6 + 6]  # -z
+            volume_gradients[(i - 1) * 3 + 3, J + 1] = (vp - vm) / (2 * stepsize)
+        end
     end
 
-    return DRV
+    return volume_gradients * 3.571064  # convert from Å² to a₀²
 end
 
 #=
@@ -557,11 +424,13 @@ end
 
     # Extract pressures and volume gradients from pressure output file
     # DRV is a 2D matrix with dimensions num_coords * num_pressures
-    #pressure_values, DRV = extract_pressures_and_volume_gradients(force_calculation_output_file, num_atoms)
-    pressure_values = extract_pressures(force_calculation_output_file)
+    #pressure_values, DRV = readin_pressures_and_volume_gradients(force_calculation_output_file, num_atoms)
+    pressure_values = readin_pressures("pressures.dat")
     #pressure_values = pressure_values_GPa/29421.0471
     num_pressures = length(pressure_values)
-    DRV = extract_volume_gradients(force_calculation_output_file, num_atoms, num_pressures)
+    volumes = extract_volumes(force_calculation_output_file, num_atoms, num_pressures)
+    stepsize = 0.01  # Å
+    DRV = calculate_volume_gradients(volumes, stepsize, num_atoms, num_pressures)
 
     # ---------------------------
     # Data Reporting

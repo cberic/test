@@ -1,4 +1,5 @@
 # Julia Script: Data Extraction and High-Pressure Equilibrium Geometry Calculations
+# v1: volume gradients are calculated using fixed cavity.
 # Usage:
 
 # run the script with julia, passing as commaned line arguments the two file names 
